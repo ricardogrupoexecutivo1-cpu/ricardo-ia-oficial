@@ -3,13 +3,17 @@ import { NextResponse } from "next/server";
 
 export const runtime = "nodejs";
 
+const VERSION = "ptbr-check-390a561";
+
 export async function POST(req: Request) {
   try {
     const apiKey = process.env.OPENAI_API_KEY;
 
+    console.log("API VERSION:", VERSION);
+
     if (!apiKey) {
       return NextResponse.json(
-        { reply: "OPENAI_API_KEY ausente na Vercel (Production)." },
+        { reply: "OPENAI_API_KEY ausente na Vercel (Production).", version: VERSION },
         { status: 500 }
       );
     }
@@ -19,7 +23,7 @@ export async function POST(req: Request) {
 
     if (!message) {
       return NextResponse.json(
-        { reply: "Body inválido. Envie { message: string }." },
+        { reply: "Body inválido. Envie { message: string }.", version: VERSION },
         { status: 400 }
       );
     }
@@ -29,17 +33,20 @@ export async function POST(req: Request) {
     const response = await openai.responses.create({
       model: "gpt-4.1-mini",
       instructions:
-        "Responda sempre em português do Brasil (pt-BR), de forma clara, impactante, profissional e objetiva.",
+        "Responda sempre em português do Brasil (pt-BR), sem inglês. Se o usuário disser 'olá', responda em português.",
       input: message,
     });
 
     return new Response(
-      JSON.stringify({ reply: response.output_text ?? "Sem resposta." }),
+      JSON.stringify({
+        reply: response.output_text ?? "Sem resposta.",
+        version: VERSION,
+      }),
       { status: 200, headers: { "Content-Type": "application/json; charset=utf-8" } }
     );
   } catch (error: any) {
     return NextResponse.json(
-      { reply: error?.message || "Erro interno." },
+      { reply: error?.message || "Erro interno.", version: VERSION },
       { status: error?.status || 500 }
     );
   }
