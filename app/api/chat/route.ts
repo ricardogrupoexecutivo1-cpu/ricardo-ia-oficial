@@ -38,7 +38,8 @@ export async function POST(req: Request) {
   if (!apiKey) return textError("OPENAI_API_KEY ausente no ambiente.", 500);
 
   const pool = getPool();
-  if (!pool) return textError("DATABASE_URL ausente no ambiente (Vercel/Local).", 500);
+  // ✅ MARKER para confirmar deploy certo
+  if (!pool) return textError("MARKER_2026_DATABASE_URL_AUSENTE", 500);
 
   const body = await req.json().catch(() => ({} as any));
   const message = typeof body?.message === "string" ? body.message.trim() : "";
@@ -62,7 +63,10 @@ export async function POST(req: Request) {
     const ordered = rows.slice().reverse();
     if (ordered.length > 0) {
       historyText = ordered
-        .map((r: any) => `${r.role === "user" ? "Usuário" : "RicardoIA"}: ${r.content}`)
+        .map(
+          (r: any) =>
+            `${r.role === "user" ? "Usuário" : "RicardoIA"}: ${r.content}`
+        )
         .join("\n");
     }
   } catch (e: any) {
@@ -143,7 +147,9 @@ Sem usar reticências "...".
             );
           } catch (e: any) {
             controller.enqueue(
-              encoder.encode(`\n[erro] Falha ao salvar memória: ${e?.message ?? "falha"}`)
+              encoder.encode(
+                `\n[erro] Falha ao salvar memória: ${e?.message ?? "falha"}`
+              )
             );
           }
 
@@ -151,7 +157,8 @@ Sem usar reticências "...".
         });
 
         stream.on("error", (err: any) => {
-          const msg = typeof err?.message === "string" ? err.message : "Erro no streaming.";
+          const msg =
+            typeof err?.message === "string" ? err.message : "Erro no streaming.";
           controller.enqueue(encoder.encode(`\n[erro] ${msg}`));
           controller.close();
         });
