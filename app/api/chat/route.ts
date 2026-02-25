@@ -1,5 +1,5 @@
 import OpenAI from "openai";
-import { createClient } from "@supabase/supabase-js";
+import { Pool } from "pg";
 
 export const runtime = "nodejs";
 
@@ -7,50 +7,78 @@ function cleanText(s: string) {
   return s.replace(/\s+\.\.\.\s*$/g, "").replace(/\s{2,}/g, " ").trim();
 }
 
-function jsonError(message: string, status = 500) {
+function textError(message: string, status = 500) {
   return new Response(message, {
     status,
     headers: { "Content-Type": "text/plain; charset=utf-8" },
   });
 }
 
+// Pool singleton (evita abrir conexão toda hora)
+declare global {
+  // eslint-disable-next-line no-var
+  var __dbPool: Pool | undefined;
+}
+
+function getPool() {
+  const databaseUrl = process.env.DATABASE_URL;
+  if (!databaseUrl) return null;
+
+  if (!global.__dbPool) {
+    global.__dbPool = new Pool({
+      connectionString: databaseUrl,
+      ssl: { rejectUnauthorized: false },
+    });
+  }
+  return global.__dbPool;
+}
+
 export async function POST(req: Request) {
   const apiKey = process.env.OPENAI_API_KEY;
-  if (!apiKey) return jsonError("OPENAI_API_KEY ausente no ambiente.", 500);
+  if (!apiKey) return textError("OPENAI_API_KEY ausente no ambiente.", 500);
 
-  const supabaseUrl = process.env.SUPABASE_URL;
-  const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-  if (!supabaseUrl || !supabaseServiceKey) {
-    return jsonError(
-      "SUPABASE_URL ou SUPABASE_SERVICE_ROLE_KEY ausentes no ambiente (Vercel/Local).",
-      500
-    );
-  }
+  const pool = getPool();
+  if (!pool) return textError("DATABASE_URL ausente no ambiente (Vercel/Local).", 500);
 
   const body = await req.json().catch(() => ({} as any));
   const message = typeof body?.message === "string" ? body.message.trim() : "";
   const userId = typeof body?.userId === "string" ? body.userId.trim() : "";
 
-  if (!message) return jsonError("Body inválido. Envie { message: string }.", 400);
-  if (!userId) return jsonError("Body inválido. Envie { userId: string }.", 400);
+  if (!message) return textError("Body inválido. Envie { message: string }.", 400);
+  if (!userId) return textError("Body inválido. Envie { userId: string }.", 400);
 
-  const supabase = createClient(supabaseUrl, supabaseServiceKey, {
-    auth: { persistSession: false },
-  });
+  // 1) Buscar memória curta
+  let historyText = "";
+  try {
+    const { rows } = await pool.query(
+      `select role, content
+         from public.memories
+        where user_id = $1
+        order by created_at desc
+        limit 12`,
+      [userId]
+    );
 
-  // Puxa as últimas mensagens do usuário (memória curta)
-  const { data: memRows, error: memErr } = await supabase
-    .from("memories")
-    .select("role, content, created_at")
-    .eq("user_id", userId)
-    .order("created_at", { ascending: false })
-    .limit(12);
+    const ordered = rows.slice().reverse();
+    if (ordered.length > 0) {
+      historyText = ordered
+        .map((r: any) => `${r.role === "user" ? "Usuário" : "RicardoIA"}: ${r.content}`)
+        .join("\n");
+    }
+  } catch (e: any) {
+    return textError(`Erro DB (select memories): ${e?.message ?? "falha"}`, 500);
+  }
 
-  if (memErr) return jsonError(`Erro Supabase (memories select): ${memErr.message}`, 500);
-
-  // Reverte para ordem cronológica
-  const history = (memRows ?? []).slice().reverse();
+  // 2) Inserir mensagem do usuário
+  try {
+    await pool.query(
+      `insert into public.memories (user_id, role, content)
+       values ($1, $2, $3)`,
+      [userId, "user", message]
+    );
+  } catch (e: any) {
+    return textError(`Erro DB (insert user): ${e?.message ?? "falha"}`, 500);
+  }
 
   const openai = new OpenAI({ apiKey });
 
@@ -77,28 +105,12 @@ Formato:
 Sem usar reticências "...".
 `.trim();
 
-  // Monta input com contexto da memória
-  const contextText =
-    history.length === 0
-      ? ""
-      : history
-          .map((m) => `${m.role === "user" ? "Usuário" : "RicardoIA"}: ${m.content}`)
-          .join("\n");
-
   const fullInput =
-    contextText.length > 0
-      ? `Contexto (conversa recente):\n${contextText}\n\nMensagem atual do usuário:\n${message}`
+    historyText.length > 0
+      ? `Contexto (conversa recente):\n${historyText}\n\nMensagem atual do usuário:\n${message}`
       : message;
 
-  // Salva a mensagem do usuário antes (para garantir histórico)
-  const { error: insUserErr } = await supabase.from("memories").insert({
-    user_id: userId,
-    role: "user",
-    content: message,
-  });
-
-  if (insUserErr) return jsonError(`Erro Supabase (insert user): ${insUserErr.message}`, 500);
-
+  // 3) Streaming + salvar resposta
   try {
     const stream = openai.responses.stream({
       model: "gpt-4.1-mini",
@@ -108,7 +120,6 @@ Sem usar reticências "...".
     });
 
     const encoder = new TextEncoder();
-
     let assistantText = "";
 
     const readable = new ReadableStream<Uint8Array>({
@@ -122,17 +133,17 @@ Sem usar reticências "...".
         });
 
         stream.on("response.completed", async () => {
-          // salva resposta do assistente
           const finalText = cleanText(assistantText || "Sem resposta.");
-          const { error: insAsstErr } = await supabase.from("memories").insert({
-            user_id: userId,
-            role: "assistant",
-            content: finalText,
-          });
 
-          if (insAsstErr) {
+          try {
+            await pool.query(
+              `insert into public.memories (user_id, role, content)
+               values ($1, $2, $3)`,
+              [userId, "assistant", finalText]
+            );
+          } catch (e: any) {
             controller.enqueue(
-              encoder.encode(`\n[erro] Falha ao salvar memória: ${insAsstErr.message}`)
+              encoder.encode(`\n[erro] Falha ao salvar memória: ${e?.message ?? "falha"}`)
             );
           }
 
@@ -159,8 +170,7 @@ Sem usar reticências "...".
         "Cache-Control": "no-cache, no-transform",
       },
     });
-  } catch (err: any) {
-    const msg = cleanText(typeof err?.message === "string" ? err.message : "Erro interno.");
-    return jsonError(msg, 500);
+  } catch (e: any) {
+    return textError(cleanText(e?.message ?? "Erro interno."), 500);
   }
 }
