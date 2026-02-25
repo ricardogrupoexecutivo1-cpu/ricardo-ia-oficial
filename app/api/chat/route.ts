@@ -5,9 +5,7 @@ export const runtime = "nodejs";
 
 export async function POST(req: Request) {
   try {
-    const apiKey = process.env.OPENAI_API_KEY || "";
-
-    console.log("OPENAI_API_KEY prefix:", apiKey.slice(0, 8));
+    const apiKey = process.env.OPENAI_API_KEY;
 
     if (!apiKey) {
       return NextResponse.json(
@@ -33,15 +31,20 @@ export async function POST(req: Request) {
       input: message,
     });
 
-    return NextResponse.json({
-      reply: response.output_text ?? "Sem resposta.",
-    });
+    return new Response(
+      JSON.stringify({
+        reply: response.output_text ?? "Sem resposta.",
+      }),
+      {
+        status: 200,
+        headers: { "Content-Type": "application/json; charset=utf-8" },
+      }
+    );
+
   } catch (error: any) {
-    const status = typeof error?.status === "number" ? error.status : 500;
-    console.error("Erro na API:", error?.message || error);
     return NextResponse.json(
-      { reply: error?.message || "Erro ao processar a mensagem." },
-      { status }
+      { reply: error?.message || "Erro interno." },
+      { status: error?.status || 500 }
     );
   }
 }
