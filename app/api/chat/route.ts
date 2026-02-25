@@ -13,13 +13,14 @@ export async function POST(req: Request) {
 
     if (!apiKey) {
       return NextResponse.json(
-        { reply: "OPENAI_API_KEY ausente na Vercel (Production)." },
+        { reply: "OPENAI_API_KEY ausente no ambiente." },
         { status: 500 }
       );
     }
 
     const body = await req.json().catch(() => ({} as any));
-    const message = typeof body?.message === "string" ? body.message.trim() : "";
+    const message =
+      typeof body?.message === "string" ? body.message.trim() : "";
 
     if (!message) {
       return NextResponse.json(
@@ -30,31 +31,46 @@ export async function POST(req: Request) {
 
     const openai = new OpenAI({ apiKey });
 
-    const response = await openai.responses.create({
-      model: "gpt-4.1-mini",
-      max_output_tokens: 180,
-      instructions: `
+    const instructions = `
 Você é RicardoIA Oficial.
-Responda sempre em pt-BR.
-Curto, direto, elegante e impactante.
+Responda sempre em português do Brasil.
+
+REGRA PRINCIPAL:
+Se o usuário pedir para repetir exatamente algo,
+copiar sem alterar,
+retornar idêntico,
+ou semelhante,
+então responda SOMENTE com o texto exato solicitado,
+sem lista,
+sem comentário,
+sem explicação.
+
+Caso contrário:
+Responda curto, direto, elegante e impactante.
 Formato:
 1) Resposta objetiva (1–2 frases)
 2) Insight (1 frase)
 3) Ação: (1 frase)
-Sem reticências "...".
-      `.trim(),
+Sem usar reticências "...".
+`.trim();
+
+    const response = await openai.responses.create({
+      model: "gpt-4.1-mini",
+      max_output_tokens: 220,
+      instructions,
       input: message,
     });
 
     const reply = cleanText(response.output_text ?? "Sem resposta.");
 
-    return new Response(JSON.stringify({ reply }), {
-      status: 200,
-      headers: { "Content-Type": "application/json; charset=utf-8" },
-    });
+    return NextResponse.json({ reply }, { status: 200 });
   } catch (error: any) {
-    const status = typeof error?.status === "number" ? error.status : 500;
-    const msg = typeof error?.message === "string" ? error.message : "Erro interno.";
+    const status =
+      typeof error?.status === "number" ? error.status : 500;
+    const msg =
+      typeof error?.message === "string"
+        ? error.message
+        : "Erro interno.";
     return NextResponse.json({ reply: msg }, { status });
   }
 }
