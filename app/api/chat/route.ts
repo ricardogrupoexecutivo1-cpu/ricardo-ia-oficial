@@ -28,7 +28,17 @@ export async function POST(req: Request) {
 
     const response = await openai.responses.create({
       model: "gpt-4.1-mini",
-      input: message,
+      input: [
+        {
+          role: "system",
+          content:
+            "Responda sempre em português do Brasil (pt-BR), de forma clara, impactante, profissional e objetiva.",
+        },
+        {
+          role: "user",
+          content: message,
+        },
+      ],
     });
 
     return new Response(
