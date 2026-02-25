@@ -28,29 +28,15 @@ export async function POST(req: Request) {
 
     const response = await openai.responses.create({
       model: "gpt-4.1-mini",
-      input: [
-        {
-          role: "system",
-          content:
-            "Responda sempre em português do Brasil (pt-BR), de forma clara, impactante, profissional e objetiva.",
-        },
-        {
-          role: "user",
-          content: message,
-        },
-      ],
+      instructions:
+        "Responda sempre em português do Brasil (pt-BR), de forma clara, impactante, profissional e objetiva.",
+      input: message,
     });
 
     return new Response(
-      JSON.stringify({
-        reply: response.output_text ?? "Sem resposta.",
-      }),
-      {
-        status: 200,
-        headers: { "Content-Type": "application/json; charset=utf-8" },
-      }
+      JSON.stringify({ reply: response.output_text ?? "Sem resposta." }),
+      { status: 200, headers: { "Content-Type": "application/json; charset=utf-8" } }
     );
-
   } catch (error: any) {
     return NextResponse.json(
       { reply: error?.message || "Erro interno." },
