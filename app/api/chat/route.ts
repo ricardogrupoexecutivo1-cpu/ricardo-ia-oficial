@@ -2,6 +2,9 @@ import OpenAI from 'openai'
 
 export const runtime = 'nodejs'
 
+// ✅ aumenta o tempo máximo da Function na Vercel (se o plano permitir)
+export const maxDuration = 60
+
 const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
 
 type Msg = { role: 'user' | 'assistant' | 'system'; content: string }
@@ -44,7 +47,8 @@ export async function POST(req: Request) {
       model: 'gpt-4o-mini',
       stream: true,
       temperature: 0.7,
-      max_tokens: 900,
+      // ✅ evita “respostas infinitas” que podem estourar timeout
+      max_tokens: 800,
       messages: [
         {
           role: 'system',
@@ -63,11 +67,28 @@ export async function POST(req: Request) {
           controller.enqueue(encoder.encode(`data: ${JSON.stringify(obj)}\n\n`))
         }
 
+        // ✅ keep-alive: envia ping se ficar muito tempo sem mandar dados
+        let lastSend = Date.now()
+        const pingIfNeeded = () => {
+          const now = Date.now()
+          if (now - lastSend > 8000) {
+            // comentário SSE (não quebra JSON)
+            controller.enqueue(encoder.encode(`: ping\n\n`))
+            lastSend = now
+          }
+        }
+
         try {
           for await (const part of stream) {
+            pingIfNeeded()
+
             const text = part.choices?.[0]?.delta?.content || ''
-            if (text) send({ type: 'delta', text })
+            if (text) {
+              send({ type: 'delta', text })
+              lastSend = Date.now()
+            }
           }
+
           send({ type: 'done' })
         } catch (err: any) {
           console.error('SSE streaming error:', err)
