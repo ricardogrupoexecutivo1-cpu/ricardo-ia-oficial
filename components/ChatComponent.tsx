@@ -1,66 +1,120 @@
-import OpenAI from 'openai'
+'use client'
 
-export const runtime = 'nodejs'
+import { useEffect, useRef, useState } from 'react'
 
-type Msg = { role: 'user' | 'assistant' | 'system'; content: string }
+type Msg = {
+  role: 'user' | 'assistant'
+  content: string
+}
 
-export async function POST(req: Request) {
-  try {
-    const body = await req.json().catch(() => null)
+export default function ChatComponent() {
 
-    let messages: Msg[] = []
+  const [messages, setMessages] = useState<Msg[]>([
+    { role: 'assistant', content: 'Olá! Como posso ajudar você hoje?' }
+  ])
 
-    if (typeof body?.message === 'string') {
-      messages = [{ role: 'user', content: body.message }]
-    } else if (Array.isArray(body?.messages)) {
-      messages = body.messages
-        .filter((m: any) => m?.role && m?.content)
-        .map((m: any) => ({ role: m.role, content: String(m.content) }))
-    } else {
-      return new Response(
-        JSON.stringify({
-          error: 'Body inválido. Envie { message: string } ou { messages: [{role, content}] }.',
-        }),
-        { status: 400, headers: { 'Content-Type': 'application/json; charset=utf-8' } }
-      )
+  const [input, setInput] = useState('')
+  const [loading, setLoading] = useState(false)
+
+  const endRef = useRef<HTMLDivElement | null>(null)
+
+  useEffect(() => {
+    endRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }, [messages])
+
+  async function sendMessage() {
+
+    const text = input.trim()
+
+    if (!text || loading) return
+
+    setInput('')
+    setMessages(prev => [...prev, { role: 'user', content: text }])
+
+    setLoading(true)
+
+    try {
+
+      const res = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: text })
+      })
+
+      const data = await res.json()
+
+      setMessages(prev => [
+        ...prev,
+        { role: 'assistant', content: data.reply || 'Sem resposta.' }
+      ])
+
+    } catch {
+
+      setMessages(prev => [
+        ...prev,
+        { role: 'assistant', content: 'Erro ao processar a mensagem.' }
+      ])
+
+    } finally {
+      setLoading(false)
     }
 
-    const apiKey = process.env.OPENAI_API_KEY
-    if (!apiKey) {
-      return new Response(
-        JSON.stringify({ error: 'OPENAI_API_KEY não configurada na Vercel.' }),
-        { status: 500, headers: { 'Content-Type': 'application/json; charset=utf-8' } }
-      )
-    }
-
-    const client = new OpenAI({ apiKey })
-
-    const resp = await client.chat.completions.create({
-      model: 'gpt-4o-mini',
-      messages: [
-        {
-          role: 'system',
-          content:
-            'Você é a RicardoIA. Responda em português do Brasil, com acentos corretos, de forma objetiva e útil.',
-        },
-        ...messages,
-      ],
-      temperature: 0.7,
-    })
-
-    const reply = resp.choices?.[0]?.message?.content ?? 'Sem resposta.'
-
-    return new Response(JSON.stringify({ reply }), {
-      status: 200,
-      headers: { 'Content-Type': 'application/json; charset=utf-8' },
-    })
-  } catch (err: any) {
-    return new Response(
-      JSON.stringify({
-        error: 'Erro interno na rota /api/chat.',
-        details: String(err?.message ?? err),
-      }),
-      { status: 500, headers: { 'Content-Type': 'application/json; charset=utf-8' } }
-    )
   }
+
+  return (
+
+    <div className="flex flex-col w-full max-w-md h-[500px] bg-white border rounded-xl shadow-lg overflow-hidden">
+
+      <div className="flex-1 p-4 overflow-y-auto space-y-2">
+
+        {messages.map((m, i) => (
+
+          <div
+            key={i}
+            className={m.role === 'user' ? 'text-right' : 'text-left'}
+          >
+
+            <div className="inline-block px-3 py-2 rounded-lg bg-gray-200">
+              {m.content}
+            </div>
+
+          </div>
+
+        ))}
+
+        {loading && (
+          <div className="text-xs text-gray-500">
+            digitando...
+          </div>
+        )}
+
+        <div ref={endRef} />
+
+      </div>
+
+      <div className="p-3 border-t flex gap-2">
+
+        <input
+          className="flex-1 px-3 py-2 border rounded-lg"
+          placeholder="Digite sua mensagem..."
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') sendMessage()
+          }}
+        />
+
+        <button
+          className="px-4 py-2 bg-black text-white rounded-lg"
+          onClick={sendMessage}
+        >
+          Enviar
+        </button>
+
+      </div>
+
+    </div>
+
+  )
+
 }
