@@ -3,24 +3,19 @@
 import { useEffect, useRef, useState } from 'react'
 
 type Role = 'user' | 'assistant'
-
-type Msg = {
-  role: Role
-  content: string
-}
+type Msg = { role: Role; content: string }
 
 export default function ChatComponent() {
   const [messages, setMessages] = useState<Msg[]>([
     { role: 'assistant', content: 'Olá! Como posso ajudar você hoje?' },
   ])
-
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
   const endRef = useRef<HTMLDivElement | null>(null)
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [messages])
+  }, [messages, loading])
 
   async function sendMessage() {
     const text = input.trim()
@@ -29,8 +24,10 @@ export default function ChatComponent() {
     const nextMessages: Msg[] = [...messages, { role: 'user' as const, content: text }]
 
     setInput('')
-    setMessages(nextMessages)
     setLoading(true)
+
+    // coloca a mensagem do usuário + cria um placeholder do assistente
+    setMessages([...nextMessages, { role: 'assistant' as const, content: '' }])
 
     try {
       const res = await fetch('/api/chat', {
@@ -40,36 +37,46 @@ export default function ChatComponent() {
       })
 
       if (!res.ok) {
-        const t = await res.text().catch(() => '')
-        throw new Error(t || `HTTP ${res.status}`)
+        const errText = await res.text().catch(() => '')
+        throw new Error(errText || `HTTP ${res.status}`)
       }
 
-      const reader = res.body?.getReader()
-      if (!reader) throw new Error('Sem stream no response (res.body null).')
+      // ✅ se não houver stream, faz fallback lendo texto inteiro
+      if (!res.body) {
+        const full = await res.text()
+        setMessages((prev) => {
+          const updated = [...prev]
+          updated[updated.length - 1] = { role: 'assistant', content: full || 'Sem resposta.' }
+          return updated
+        })
+        return
+      }
 
+      const reader = res.body.getReader()
       const decoder = new TextDecoder()
-
-      let assistantMessage = ''
-
-      setMessages((prev) => [...prev, { role: 'assistant' as const, content: '' }])
+      let assistantText = ''
 
       while (true) {
         const { done, value } = await reader.read()
         if (done) break
 
-        assistantMessage += decoder.decode(value, { stream: true })
+        assistantText += decoder.decode(value, { stream: true })
 
         setMessages((prev) => {
           const updated = [...prev]
-          updated[updated.length - 1] = { role: 'assistant', content: assistantMessage }
+          updated[updated.length - 1] = { role: 'assistant', content: assistantText }
           return updated
         })
       }
     } catch (e: any) {
-      setMessages((prev) => [
-        ...prev,
-        { role: 'assistant', content: `Erro: ${e?.message ?? 'falha no streaming'}` },
-      ])
+      setMessages((prev) => {
+        const updated = [...prev]
+        updated[updated.length - 1] = {
+          role: 'assistant',
+          content: `Erro ao processar a mensagem.\n${e?.message ?? ''}`.trim(),
+        }
+        return updated
+      })
     } finally {
       setLoading(false)
     }
@@ -87,7 +94,6 @@ export default function ChatComponent() {
         ))}
 
         {loading && <div className="text-xs text-gray-500">digitando...</div>}
-
         <div ref={endRef} />
       </div>
 
@@ -97,12 +103,9 @@ export default function ChatComponent() {
           placeholder="Digite sua mensagem..."
           value={input}
           onChange={(e) => setInput(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter') sendMessage()
-          }}
+          onKeyDown={(e) => e.key === 'Enter' && sendMessage()}
           disabled={loading}
         />
-
         <button
           className="px-4 py-2 bg-black text-white rounded-lg disabled:opacity-50"
           onClick={sendMessage}
