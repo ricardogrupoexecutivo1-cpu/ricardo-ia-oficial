@@ -2,61 +2,42 @@ import OpenAI from 'openai'
 
 export const runtime = 'nodejs'
 
-type Msg = { role: 'user' | 'assistant' | 'system'; content: string }
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+})
 
 export async function POST(req: Request) {
-  try {
-    const body = await req.json().catch(() => null)
+  const body = await req.json()
+  const messages = body.messages || []
 
-    let messages: Msg[] = []
+  const stream = await openai.chat.completions.create({
+    model: 'gpt-4o-mini',
+    stream: true,
+    messages: [
+      {
+        role: 'system',
+        content:
+          'Você é a RicardoIA. Responda em português do Brasil, de forma clara e útil.',
+      },
+      ...messages,
+    ],
+  })
 
-    if (typeof body?.message === 'string') {
-      messages = [{ role: 'user', content: body.message }]
-    } else if (Array.isArray(body?.messages)) {
-      messages = body.messages
-        .filter((m: any) => m?.role && m?.content)
-        .map((m: any) => ({ role: m.role, content: String(m.content) }))
-    } else {
-      return new Response(
-        JSON.stringify({
-          error: 'Body inválido. Envie { message: string } ou { messages: [{role, content}] }.',
-        }),
-        { status: 400, headers: { 'Content-Type': 'application/json; charset=utf-8' } }
-      )
-    }
+  const encoder = new TextEncoder()
 
-    const apiKey = process.env.OPENAI_API_KEY
-    if (!apiKey) {
-      return new Response(JSON.stringify({ error: 'OPENAI_API_KEY não configurada na Vercel.' }), {
-        status: 500,
-        headers: { 'Content-Type': 'application/json; charset=utf-8' },
-      })
-    }
+  const readable = new ReadableStream({
+    async start(controller) {
+      for await (const part of stream) {
+        const text = part.choices?.[0]?.delta?.content || ''
+        controller.enqueue(encoder.encode(text))
+      }
+      controller.close()
+    },
+  })
 
-    const client = new OpenAI({ apiKey })
-
-    const resp = await client.chat.completions.create({
-      model: 'gpt-4o-mini',
-      messages: [
-        { role: 'system', content: 'Você é a RicardoIA. Responda em português do Brasil.' },
-        ...messages,
-      ],
-      temperature: 0.7,
-    })
-
-    const reply = resp.choices?.[0]?.message?.content ?? 'Sem resposta.'
-
-    return new Response(JSON.stringify({ reply }), {
-      status: 200,
-      headers: { 'Content-Type': 'application/json; charset=utf-8' },
-    })
-  } catch (err: any) {
-    return new Response(
-      JSON.stringify({
-        error: 'Erro interno na rota /api/chat.',
-        details: String(err?.message ?? err),
-      }),
-      { status: 500, headers: { 'Content-Type': 'application/json; charset=utf-8' } }
-    )
-  }
+  return new Response(readable, {
+    headers: {
+      'Content-Type': 'text/plain; charset=utf-8',
+    },
+  })
 }
