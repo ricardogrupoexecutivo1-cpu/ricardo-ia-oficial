@@ -26,8 +26,10 @@ export default function ChatComponent() {
     setInput('')
     setLoading(true)
 
-    // coloca a mensagem do usuário + cria um placeholder do assistente
+    // coloca o usuário + cria placeholder do assistente para preencher
     setMessages([...nextMessages, { role: 'assistant' as const, content: '' }])
+
+    let assistantText = ''
 
     try {
       const res = await fetch('/api/chat', {
@@ -41,12 +43,13 @@ export default function ChatComponent() {
         throw new Error(errText || `HTTP ${res.status}`)
       }
 
-      // ✅ se não houver stream, faz fallback lendo texto inteiro
       if (!res.body) {
+        // fallback raro
         const full = await res.text()
+        assistantText = full
         setMessages((prev) => {
           const updated = [...prev]
-          updated[updated.length - 1] = { role: 'assistant', content: full || 'Sem resposta.' }
+          updated[updated.length - 1] = { role: 'assistant', content: assistantText || 'Sem resposta.' }
           return updated
         })
         return
@@ -54,27 +57,64 @@ export default function ChatComponent() {
 
       const reader = res.body.getReader()
       const decoder = new TextDecoder()
-      let assistantText = ''
+
+      let buffer = ''
 
       while (true) {
         const { done, value } = await reader.read()
         if (done) break
 
-        assistantText += decoder.decode(value, { stream: true })
+        buffer += decoder.decode(value, { stream: true })
 
-        setMessages((prev) => {
-          const updated = [...prev]
-          updated[updated.length - 1] = { role: 'assistant', content: assistantText }
-          return updated
-        })
+        // SSE events são separados por \n\n
+        const parts = buffer.split('\n\n')
+        buffer = parts.pop() || ''
+
+        for (const chunk of parts) {
+          const line = chunk.trim()
+          if (!line.startsWith('data:')) continue
+
+          const jsonStr = line.slice(5).trim()
+          if (!jsonStr) continue
+
+          let payload: any
+          try {
+            payload = JSON.parse(jsonStr)
+          } catch {
+            continue
+          }
+
+          if (payload.type === 'delta' && typeof payload.text === 'string') {
+            assistantText += payload.text
+            setMessages((prev) => {
+              const updated = [...prev]
+              updated[updated.length - 1] = { role: 'assistant', content: assistantText }
+              return updated
+            })
+          }
+
+          if (payload.type === 'error') {
+            // não apaga o texto já recebido; só adiciona aviso
+            const msg = payload.message ? `\n\n⚠️ Stream interrompido: ${payload.message}` : '\n\n⚠️ Stream interrompido.'
+            assistantText += msg
+            setMessages((prev) => {
+              const updated = [...prev]
+              updated[updated.length - 1] = { role: 'assistant', content: assistantText }
+              return updated
+            })
+          }
+
+          if (payload.type === 'done') {
+            // terminou normal
+          }
+        }
       }
     } catch (e: any) {
+      // mantém o que já veio e só adiciona aviso
+      assistantText = (assistantText || '') + `\n\n⚠️ Erro ao processar a mensagem: ${e?.message ?? ''}`.trim()
       setMessages((prev) => {
         const updated = [...prev]
-        updated[updated.length - 1] = {
-          role: 'assistant',
-          content: `Erro ao processar a mensagem.\n${e?.message ?? ''}`.trim(),
-        }
+        updated[updated.length - 1] = { role: 'assistant', content: assistantText }
         return updated
       })
     } finally {
