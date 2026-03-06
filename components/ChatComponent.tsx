@@ -67,17 +67,15 @@ export default function ChatComponent() {
 
   async function sendMessage() {
     const text = input.trim()
-    if (!text || loading) return
-    if (!init) return
+    if (!text || loading || !init) return
 
-    const nextMessages: Msg[] = [...messages, { role: 'user' as const, content: text }]
+    const nextMessages: Msg[] = [...messages, { role: 'user', content: text }]
 
     setInput('')
     setLoading(true)
-    setMessages([...nextMessages, { role: 'assistant' as const, content: '' }])
+    setMessages([...nextMessages, { role: 'assistant', content: '' }])
 
     let assistantText = ''
-    let doneReceived = false
 
     try {
       const res = await fetch('/api/chat', {
@@ -101,20 +99,19 @@ export default function ChatComponent() {
 
       const decoder = new TextDecoder()
       let buffer = ''
+      let stop = false
 
-      while (true) {
+      while (!stop) {
         const { done, value } = await reader.read()
         if (done) break
 
         buffer += decoder.decode(value, { stream: true })
-
         const parts = buffer.split('\n\n')
         buffer = parts.pop() || ''
 
         for (const chunk of parts) {
           const line = chunk.trim()
-
-          if (line.startsWith(':')) continue
+          if (!line || line.startsWith(':')) continue
           if (!line.startsWith('data:')) continue
 
           const jsonStr = line.slice(5).trim()
@@ -137,7 +134,7 @@ export default function ChatComponent() {
           }
 
           if (payload.type === 'done') {
-            doneReceived = true
+            stop = true
             setLoading(false)
             try {
               await reader.cancel()
@@ -158,6 +155,7 @@ export default function ChatComponent() {
               return updated
             })
 
+            stop = true
             setLoading(false)
             try {
               await reader.cancel()
@@ -165,8 +163,6 @@ export default function ChatComponent() {
             break
           }
         }
-
-        if (doneReceived) break
       }
     } catch (e: any) {
       const msg = e?.message ? String(e.message) : 'falha'
@@ -177,7 +173,10 @@ export default function ChatComponent() {
 
       setMessages((prev) => {
         const updated = [...prev]
-        updated[updated.length - 1] = { role: 'assistant', content: assistantText || 'Erro ao processar a mensagem.' }
+        updated[updated.length - 1] = {
+          role: 'assistant',
+          content: assistantText || 'Erro ao processar a mensagem.',
+        }
         return updated
       })
     } finally {
