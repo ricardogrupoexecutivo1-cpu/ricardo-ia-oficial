@@ -24,11 +24,7 @@ function extractFacts(userText: string): Fact[] {
 
   const drivers = userText.match(/(\d+)\s*motoristas?/i)
   if (drivers) {
-    facts.push({
-      key: 'drivers_count',
-      value: drivers[1],
-      confidence: 0.98,
-    })
+    facts.push({ key: 'drivers_count', value: drivers[1], confidence: 0.98 })
   }
 
   const employees =
@@ -36,20 +32,12 @@ function extractFacts(userText: string): Fact[] {
     userText.match(/(\d+)\s*funcion[áa]rios?/i)
 
   if (employees) {
-    facts.push({
-      key: 'employees_count',
-      value: employees[1],
-      confidence: 0.98,
-    })
+    facts.push({ key: 'employees_count', value: employees[1], confidence: 0.98 })
   }
 
   const companies = userText.match(/(\d+)\s*empresas?/i)
   if (companies) {
-    facts.push({
-      key: 'companies_count',
-      value: companies[1],
-      confidence: 0.98,
-    })
+    facts.push({ key: 'companies_count', value: companies[1], confidence: 0.98 })
   }
 
   const prazo =
@@ -104,7 +92,6 @@ function buildMemoryBlock(map: Map<string, string>) {
   if (map.size === 0) return 'Memórias: nenhuma ainda.'
 
   const lines: string[] = []
-
   for (const [key, value] of map.entries()) {
     lines.push(`- ${key}: ${value}`)
   }
@@ -166,6 +153,36 @@ function buildDirectAnswer(message: string, memory: Map<string, string>) {
   return `Seu prazo atual é de ${prazoPart}.`
 }
 
+async function createEmbedding(text: string) {
+  const response = await client.embeddings.create({
+    model: 'text-embedding-3-small',
+    input: text,
+  })
+
+  return response.data[0].embedding
+}
+
+async function saveVectorMemory(params: {
+  companyId: string
+  userId: string
+  conversationId: string
+  content: string
+}) {
+  try {
+    const embedding = await createEmbedding(params.content)
+
+    await supabaseAdmin.from('memory_vectors').insert({
+      company_id: params.companyId,
+      user_id: params.userId,
+      conversation_id: params.conversationId,
+      content: params.content,
+      embedding,
+    })
+  } catch (e) {
+    console.error('Erro ao salvar memória vetorial:', e)
+  }
+}
+
 export async function POST(req: Request) {
   try {
     const body = await req.json().catch(() => null)
@@ -195,6 +212,13 @@ export async function POST(req: Request) {
 
     const currentFacts = extractFacts(message)
     await upsertFacts(companyId, userId, currentFacts)
+
+    await saveVectorMemory({
+      companyId,
+      userId,
+      conversationId,
+      content: message,
+    })
 
     const { data: rows } = await supabaseAdmin
       .from('messages')
@@ -238,6 +262,13 @@ export async function POST(req: Request) {
             content: assistantText,
           })
 
+          await saveVectorMemory({
+            companyId,
+            userId,
+            conversationId,
+            content: assistantText,
+          })
+
           controller.close()
         },
       })
@@ -266,21 +297,8 @@ Responda sempre em português do Brasil.
 REGRAS IMPORTANTES:
 - Use o histórico e as memórias como contexto real.
 - Quando o usuário fizer uma pergunta objetiva, responda de forma objetiva e direta.
-- Evite frases genéricas como:
-  "estou aqui para ajudar"
-  "se precisar de mais alguma coisa"
-  "estou à disposição"
-  "estou pronta para responder"
-- Se o usuário atualizar um número ou fato, considere o valor mais recente como o correto.
-- Se a resposta já estiver na memória, responda diretamente.
+- Evite frases genéricas.
 - Seja firme, clara e profissional.
-
-EXEMPLOS DE ESTILO:
-Pergunta: "Quantos motoristas eu tenho e qual é o meu prazo?"
-Resposta ideal: "Você tem 18 motoristas e seu prazo padrão é de 30 dias."
-
-Pergunta: "Quantos funcionários tenho, quantas empresas tenho e qual é meu novo prazo?"
-Resposta ideal: "Você tem 100000 empregados, 4000 empresas e seu prazo atual é de 190 dias."
 
 ${memoryBlock}`,
         },
@@ -313,6 +331,13 @@ ${memoryBlock}`,
               company_id: companyId,
               user_id: userId,
               role: 'assistant',
+              content: assistantText,
+            })
+
+            await saveVectorMemory({
+              companyId,
+              userId,
+              conversationId,
               content: assistantText,
             })
           }
