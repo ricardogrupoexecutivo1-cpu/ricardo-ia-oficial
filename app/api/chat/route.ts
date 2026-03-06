@@ -34,11 +34,7 @@ function extractFacts(userText: string): Fact[] {
 
   const drivers = userText.match(/(\d{1,3}(?:\.\d{3})*|\d+)\s*motoristas?/i)
   if (drivers) {
-    facts.push({
-      key: 'drivers_count',
-      value: normalizeNumber(drivers[1]),
-      confidence: 0.98,
-    })
+    facts.push({ key: 'drivers_count', value: normalizeNumber(drivers[1]), confidence: 0.98 })
   }
 
   const employees =
@@ -46,65 +42,36 @@ function extractFacts(userText: string): Fact[] {
     userText.match(/(\d{1,3}(?:\.\d{3})*|\d+)\s*funcion[áa]rios?/i)
 
   if (employees) {
-    facts.push({
-      key: 'employees_count',
-      value: normalizeNumber(employees[1]),
-      confidence: 0.98,
-    })
+    facts.push({ key: 'employees_count', value: normalizeNumber(employees[1]), confidence: 0.98 })
   }
 
   const companies = userText.match(/(\d{1,3}(?:\.\d{3})*|\d+)\s*empresas?/i)
   if (companies) {
-    facts.push({
-      key: 'companies_count',
-      value: normalizeNumber(companies[1]),
-      confidence: 0.98,
-    })
+    facts.push({ key: 'companies_count', value: normalizeNumber(companies[1]), confidence: 0.98 })
+  }
+
+  const branches = userText.match(/(\d{1,3}(?:\.\d{3})*|\d+)\s*filiais?/i)
+  if (branches) {
+    facts.push({ key: 'branches_count', value: normalizeNumber(branches[1]), confidence: 0.98 })
+  }
+
+  const branchesLocation = userText.match(/filiais?\s+em\s+([A-Za-zÀ-ÿ\s]+?)(?:[.!?]|$)/i)
+  if (branchesLocation) {
+    facts.push({ key: 'branches_location', value: branchesLocation[1].trim(), confidence: 0.94 })
   }
 
   const prazoNums = extractAllPrazoDays(userText)
 
   if (prazoNums.length === 1) {
-    facts.push({
-      key: 'payment_terms_default',
-      value: `${prazoNums[0]} dias`,
-      confidence: 0.95,
-    })
+    facts.push({ key: 'payment_terms_default', value: `${prazoNums[0]} dias`, confidence: 0.95 })
   }
 
   if (prazoNums.length > 1) {
-    facts.push({
-      key: 'payment_terms_default',
-      value: `${prazoNums[0]} dias`,
-      confidence: 0.9,
-    })
-
+    facts.push({ key: 'payment_terms_default', value: `${prazoNums[0]} dias`, confidence: 0.9 })
     facts.push({
       key: 'payment_terms_list',
       value: prazoNums.map((n) => `${n} dias`).join(', '),
       confidence: 0.96,
-    })
-  }
-
-  const branches =
-    userText.match(/(\d{1,3}(?:\.\d{3})*|\d+)\s*filiais?/i)
-
-  if (branches) {
-    facts.push({
-      key: 'branches_count',
-      value: normalizeNumber(branches[1]),
-      confidence: 0.98,
-    })
-  }
-
-  const branchesLocation =
-    userText.match(/filiais?\s+em\s+([A-Za-zÀ-ÿ\s]+?)(?:[.!?]|$)/i)
-
-  if (branchesLocation) {
-    facts.push({
-      key: 'branches_location',
-      value: branchesLocation[1].trim(),
-      confidence: 0.94,
     })
   }
 
@@ -134,46 +101,21 @@ async function upsertFacts(companyId: string, userId: string, facts: Fact[]) {
 
 function memoryMapFromRows(memRows: any[] | null) {
   const map = new Map<string, string>()
-
   for (const row of memRows || []) {
     if (row?.key && row?.value) {
       map.set(String(row.key), String(row.value))
     }
   }
-
   return map
 }
 
 function buildMemoryBlock(map: Map<string, string>) {
   if (map.size === 0) return 'Memórias: nenhuma ainda.'
-
   const lines: string[] = []
-
   for (const [key, value] of map.entries()) {
     lines.push(`- ${key}: ${value}`)
   }
-
   return 'Memórias do usuário/empresa:\n' + lines.join('\n')
-}
-
-function buildVectorContextBlock(vectorRows: any[] | null) {
-  if (!vectorRows || vectorRows.length === 0) {
-    return ''
-  }
-
-  const lines = vectorRows
-    .filter((r: any) => Number(r?.similarity ?? 0) > 0.25)
-    .slice(0, 5)
-    .map((r: any, i: number) => `Memória relevante ${i + 1}: ${String(r.content)}`)
-
-  if (lines.length === 0) return ''
-
-  return `
-INFORMAÇÕES IMPORTANTES DE CONVERSAS PASSADAS:
-${lines.join('\n')}
-
-Se o usuário fizer uma pergunta relacionada a essas informações, utilize-as diretamente na resposta.
-`
 }
 
 function buildDirectAnswer(message: string, memory: Map<string, string>) {
@@ -196,58 +138,32 @@ function buildDirectAnswer(message: string, memory: Map<string, string>) {
   if (wantsBranches && wantsLocation && memory.has('branches_location')) {
     const count = memory.get('branches_count')
     const location = memory.get('branches_location')
-    if (count && location) {
-      return `Suas ${count} filiais ficam em ${location}.`
-    }
+    if (count && location) return `Suas ${count} filiais ficam em ${location}.`
     return `Suas filiais ficam em ${location}.`
   }
 
   const countParts: string[] = []
   let prazoPart: string | null = null
 
-  if (wantsDrivers && memory.has('drivers_count')) {
-    countParts.push(`${memory.get('drivers_count')} motoristas`)
-  }
-
-  if (wantsEmployees && memory.has('employees_count')) {
-    countParts.push(`${memory.get('employees_count')} empregados`)
-  }
-
-  if (wantsCompanies && memory.has('companies_count')) {
-    countParts.push(`${memory.get('companies_count')} empresas`)
-  }
-
-  if (wantsBranches && memory.has('branches_count')) {
-    countParts.push(`${memory.get('branches_count')} filiais`)
-  }
+  if (wantsDrivers && memory.has('drivers_count')) countParts.push(`${memory.get('drivers_count')} motoristas`)
+  if (wantsEmployees && memory.has('employees_count')) countParts.push(`${memory.get('employees_count')} empregados`)
+  if (wantsCompanies && memory.has('companies_count')) countParts.push(`${memory.get('companies_count')} empresas`)
+  if (wantsBranches && memory.has('branches_count')) countParts.push(`${memory.get('branches_count')} filiais`)
 
   if (wantsPrazo) {
-    if (memory.has('payment_terms_list')) {
-      prazoPart = memory.get('payment_terms_list') || null
-    } else if (memory.has('payment_terms_default')) {
-      prazoPart = memory.get('payment_terms_default') || null
-    }
+    if (memory.has('payment_terms_list')) prazoPart = memory.get('payment_terms_list') || null
+    else if (memory.has('payment_terms_default')) prazoPart = memory.get('payment_terms_default') || null
   }
 
   if (countParts.length === 0 && !prazoPart) return null
 
   let countsText = ''
-  if (countParts.length === 1) {
-    countsText = countParts[0]
-  } else if (countParts.length === 2) {
-    countsText = `${countParts[0]} e ${countParts[1]}`
-  } else if (countParts.length > 2) {
-    countsText = `${countParts.slice(0, -1).join(', ')} e ${countParts[countParts.length - 1]}`
-  }
+  if (countParts.length === 1) countsText = countParts[0]
+  else if (countParts.length === 2) countsText = `${countParts[0]} e ${countParts[1]}`
+  else if (countParts.length > 2) countsText = `${countParts.slice(0, -1).join(', ')} e ${countParts[countParts.length - 1]}`
 
-  if (countsText && prazoPart) {
-    return `Você tem ${countsText} e seus prazos são ${prazoPart}.`
-  }
-
-  if (countsText) {
-    return `Você tem ${countsText}.`
-  }
-
+  if (countsText && prazoPart) return `Você tem ${countsText} e seus prazos são ${prazoPart}.`
+  if (countsText) return `Você tem ${countsText}.`
   return `Seus prazos são ${prazoPart}.`
 }
 
@@ -256,7 +172,6 @@ async function createEmbedding(text: string) {
     model: 'text-embedding-3-small',
     input: text,
   })
-
   return response.data[0].embedding
 }
 
@@ -268,7 +183,6 @@ async function saveVectorMemory(params: {
 }) {
   try {
     const embedding = await createEmbedding(params.content)
-
     await supabaseAdmin.from('memory_vectors').insert({
       company_id: params.companyId,
       user_id: params.userId,
@@ -308,6 +222,23 @@ async function searchVectorMemory(params: {
   }
 }
 
+function buildVectorContextBlock(vectorRows: any[] | null) {
+  if (!vectorRows || vectorRows.length === 0) return ''
+  const lines = vectorRows
+    .filter((r: any) => Number(r?.similarity ?? 0) > 0.25)
+    .slice(0, 5)
+    .map((r: any, i: number) => `Memória relevante ${i + 1}: ${String(r.content)}`)
+
+  if (lines.length === 0) return ''
+
+  return `
+INFORMAÇÕES IMPORTANTES DE CONVERSAS PASSADAS:
+${lines.join('\n')}
+
+Se a pergunta do usuário estiver relacionada a essas informações, use-as diretamente.
+`
+}
+
 export async function POST(req: Request) {
   try {
     const body = await req.json().catch(() => null)
@@ -320,10 +251,7 @@ export async function POST(req: Request) {
     if (!userId || !companyId || !conversationId || !message) {
       return new Response(
         JSON.stringify({ error: 'Body inválido. Envie { userId, companyId, conversationId, message }.' }),
-        {
-          status: 400,
-          headers: { 'Content-Type': 'application/json; charset=utf-8' },
-        }
+        { status: 400, headers: { 'Content-Type': 'application/json; charset=utf-8' } }
       )
     }
 
@@ -375,54 +303,19 @@ export async function POST(req: Request) {
     const vectorContextBlock = buildVectorContextBlock(vectorRows)
     const directAnswer = buildDirectAnswer(message, memoryMap)
 
-    const encoder = new TextEncoder()
     let assistantText = ''
 
     if (directAnswer) {
       assistantText = directAnswer
-
-      const sseStream = new ReadableStream({
-        async start(controller) {
-          controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: 'delta', text: directAnswer })}\n\n`))
-          controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: 'done' })}\n\n`))
-
-          await supabaseAdmin.from('messages').insert({
-            conversation_id: conversationId,
-            company_id: companyId,
-            user_id: userId,
-            role: 'assistant',
-            content: assistantText,
-          })
-
-          await saveVectorMemory({
-            companyId,
-            userId,
-            conversationId,
-            content: assistantText,
-          })
-
-          controller.close()
-        },
-      })
-
-      return new Response(sseStream, {
-        headers: {
-          'Content-Type': 'text/event-stream; charset=utf-8',
-          'Cache-Control': 'no-cache, no-transform',
-          Connection: 'keep-alive',
-        },
-      })
-    }
-
-    const stream = await client.chat.completions.create({
-      model: 'gpt-4o-mini',
-      stream: true,
-      temperature: 0.3,
-      max_tokens: 700,
-      messages: [
-        {
-          role: 'system',
-          content: `Você é a AURORA do RicardoIA.
+    } else {
+      const completion = await client.chat.completions.create({
+        model: 'gpt-4o-mini',
+        temperature: 0.3,
+        max_tokens: 700,
+        messages: [
+          {
+            role: 'system',
+            content: `Você é a AURORA do RicardoIA.
 
 Responda sempre em português do Brasil.
 
@@ -442,61 +335,37 @@ ${memoryBlock}
 MEMÓRIAS SEMÂNTICAS DE CONVERSAS ANTIGAS:
 ${vectorContextBlock}
 
-Se o usuário perguntar algo que esteja nessas memórias, responda diretamente usando esses dados.
-`,
-        },
-        ...history,
-      ],
+Se o usuário perguntar algo que esteja nessas memórias, responda diretamente usando esses dados.`,
+          },
+          ...history,
+        ],
+      })
+
+      assistantText = completion.choices?.[0]?.message?.content?.trim() || 'Sem resposta.'
+    }
+
+    await supabaseAdmin.from('messages').insert({
+      conversation_id: conversationId,
+      company_id: companyId,
+      user_id: userId,
+      role: 'assistant',
+      content: assistantText,
     })
 
-    const sseStream = new ReadableStream({
-      async start(controller) {
-        const send = (obj: any) => {
-          controller.enqueue(encoder.encode(`data: ${JSON.stringify(obj)}\n\n`))
-        }
-
-        try {
-          for await (const part of stream) {
-            const text = part.choices?.[0]?.delta?.content || ''
-            if (text) {
-              assistantText += text
-              send({ type: 'delta', text })
-            }
-          }
-
-          send({ type: 'done' })
-        } catch (err: any) {
-          send({ type: 'error', message: String(err?.message ?? err) })
-        } finally {
-          if (assistantText.trim()) {
-            await supabaseAdmin.from('messages').insert({
-              conversation_id: conversationId,
-              company_id: companyId,
-              user_id: userId,
-              role: 'assistant',
-              content: assistantText,
-            })
-
-            await saveVectorMemory({
-              companyId,
-              userId,
-              conversationId,
-              content: assistantText,
-            })
-          }
-
-          controller.close()
-        }
-      },
+    await saveVectorMemory({
+      companyId,
+      userId,
+      conversationId,
+      content: assistantText,
     })
 
-    return new Response(sseStream, {
-      headers: {
-        'Content-Type': 'text/event-stream; charset=utf-8',
-        'Cache-Control': 'no-cache, no-transform',
-        Connection: 'keep-alive',
-      },
-    })
+    return new Response(
+      JSON.stringify({ reply: assistantText }),
+      {
+        status: 200,
+        headers: { 'Content-Type': 'application/json; charset=utf-8' },
+      }
+    )
   } catch (err: any) {
     return new Response(
       JSON.stringify({

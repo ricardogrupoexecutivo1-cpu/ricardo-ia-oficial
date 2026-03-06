@@ -51,16 +51,10 @@ export default function ChatComponent() {
           localStorage.setItem('aurora_init', JSON.stringify(data))
           setInit(data)
         } else {
-          setMessages((prev) => [
-            ...prev,
-            { role: 'assistant', content: 'Erro ao inicializar a AURORA.' },
-          ])
+          setMessages((prev) => [...prev, { role: 'assistant', content: 'Erro ao inicializar a AURORA.' }])
         }
       } catch {
-        setMessages((prev) => [
-          ...prev,
-          { role: 'assistant', content: 'Erro ao inicializar a AURORA.' },
-        ])
+        setMessages((prev) => [...prev, { role: 'assistant', content: 'Erro ao inicializar a AURORA.' }])
       }
     })()
   }, [])
@@ -73,15 +67,7 @@ export default function ChatComponent() {
 
     setInput('')
     setLoading(true)
-    setMessages([...nextMessages, { role: 'assistant', content: '' }])
-
-    let assistantText = ''
-    const controller = new AbortController()
-
-    // fallback extra: não deixar a UI parecer congelada por muito tempo
-    const hardTimeout = setTimeout(() => {
-      controller.abort()
-    }, 45000)
+    setMessages([...nextMessages, { role: 'assistant', content: 'digitando...' }])
 
     try {
       const res = await fetch('/api/chat', {
@@ -93,99 +79,30 @@ export default function ChatComponent() {
           conversationId: init.conversationId,
           message: text,
         }),
-        signal: controller.signal,
       })
 
-      if (!res.ok) {
-        const errText = await res.text().catch(() => '')
-        throw new Error(errText || `HTTP ${res.status}`)
-      }
+      const data = await res.json()
 
-      const reader = res.body?.getReader()
-      if (!reader) throw new Error('Sem stream')
-
-      const decoder = new TextDecoder()
-      let buffer = ''
-      let finished = false
-
-      while (!finished) {
-        const { done, value } = await reader.read()
-        if (done) break
-
-        buffer += decoder.decode(value, { stream: true })
-        const parts = buffer.split('\n\n')
-        buffer = parts.pop() || ''
-
-        for (const chunk of parts) {
-          const line = chunk.trim()
-          if (!line || line.startsWith(':')) continue
-          if (!line.startsWith('data:')) continue
-
-          const jsonStr = line.slice(5).trim()
-          if (!jsonStr) continue
-
-          let payload: any
-          try {
-            payload = JSON.parse(jsonStr)
-          } catch {
-            continue
-          }
-
-          if (payload.type === 'delta' && typeof payload.text === 'string') {
-            assistantText += payload.text
-            setMessages((prev) => {
-              const updated = [...prev]
-              updated[updated.length - 1] = { role: 'assistant', content: assistantText }
-              return updated
-            })
-          }
-
-          if (payload.type === 'done') {
-            finished = true
-            break
-          }
-
-          if (payload.type === 'error') {
-            const msg = payload.message ? String(payload.message) : 'erro no stream'
-            assistantText =
-              (assistantText || '') +
-              (assistantText ? '\n\n' : '') +
-              `⚠️ Resposta interrompida. Detalhe: ${msg}`
-
-            setMessages((prev) => {
-              const updated = [...prev]
-              updated[updated.length - 1] = { role: 'assistant', content: assistantText }
-              return updated
-            })
-
-            finished = true
-            break
-          }
-        }
-      }
-    } catch (e: any) {
-      const msg =
-        e?.name === 'AbortError'
-          ? 'tempo limite excedido'
-          : e?.message
-            ? String(e.message)
-            : 'falha'
-
-      assistantText =
-        (assistantText || '') +
-        (assistantText ? '\n\n' : '') +
-        `⚠️ Resposta interrompida. Detalhe: ${msg}`
+      const reply =
+        typeof data?.reply === 'string'
+          ? data.reply
+          : typeof data?.error === 'string'
+            ? `Erro: ${data.error}`
+            : 'Sem resposta.'
 
       setMessages((prev) => {
         const updated = [...prev]
-        updated[updated.length - 1] = {
-          role: 'assistant',
-          content: assistantText || 'Erro ao processar a mensagem.',
-        }
+        updated[updated.length - 1] = { role: 'assistant', content: reply }
+        return updated
+      })
+    } catch (e: any) {
+      const msg = e?.message ? String(e.message) : 'falha'
+      setMessages((prev) => {
+        const updated = [...prev]
+        updated[updated.length - 1] = { role: 'assistant', content: `Erro ao processar a mensagem. ${msg}` }
         return updated
       })
     } finally {
-      clearTimeout(hardTimeout)
       setLoading(false)
     }
   }
@@ -200,7 +117,7 @@ export default function ChatComponent() {
             </div>
           </div>
         ))}
-        {loading && <div className="text-xs text-gray-500">digitando...</div>}
+        {loading && <div className="text-xs text-gray-500">processando...</div>}
         <div ref={endRef} />
       </div>
 
@@ -213,8 +130,9 @@ export default function ChatComponent() {
           onKeyDown={(e) => e.key === 'Enter' && sendMessage()}
         />
         <button
-          className="px-4 py-2 bg-black text-white rounded-lg"
+          className="px-4 py-2 bg-black text-white rounded-lg disabled:opacity-50"
           onClick={sendMessage}
+          disabled={loading}
         >
           {loading ? 'Enviando...' : 'Enviar'}
         </button>
