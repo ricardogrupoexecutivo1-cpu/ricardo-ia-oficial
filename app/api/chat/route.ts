@@ -20,14 +20,12 @@ function safeStr(x: any) {
 }
 
 function normalizeNumber(value: string) {
-  return value.replace(/[.\s]/g, '')
+  return value.replace(/\./g, '').replace(/\s+/g, '')
 }
 
 function extractAllPrazoDays(text: string) {
   const matches = [...text.matchAll(/(\d{1,3}(?:\.\d{3})*|\d+)\s*dias?/gi)]
   const nums = matches.map((m) => normalizeNumber(m[1])).filter(Boolean)
-
-  // remove duplicados mantendo ordem
   return [...new Set(nums)]
 }
 
@@ -78,7 +76,7 @@ function extractFacts(userText: string): Fact[] {
     facts.push({
       key: 'payment_terms_default',
       value: `${prazoNums[0]} dias`,
-      confidence: 0.9,
+      confidence: 0.90,
     })
 
     facts.push({
@@ -167,9 +165,9 @@ function buildDirectAnswer(message: string, memory: Map<string, string>) {
 
   if (wantsPrazo) {
     if (memory.has('payment_terms_list')) {
-      prazoPart = `${memory.get('payment_terms_list')}`
+      prazoPart = memory.get('payment_terms_list') || null
     } else if (memory.has('payment_terms_default')) {
-      prazoPart = `${memory.get('payment_terms_default')}`
+      prazoPart = memory.get('payment_terms_default') || null
     }
   }
 
