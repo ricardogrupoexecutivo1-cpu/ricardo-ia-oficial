@@ -86,6 +86,28 @@ function extractFacts(userText: string): Fact[] {
     })
   }
 
+  const branches =
+    userText.match(/(\d{1,3}(?:\.\d{3})*|\d+)\s*filiais?/i)
+
+  if (branches) {
+    facts.push({
+      key: 'branches_count',
+      value: normalizeNumber(branches[1]),
+      confidence: 0.98,
+    })
+  }
+
+  const branchesLocation =
+    userText.match(/filiais?\s+em\s+([A-Za-zÀ-ÿ\s]+?)(?:[.!?]|$)/i)
+
+  if (branchesLocation) {
+    facts.push({
+      key: 'branches_location',
+      value: branchesLocation[1].trim(),
+      confidence: 0.94,
+    })
+  }
+
   return facts
 }
 
@@ -159,14 +181,26 @@ function buildDirectAnswer(message: string, memory: Map<string, string>) {
   const wantsEmployees = /empregados?|funcion[áa]rios?/i.test(message)
   const wantsCompanies = /empresas?/i.test(message)
   const wantsPrazo = /prazo/i.test(message)
+  const wantsBranches = /filiais?/i.test(message)
+  const wantsLocation = /onde|localiza|ficam|fica/i.test(message)
 
   const isQuestion =
     /\?/.test(message) ||
     /\bquantos?\b/i.test(message) ||
     /\bqual\b/i.test(message) ||
-    /\bquais\b/i.test(message)
+    /\bquais\b/i.test(message) ||
+    /\bonde\b/i.test(message)
 
   if (!isQuestion) return null
+
+  if (wantsBranches && wantsLocation && memory.has('branches_location')) {
+    const count = memory.get('branches_count')
+    const location = memory.get('branches_location')
+    if (count && location) {
+      return `Suas ${count} filiais ficam em ${location}.`
+    }
+    return `Suas filiais ficam em ${location}.`
+  }
 
   const countParts: string[] = []
   let prazoPart: string | null = null
@@ -181,6 +215,10 @@ function buildDirectAnswer(message: string, memory: Map<string, string>) {
 
   if (wantsCompanies && memory.has('companies_count')) {
     countParts.push(`${memory.get('companies_count')} empresas`)
+  }
+
+  if (wantsBranches && memory.has('branches_count')) {
+    countParts.push(`${memory.get('branches_count')} filiais`)
   }
 
   if (wantsPrazo) {
@@ -388,15 +426,24 @@ export async function POST(req: Request) {
 
 Responda sempre em português do Brasil.
 
-REGRAS IMPORTANTES:
+REGRAS CRÍTICAS:
+- Use SEMPRE as informações abaixo antes de responder.
+- Elas são memórias reais do usuário.
+- Se a pergunta estiver relacionada a essas memórias, responda usando essas informações.
+- Nunca ignore as memórias se elas responderem à pergunta.
 - Use o histórico, as memórias e o contexto semântico de conversas antigas como contexto real.
 - Quando o usuário fizer uma pergunta objetiva, responda de forma objetiva e direta.
 - Evite frases genéricas.
 - Seja firme, clara e profissional.
 
+MEMÓRIAS DO USUÁRIO:
 ${memoryBlock}
 
-${vectorContextBlock}`,
+MEMÓRIAS SEMÂNTICAS DE CONVERSAS ANTIGAS:
+${vectorContextBlock}
+
+Se o usuário perguntar algo que esteja nessas memórias, responda diretamente usando esses dados.
+`,
         },
         ...history,
       ],
