@@ -99,9 +99,9 @@ export default function ChatComponent() {
 
       const decoder = new TextDecoder()
       let buffer = ''
-      let stop = false
+      let finished = false
 
-      while (!stop) {
+      while (!finished) {
         const { done, value } = await reader.read()
         if (done) break
 
@@ -134,11 +134,7 @@ export default function ChatComponent() {
           }
 
           if (payload.type === 'done') {
-            stop = true
-            setLoading(false)
-            try {
-              await reader.cancel()
-            } catch {}
+            finished = true
             break
           }
 
@@ -155,11 +151,7 @@ export default function ChatComponent() {
               return updated
             })
 
-            stop = true
-            setLoading(false)
-            try {
-              await reader.cancel()
-            } catch {}
+            finished = true
             break
           }
         }
