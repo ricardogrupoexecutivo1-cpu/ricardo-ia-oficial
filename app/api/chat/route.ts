@@ -9,12 +9,18 @@ const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
 type Role = 'user' | 'assistant' | 'system'
 type Msg = { role: Role; content: string }
 
+type Fact = {
+  key: string
+  value: string
+  confidence: number
+}
+
 function safeStr(x: any) {
   return typeof x === 'string' ? x : ''
 }
 
-async function extractFacts(userText: string) {
-  const facts: { key: string; value: string; confidence: number }[] = []
+function extractFacts(userText: string): Fact[] {
+  const facts: Fact[] = []
 
   const drivers = userText.match(/(\d+)\s*motoristas?/i)
   if (drivers) {
@@ -37,9 +43,7 @@ async function extractFacts(userText: string) {
     })
   }
 
-  const companies =
-    userText.match(/(\d+)\s*empresas?/i)
-
+  const companies = userText.match(/(\d+)\s*empresas?/i)
   if (companies) {
     facts.push({
       key: 'companies_count',
@@ -63,15 +67,91 @@ async function extractFacts(userText: string) {
   return facts
 }
 
-function buildMemoryBlock(memRows: any[] | null) {
-  if (!memRows || memRows.length === 0) {
-    return 'Memórias: nenhuma ainda.'
+async function upsertFacts(companyId: string, userId: string, facts: Fact[]) {
+  for (const f of facts) {
+    try {
+      await supabaseAdmin.from('memories').upsert(
+        {
+          company_id: companyId,
+          user_id: userId,
+          key: f.key,
+          value: f.value,
+          confidence: f.confidence,
+          source_role: 'user',
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: 'company_id,user_id,key' }
+      )
+    } catch (e) {
+      console.error('Erro ao salvar memória:', e)
+    }
+  }
+}
+
+function memoryMapFromRows(memRows: any[] | null) {
+  const map = new Map<string, string>()
+
+  for (const row of memRows || []) {
+    if (row?.key && row?.value) {
+      map.set(String(row.key), String(row.value))
+    }
   }
 
-  return (
-    'Memórias do usuário/empresa:\n' +
-    memRows.map((m: any) => `- ${m.key}: ${m.value}`).join('\n')
-  )
+  return map
+}
+
+function buildMemoryBlock(map: Map<string, string>) {
+  if (map.size === 0) return 'Memórias: nenhuma ainda.'
+
+  const lines: string[] = []
+
+  for (const [key, value] of map.entries()) {
+    lines.push(`- ${key}: ${value}`)
+  }
+
+  return 'Memórias do usuário/empresa:\n' + lines.join('\n')
+}
+
+function buildDirectAnswer(message: string, memory: Map<string, string>) {
+  const wantsDrivers = /motoristas?/i.test(message)
+  const wantsEmployees = /empregados?|funcion[áa]rios?/i.test(message)
+  const wantsCompanies = /empresas?/i.test(message)
+  const wantsPrazo = /prazo/i.test(message)
+
+  const isQuestion =
+    /\?/.test(message) ||
+    /\bquantos?\b/i.test(message) ||
+    /\bqual\b/i.test(message)
+
+  if (!isQuestion) return null
+
+  const parts: string[] = []
+
+  if (wantsDrivers && memory.has('drivers_count')) {
+    parts.push(`você tem ${memory.get('drivers_count')} motoristas`)
+  }
+
+  if (wantsEmployees && memory.has('employees_count')) {
+    parts.push(`você tem ${memory.get('employees_count')} empregados`)
+  }
+
+  if (wantsCompanies && memory.has('companies_count')) {
+    parts.push(`você tem ${memory.get('companies_count')} empresas`)
+  }
+
+  if (wantsPrazo && memory.has('payment_terms_default')) {
+    parts.push(`seu prazo atual é de ${memory.get('payment_terms_default')}`)
+  }
+
+  if (parts.length === 0) return null
+
+  if (parts.length === 1) {
+    const sentence = parts[0]
+    return sentence.charAt(0).toUpperCase() + sentence.slice(1) + '.'
+  }
+
+  const last = parts.pop()
+  return parts.join(', ') + ' e ' + last + '.'
 }
 
 export async function POST(req: Request) {
@@ -102,25 +182,11 @@ export async function POST(req: Request) {
       content: message,
     })
 
-    // extrai fatos da mensagem atual e já faz upsert ANTES da resposta
-    const facts = await extractFacts(message)
+    // extrai e salva fatos da mensagem atual antes da resposta
+    const currentFacts = extractFacts(message)
+    await upsertFacts(companyId, userId, currentFacts)
 
-    for (const f of facts) {
-      await supabaseAdmin.from('memories').upsert(
-        {
-          company_id: companyId,
-          user_id: userId,
-          key: f.key,
-          value: f.value,
-          confidence: f.confidence,
-          source_role: 'user',
-          updated_at: new Date().toISOString(),
-        },
-        { onConflict: 'company_id,user_id,key' }
-      )
-    }
-
-    // histórico
+    // busca histórico
     const { data: rows } = await supabaseAdmin
       .from('messages')
       .select('role, content')
@@ -132,7 +198,7 @@ export async function POST(req: Request) {
       .map((r: any) => ({ role: r.role as Role, content: String(r.content) }))
       .filter((m) => m.role === 'user' || m.role === 'assistant')
 
-    // memórias atualizadas
+    // busca memórias atualizadas
     const { data: memRows } = await supabaseAdmin
       .from('memories')
       .select('key, value, confidence')
@@ -141,8 +207,45 @@ export async function POST(req: Request) {
       .order('updated_at', { ascending: false })
       .limit(30)
 
-    const memoryBlock = buildMemoryBlock(memRows)
+    const memoryMap = memoryMapFromRows(memRows)
+    const memoryBlock = buildMemoryBlock(memoryMap)
 
+    // se a pergunta for objetiva e a resposta já estiver na memória, responde direto
+    const directAnswer = buildDirectAnswer(message, memoryMap)
+
+    const encoder = new TextEncoder()
+    let assistantText = ''
+
+    if (directAnswer) {
+      assistantText = directAnswer
+
+      const sseStream = new ReadableStream({
+        async start(controller) {
+          controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: 'delta', text: directAnswer })}\n\n`))
+          controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: 'done' })}\n\n`))
+
+          await supabaseAdmin.from('messages').insert({
+            conversation_id: conversationId,
+            company_id: companyId,
+            user_id: userId,
+            role: 'assistant',
+            content: assistantText,
+          })
+
+          controller.close()
+        },
+      })
+
+      return new Response(sseStream, {
+        headers: {
+          'Content-Type': 'text/event-stream; charset=utf-8',
+          'Cache-Control': 'no-cache, no-transform',
+          Connection: 'keep-alive',
+        },
+      })
+    }
+
+    // fallback: usa o modelo normalmente
     const stream = await client.chat.completions.create({
       model: 'gpt-4o-mini',
       stream: true,
@@ -162,6 +265,7 @@ REGRAS IMPORTANTES:
   "estou aqui para ajudar"
   "se precisar de mais alguma coisa"
   "estou à disposição"
+  "estou pronta para responder"
 - Se o usuário atualizar um número ou fato, considere o valor mais recente como o correto.
 - Se a resposta já estiver na memória, responda diretamente.
 - Seja firme, clara e profissional.
@@ -178,9 +282,6 @@ ${memoryBlock}`,
         ...history,
       ],
     })
-
-    const encoder = new TextEncoder()
-    let assistantText = ''
 
     const sseStream = new ReadableStream({
       async start(controller) {
