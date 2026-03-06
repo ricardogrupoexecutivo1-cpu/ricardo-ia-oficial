@@ -76,6 +76,12 @@ export default function ChatComponent() {
     setMessages([...nextMessages, { role: 'assistant', content: '' }])
 
     let assistantText = ''
+    const controller = new AbortController()
+
+    // fallback extra: não deixar a UI parecer congelada por muito tempo
+    const hardTimeout = setTimeout(() => {
+      controller.abort()
+    }, 45000)
 
     try {
       const res = await fetch('/api/chat', {
@@ -87,6 +93,7 @@ export default function ChatComponent() {
           conversationId: init.conversationId,
           message: text,
         }),
+        signal: controller.signal,
       })
 
       if (!res.ok) {
@@ -157,7 +164,13 @@ export default function ChatComponent() {
         }
       }
     } catch (e: any) {
-      const msg = e?.message ? String(e.message) : 'falha'
+      const msg =
+        e?.name === 'AbortError'
+          ? 'tempo limite excedido'
+          : e?.message
+            ? String(e.message)
+            : 'falha'
+
       assistantText =
         (assistantText || '') +
         (assistantText ? '\n\n' : '') +
@@ -172,6 +185,7 @@ export default function ChatComponent() {
         return updated
       })
     } finally {
+      clearTimeout(hardTimeout)
       setLoading(false)
     }
   }
@@ -197,14 +211,12 @@ export default function ChatComponent() {
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && sendMessage()}
-          disabled={loading}
         />
         <button
-          className="px-4 py-2 bg-black text-white rounded-lg disabled:opacity-50"
+          className="px-4 py-2 bg-black text-white rounded-lg"
           onClick={sendMessage}
-          disabled={loading}
         >
-          Enviar
+          {loading ? 'Enviando...' : 'Enviar'}
         </button>
       </div>
     </div>
