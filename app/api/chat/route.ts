@@ -76,7 +76,7 @@ function extractFacts(userText: string): Fact[] {
     facts.push({
       key: 'payment_terms_default',
       value: `${prazoNums[0]} dias`,
-      confidence: 0.90,
+      confidence: 0.9,
     })
 
     facts.push({
@@ -132,6 +132,26 @@ function buildMemoryBlock(map: Map<string, string>) {
   }
 
   return 'Memórias do usuário/empresa:\n' + lines.join('\n')
+}
+
+function buildVectorContextBlock(vectorRows: any[] | null) {
+  if (!vectorRows || vectorRows.length === 0) {
+    return ''
+  }
+
+  const lines = vectorRows
+    .filter((r: any) => Number(r?.similarity ?? 0) > 0.25)
+    .slice(0, 5)
+    .map((r: any, i: number) => `Memória relevante ${i + 1}: ${String(r.content)}`)
+
+  if (lines.length === 0) return ''
+
+  return `
+INFORMAÇÕES IMPORTANTES DE CONVERSAS PASSADAS:
+${lines.join('\n')}
+
+Se o usuário fizer uma pergunta relacionada a essas informações, utilize-as diretamente na resposta.
+`
 }
 
 function buildDirectAnswer(message: string, memory: Map<string, string>) {
@@ -223,6 +243,33 @@ async function saveVectorMemory(params: {
   }
 }
 
+async function searchVectorMemory(params: {
+  companyId: string
+  userId: string
+  query: string
+}) {
+  try {
+    const queryEmbedding = await createEmbedding(params.query)
+
+    const { data, error } = await supabaseAdmin.rpc('match_memory_vectors', {
+      query_embedding: queryEmbedding,
+      match_count: 5,
+      filter_company_id: params.companyId,
+      filter_user_id: params.userId,
+    })
+
+    if (error) {
+      console.error('Erro ao buscar memória vetorial:', error)
+      return []
+    }
+
+    return data || []
+  } catch (e) {
+    console.error('Erro ao buscar memória vetorial:', e)
+    return []
+  }
+}
+
 export async function POST(req: Request) {
   try {
     const body = await req.json().catch(() => null)
@@ -279,8 +326,15 @@ export async function POST(req: Request) {
       .order('updated_at', { ascending: false })
       .limit(30)
 
+    const vectorRows = await searchVectorMemory({
+      companyId,
+      userId,
+      query: message,
+    })
+
     const memoryMap = memoryMapFromRows(memRows)
     const memoryBlock = buildMemoryBlock(memoryMap)
+    const vectorContextBlock = buildVectorContextBlock(vectorRows)
     const directAnswer = buildDirectAnswer(message, memoryMap)
 
     const encoder = new TextEncoder()
@@ -335,12 +389,14 @@ export async function POST(req: Request) {
 Responda sempre em português do Brasil.
 
 REGRAS IMPORTANTES:
-- Use o histórico e as memórias como contexto real.
+- Use o histórico, as memórias e o contexto semântico de conversas antigas como contexto real.
 - Quando o usuário fizer uma pergunta objetiva, responda de forma objetiva e direta.
 - Evite frases genéricas.
 - Seja firme, clara e profissional.
 
-${memoryBlock}`,
+${memoryBlock}
+
+${vectorContextBlock}`,
         },
         ...history,
       ],
