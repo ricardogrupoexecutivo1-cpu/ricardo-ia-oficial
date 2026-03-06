@@ -5,28 +5,63 @@ import { useEffect, useRef, useState } from 'react'
 type Role = 'user' | 'assistant'
 type Msg = { role: Role; content: string }
 
+type InitState = {
+  userId: string
+  companyId: string
+  conversationId: string
+}
+
 export default function ChatComponent() {
   const [messages, setMessages] = useState<Msg[]>([
-    { role: 'assistant', content: 'Olá! Como posso ajudar você hoje?' },
+    { role: 'assistant', content: 'Olá! Eu sou a AURORA. Como posso ajudar você hoje?' },
   ])
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
+  const [init, setInit] = useState<InitState | null>(null)
+
   const endRef = useRef<HTMLDivElement | null>(null)
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages, loading])
 
+  useEffect(() => {
+    const saved = localStorage.getItem('aurora_init')
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved)
+        if (parsed?.userId && parsed?.companyId && parsed?.conversationId) {
+          setInit(parsed)
+          return
+        }
+      } catch {}
+    }
+
+    ;(async () => {
+      const res = await fetch('/api/init', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ displayName: 'Visitante', companyName: 'Empresa Demo' }),
+      })
+
+      const data = await res.json()
+
+      if (data?.userId && data?.companyId && data?.conversationId) {
+        localStorage.setItem('aurora_init', JSON.stringify(data))
+        setInit(data)
+      }
+    })()
+  }, [])
+
   async function sendMessage() {
     const text = input.trim()
     if (!text || loading) return
+    if (!init) return
 
     const nextMessages: Msg[] = [...messages, { role: 'user' as const, content: text }]
 
     setInput('')
     setLoading(true)
-
-    // UI: usuário + placeholder do assistente
     setMessages([...nextMessages, { role: 'assistant' as const, content: '' }])
 
     let assistantText = ''
@@ -35,7 +70,12 @@ export default function ChatComponent() {
       const res = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ messages: nextMessages }),
+        body: JSON.stringify({
+          userId: init.userId,
+          companyId: init.companyId,
+          conversationId: init.conversationId,
+          message: text,
+        }),
       })
 
       if (!res.ok) {
@@ -43,19 +83,9 @@ export default function ChatComponent() {
         throw new Error(errText || `HTTP ${res.status}`)
       }
 
-      if (!res.body) {
-        // fallback raro
-        const full = await res.text()
-        assistantText = full
-        setMessages((prev) => {
-          const updated = [...prev]
-          updated[updated.length - 1] = { role: 'assistant', content: assistantText || 'Sem resposta.' }
-          return updated
-        })
-        return
-      }
+      const reader = res.body?.getReader()
+      if (!reader) throw new Error('Sem stream')
 
-      const reader = res.body.getReader()
       const decoder = new TextDecoder()
       let buffer = ''
 
@@ -65,16 +95,11 @@ export default function ChatComponent() {
 
         buffer += decoder.decode(value, { stream: true })
 
-        // SSE events separados por \n\n
         const parts = buffer.split('\n\n')
         buffer = parts.pop() || ''
 
         for (const chunk of parts) {
           const line = chunk.trim()
-
-          // ignora pings ": ping"
-          if (line.startsWith(':')) continue
-
           if (!line.startsWith('data:')) continue
 
           const jsonStr = line.slice(5).trim()
@@ -95,28 +120,14 @@ export default function ChatComponent() {
               return updated
             })
           }
-
-          if (payload.type === 'done') {
-            // terminou normal
-          }
-
-          if (payload.type === 'error') {
-            const msg = payload.message ? String(payload.message) : 'erro no stream'
-            assistantText += `\n\n⚠️ Stream interrompido no final (texto acima está válido). Detalhe: ${msg}`
-            setMessages((prev) => {
-              const updated = [...prev]
-              updated[updated.length - 1] = { role: 'assistant', content: assistantText }
-              return updated
-            })
-          }
         }
       }
     } catch (e: any) {
-      const msg = e?.message ? String(e.message) : 'falha no streaming'
+      const msg = e?.message ? String(e.message) : 'falha'
       assistantText =
         (assistantText || '') +
         (assistantText ? '\n\n' : '') +
-        `⚠️ A resposta foi interrompida no final (mas o texto acima está válido). Detalhe: ${msg}`
+        `⚠️ Resposta interrompida. Detalhe: ${msg}`
 
       setMessages((prev) => {
         const updated = [...prev]
@@ -133,12 +144,9 @@ export default function ChatComponent() {
       <div className="flex-1 p-4 overflow-y-auto space-y-2">
         {messages.map((m, i) => (
           <div key={i} className={m.role === 'user' ? 'text-right' : 'text-left'}>
-            <div className="inline-block px-3 py-2 rounded-lg bg-gray-200 whitespace-pre-wrap">
-              {m.content}
-            </div>
+            <div className="inline-block px-3 py-2 rounded-lg bg-gray-200 whitespace-pre-wrap">{m.content}</div>
           </div>
         ))}
-
         {loading && <div className="text-xs text-gray-500">digitando...</div>}
         <div ref={endRef} />
       </div>
