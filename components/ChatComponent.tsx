@@ -38,17 +38,29 @@ export default function ChatComponent() {
     }
 
     ;(async () => {
-      const res = await fetch('/api/init', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ displayName: 'Visitante', companyName: 'Empresa Demo' }),
-      })
+      try {
+        const res = await fetch('/api/init', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ displayName: 'Visitante', companyName: 'Empresa Demo' }),
+        })
 
-      const data = await res.json()
+        const data = await res.json()
 
-      if (data?.userId && data?.companyId && data?.conversationId) {
-        localStorage.setItem('aurora_init', JSON.stringify(data))
-        setInit(data)
+        if (data?.userId && data?.companyId && data?.conversationId) {
+          localStorage.setItem('aurora_init', JSON.stringify(data))
+          setInit(data)
+        } else {
+          setMessages((prev) => [
+            ...prev,
+            { role: 'assistant', content: 'Erro ao inicializar a AURORA.' },
+          ])
+        }
+      } catch {
+        setMessages((prev) => [
+          ...prev,
+          { role: 'assistant', content: 'Erro ao inicializar a AURORA.' },
+        ])
       }
     })()
   }, [])
@@ -65,6 +77,7 @@ export default function ChatComponent() {
     setMessages([...nextMessages, { role: 'assistant' as const, content: '' }])
 
     let assistantText = ''
+    let doneReceived = false
 
     try {
       const res = await fetch('/api/chat', {
@@ -100,6 +113,8 @@ export default function ChatComponent() {
 
         for (const chunk of parts) {
           const line = chunk.trim()
+
+          if (line.startsWith(':')) continue
           if (!line.startsWith('data:')) continue
 
           const jsonStr = line.slice(5).trim()
@@ -120,7 +135,38 @@ export default function ChatComponent() {
               return updated
             })
           }
+
+          if (payload.type === 'done') {
+            doneReceived = true
+            setLoading(false)
+            try {
+              await reader.cancel()
+            } catch {}
+            break
+          }
+
+          if (payload.type === 'error') {
+            const msg = payload.message ? String(payload.message) : 'erro no stream'
+            assistantText =
+              (assistantText || '') +
+              (assistantText ? '\n\n' : '') +
+              `⚠️ Resposta interrompida. Detalhe: ${msg}`
+
+            setMessages((prev) => {
+              const updated = [...prev]
+              updated[updated.length - 1] = { role: 'assistant', content: assistantText }
+              return updated
+            })
+
+            setLoading(false)
+            try {
+              await reader.cancel()
+            } catch {}
+            break
+          }
         }
+
+        if (doneReceived) break
       }
     } catch (e: any) {
       const msg = e?.message ? String(e.message) : 'falha'
@@ -131,7 +177,7 @@ export default function ChatComponent() {
 
       setMessages((prev) => {
         const updated = [...prev]
-        updated[updated.length - 1] = { role: 'assistant', content: assistantText }
+        updated[updated.length - 1] = { role: 'assistant', content: assistantText || 'Erro ao processar a mensagem.' }
         return updated
       })
     } finally {
@@ -144,7 +190,9 @@ export default function ChatComponent() {
       <div className="flex-1 p-4 overflow-y-auto space-y-2">
         {messages.map((m, i) => (
           <div key={i} className={m.role === 'user' ? 'text-right' : 'text-left'}>
-            <div className="inline-block px-3 py-2 rounded-lg bg-gray-200 whitespace-pre-wrap">{m.content}</div>
+            <div className="inline-block px-3 py-2 rounded-lg bg-gray-200 whitespace-pre-wrap">
+              {m.content}
+            </div>
           </div>
         ))}
         {loading && <div className="text-xs text-gray-500">digitando...</div>}
