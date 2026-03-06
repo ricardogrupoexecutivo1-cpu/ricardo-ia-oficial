@@ -34,7 +34,11 @@ function extractFacts(userText: string): Fact[] {
 
   const drivers = userText.match(/(\d{1,3}(?:\.\d{3})*|\d+)\s*motoristas?/i)
   if (drivers) {
-    facts.push({ key: 'drivers_count', value: normalizeNumber(drivers[1]), confidence: 0.98 })
+    facts.push({
+      key: 'drivers_count',
+      value: normalizeNumber(drivers[1]),
+      confidence: 0.98,
+    })
   }
 
   const employees =
@@ -42,32 +46,57 @@ function extractFacts(userText: string): Fact[] {
     userText.match(/(\d{1,3}(?:\.\d{3})*|\d+)\s*funcion[áa]rios?/i)
 
   if (employees) {
-    facts.push({ key: 'employees_count', value: normalizeNumber(employees[1]), confidence: 0.98 })
+    facts.push({
+      key: 'employees_count',
+      value: normalizeNumber(employees[1]),
+      confidence: 0.98,
+    })
   }
 
   const companies = userText.match(/(\d{1,3}(?:\.\d{3})*|\d+)\s*empresas?/i)
   if (companies) {
-    facts.push({ key: 'companies_count', value: normalizeNumber(companies[1]), confidence: 0.98 })
+    facts.push({
+      key: 'companies_count',
+      value: normalizeNumber(companies[1]),
+      confidence: 0.98,
+    })
   }
 
   const branches = userText.match(/(\d{1,3}(?:\.\d{3})*|\d+)\s*filiais?/i)
   if (branches) {
-    facts.push({ key: 'branches_count', value: normalizeNumber(branches[1]), confidence: 0.98 })
+    facts.push({
+      key: 'branches_count',
+      value: normalizeNumber(branches[1]),
+      confidence: 0.98,
+    })
   }
 
   const branchesLocation = userText.match(/filiais?\s+em\s+([A-Za-zÀ-ÿ\s]+?)(?:[.!?]|$)/i)
   if (branchesLocation) {
-    facts.push({ key: 'branches_location', value: branchesLocation[1].trim(), confidence: 0.94 })
+    facts.push({
+      key: 'branches_location',
+      value: branchesLocation[1].trim(),
+      confidence: 0.94,
+    })
   }
 
   const prazoNums = extractAllPrazoDays(userText)
 
   if (prazoNums.length === 1) {
-    facts.push({ key: 'payment_terms_default', value: `${prazoNums[0]} dias`, confidence: 0.95 })
+    facts.push({
+      key: 'payment_terms_default',
+      value: `${prazoNums[0]} dias`,
+      confidence: 0.95,
+    })
   }
 
   if (prazoNums.length > 1) {
-    facts.push({ key: 'payment_terms_default', value: `${prazoNums[0]} dias`, confidence: 0.9 })
+    facts.push({
+      key: 'payment_terms_default',
+      value: `${prazoNums[0]} dias`,
+      confidence: 0.9,
+    })
+
     facts.push({
       key: 'payment_terms_list',
       value: prazoNums.map((n) => `${n} dias`).join(', '),
@@ -101,21 +130,46 @@ async function upsertFacts(companyId: string, userId: string, facts: Fact[]) {
 
 function memoryMapFromRows(memRows: any[] | null) {
   const map = new Map<string, string>()
+
   for (const row of memRows || []) {
     if (row?.key && row?.value) {
       map.set(String(row.key), String(row.value))
     }
   }
+
   return map
 }
 
 function buildMemoryBlock(map: Map<string, string>) {
   if (map.size === 0) return 'Memórias: nenhuma ainda.'
+
   const lines: string[] = []
+
   for (const [key, value] of map.entries()) {
     lines.push(`- ${key}: ${value}`)
   }
+
   return 'Memórias do usuário/empresa:\n' + lines.join('\n')
+}
+
+function buildVectorContextBlock(vectorRows: any[] | null) {
+  if (!vectorRows || vectorRows.length === 0) {
+    return ''
+  }
+
+  const lines = vectorRows
+    .filter((r: any) => Number(r?.similarity ?? 0) > 0.25)
+    .slice(0, 5)
+    .map((r: any, i: number) => `Memória relevante ${i + 1}: ${String(r.content)}`)
+
+  if (lines.length === 0) return ''
+
+  return `
+INFORMAÇÕES IMPORTANTES DE CONVERSAS PASSADAS:
+${lines.join('\n')}
+
+Se a pergunta do usuário estiver relacionada a essas informações, use-as diretamente.
+`
 }
 
 function buildDirectAnswer(message: string, memory: Map<string, string>) {
@@ -138,32 +192,58 @@ function buildDirectAnswer(message: string, memory: Map<string, string>) {
   if (wantsBranches && wantsLocation && memory.has('branches_location')) {
     const count = memory.get('branches_count')
     const location = memory.get('branches_location')
-    if (count && location) return `Suas ${count} filiais ficam em ${location}.`
+    if (count && location) {
+      return `Suas ${count} filiais ficam em ${location}.`
+    }
     return `Suas filiais ficam em ${location}.`
   }
 
   const countParts: string[] = []
   let prazoPart: string | null = null
 
-  if (wantsDrivers && memory.has('drivers_count')) countParts.push(`${memory.get('drivers_count')} motoristas`)
-  if (wantsEmployees && memory.has('employees_count')) countParts.push(`${memory.get('employees_count')} empregados`)
-  if (wantsCompanies && memory.has('companies_count')) countParts.push(`${memory.get('companies_count')} empresas`)
-  if (wantsBranches && memory.has('branches_count')) countParts.push(`${memory.get('branches_count')} filiais`)
+  if (wantsDrivers && memory.has('drivers_count')) {
+    countParts.push(`${memory.get('drivers_count')} motoristas`)
+  }
+
+  if (wantsEmployees && memory.has('employees_count')) {
+    countParts.push(`${memory.get('employees_count')} empregados`)
+  }
+
+  if (wantsCompanies && memory.has('companies_count')) {
+    countParts.push(`${memory.get('companies_count')} empresas`)
+  }
+
+  if (wantsBranches && memory.has('branches_count')) {
+    countParts.push(`${memory.get('branches_count')} filiais`)
+  }
 
   if (wantsPrazo) {
-    if (memory.has('payment_terms_list')) prazoPart = memory.get('payment_terms_list') || null
-    else if (memory.has('payment_terms_default')) prazoPart = memory.get('payment_terms_default') || null
+    if (memory.has('payment_terms_list')) {
+      prazoPart = memory.get('payment_terms_list') || null
+    } else if (memory.has('payment_terms_default')) {
+      prazoPart = memory.get('payment_terms_default') || null
+    }
   }
 
   if (countParts.length === 0 && !prazoPart) return null
 
   let countsText = ''
-  if (countParts.length === 1) countsText = countParts[0]
-  else if (countParts.length === 2) countsText = `${countParts[0]} e ${countParts[1]}`
-  else if (countParts.length > 2) countsText = `${countParts.slice(0, -1).join(', ')} e ${countParts[countParts.length - 1]}`
+  if (countParts.length === 1) {
+    countsText = countParts[0]
+  } else if (countParts.length === 2) {
+    countsText = `${countParts[0]} e ${countParts[1]}`
+  } else if (countParts.length > 2) {
+    countsText = `${countParts.slice(0, -1).join(', ')} e ${countParts[countParts.length - 1]}`
+  }
 
-  if (countsText && prazoPart) return `Você tem ${countsText} e seus prazos são ${prazoPart}.`
-  if (countsText) return `Você tem ${countsText}.`
+  if (countsText && prazoPart) {
+    return `Você tem ${countsText} e seus prazos são ${prazoPart}.`
+  }
+
+  if (countsText) {
+    return `Você tem ${countsText}.`
+  }
+
   return `Seus prazos são ${prazoPart}.`
 }
 
@@ -172,6 +252,7 @@ async function createEmbedding(text: string) {
     model: 'text-embedding-3-small',
     input: text,
   })
+
   return response.data[0].embedding
 }
 
@@ -183,6 +264,7 @@ async function saveVectorMemory(params: {
 }) {
   try {
     const embedding = await createEmbedding(params.content)
+
     await supabaseAdmin.from('memory_vectors').insert({
       company_id: params.companyId,
       user_id: params.userId,
@@ -222,21 +304,19 @@ async function searchVectorMemory(params: {
   }
 }
 
-function buildVectorContextBlock(vectorRows: any[] | null) {
-  if (!vectorRows || vectorRows.length === 0) return ''
-  const lines = vectorRows
-    .filter((r: any) => Number(r?.similarity ?? 0) > 0.25)
-    .slice(0, 5)
-    .map((r: any, i: number) => `Memória relevante ${i + 1}: ${String(r.content)}`)
+async function getErpInsights(baseUrl: string) {
+  try {
+    const response = await fetch(`${baseUrl}/api/erp-insights`, {
+      method: 'GET',
+      cache: 'no-store',
+    })
 
-  if (lines.length === 0) return ''
-
-  return `
-INFORMAÇÕES IMPORTANTES DE CONVERSAS PASSADAS:
-${lines.join('\n')}
-
-Se a pergunta do usuário estiver relacionada a essas informações, use-as diretamente.
-`
+    if (!response.ok) return null
+    return await response.json()
+  } catch (e) {
+    console.error('Erro consultando ERP:', e)
+    return null
+  }
 }
 
 export async function POST(req: Request) {
@@ -251,7 +331,10 @@ export async function POST(req: Request) {
     if (!userId || !companyId || !conversationId || !message) {
       return new Response(
         JSON.stringify({ error: 'Body inválido. Envie { userId, companyId, conversationId, message }.' }),
-        { status: 400, headers: { 'Content-Type': 'application/json; charset=utf-8' } }
+        {
+          status: 400,
+          headers: { 'Content-Type': 'application/json; charset=utf-8' },
+        }
       )
     }
 
@@ -301,35 +384,50 @@ export async function POST(req: Request) {
     const memoryMap = memoryMapFromRows(memRows)
     const memoryBlock = buildMemoryBlock(memoryMap)
     const vectorContextBlock = buildVectorContextBlock(vectorRows)
-    const directAnswer = buildDirectAnswer(message, memoryMap)const erpQuestion =
-  /clientes|motoristas|viagens|notas|faturas|pagamentos|receb/i.test(message)
+    const directAnswer = buildDirectAnswer(message, memoryMap)
 
-if (erpQuestion) {
-  try {
-    const erpResponse = await fetch(`${process.env.NEXT_PUBLIC_SITE_URL || ''}/api/erp-insights`)
-    const erp = await erpResponse.json()
+    const erpQuestion = /clientes|motoristas|viagens|notas|faturas|pagamentos|receb/i.test(message)
 
-    if (erp?.ok) {
-      const i = erp.insights || {}
+    if (erpQuestion) {
+      const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://127.0.0.1:3000'
+      const erp = await getErpInsights(baseUrl)
 
-      const answer =
-        `Situação atual do sistema:\n\n` +
-        `Clientes: ${i.clients ?? 0}\n` +
-        `Motoristas: ${i.drivers ?? 0}\n` +
-        `Viagens: ${i.trips ?? 0}\n` +
-        `Notas/Faturas: ${i.invoices ?? 0}\n` +
-        `Pagamentos: ${i.payments ?? 0}\n` +
-        `Recebíveis: ${i.receivables ?? 0}`
+      if (erp?.ok) {
+        const i = erp.insights || {}
 
-      return new Response(
-        JSON.stringify({ reply: answer }),
-        { status: 200, headers: { 'Content-Type': 'application/json' } }
-      )
+        const answer =
+          `Situação atual do sistema:\n\n` +
+          `Clientes: ${i.clients ?? 0}\n` +
+          `Motoristas: ${i.drivers ?? 0}\n` +
+          `Viagens: ${i.trips ?? 0}\n` +
+          `Notas/Faturas: ${i.invoices ?? 0}\n` +
+          `Pagamentos: ${i.payments ?? 0}\n` +
+          `Recebíveis: ${i.receivables ?? 0}`
+
+        await supabaseAdmin.from('messages').insert({
+          conversation_id: conversationId,
+          company_id: companyId,
+          user_id: userId,
+          role: 'assistant',
+          content: answer,
+        })
+
+        await saveVectorMemory({
+          companyId,
+          userId,
+          conversationId,
+          content: answer,
+        })
+
+        return new Response(
+          JSON.stringify({ reply: answer }),
+          {
+            status: 200,
+            headers: { 'Content-Type': 'application/json; charset=utf-8' },
+          }
+        )
+      }
     }
-  } catch (e) {
-    console.error('Erro consultando ERP:', e)
-  }
-}
 
     let assistantText = ''
 
