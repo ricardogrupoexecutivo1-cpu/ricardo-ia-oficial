@@ -100,7 +100,74 @@ function memoryMapFromRows(memRows: any[] | null) {
   return map
 }
 
-function buildMemoryBlock(map: Map<string, string>) {
+function buildDirectAnswer(message: string, memory: Map<string, string>) {
+  const wantsDrivers = /motoristas?/i.test(message)
+  const wantsEmployees = /empregados?|funcion[áa]rios?/i.test(message)
+  const wantsCompanies = /empresas?/i.test(message)
+  const wantsPrazo = /prazo/i.test(message)
+
+  const isQuestion =
+    /\?/.test(message) ||
+    /\bquantos?\b/i.test(message) ||
+    /\bqual\b/i.test(message)
+
+  if (!isQuestion) return null
+
+  const parts: string[] = []
+
+  if (wantsDrivers && memory.has('drivers_count')) {
+    parts.push(`${memory.get('drivers_count')} motoristas`)
+  }
+
+  if (wantsEmployees && memory.has('employees_count')) {
+    parts.push(`${memory.get('employees_count')} empregados`)
+  }
+
+  if (wantsCompanies && memory.has('companies_count')) {
+    parts.push(`${memory.get('companies_count')} empresas`)
+  }
+
+  if (wantsPrazo && memory.has('payment_terms_default')) {
+    parts.push(`prazo atual de ${memory.get('payment_terms_default')}`)
+  }
+
+  if (parts.length === 0) return null
+
+  if (parts.length === 1) {
+    const only = parts[0]
+
+    if (only.includes('prazo atual de')) {
+      return `Seu ${only}.`
+    }
+
+    return `Você tem ${only}.`
+  }
+
+  const last = parts.pop()
+
+  // caso especial: mistura contagens + prazo
+  const countParts = parts.filter((p) => !p.startsWith('prazo atual de'))
+  const prazoPart = [last, ...parts].find((p) => p?.startsWith('prazo atual de'))
+
+  if (prazoPart) {
+    const cleanCounts = [...countParts]
+    let prefix = ''
+
+    if (cleanCounts.length === 1) {
+      prefix = `Você tem ${cleanCounts[0]}`
+    } else if (cleanCounts.length > 1) {
+      prefix = `Você tem ${cleanCounts.slice(0, -1).join(', ')} e ${cleanCounts[cleanCounts.length - 1]}`
+    }
+
+    if (prefix) {
+      return `${prefix} e seu ${prazoPart}.`
+    }
+
+    return `Seu ${prazoPart}.`
+  }
+
+  return `Você tem ${[...parts, last].join(', ').replace(/,([^,]*)$/, ' e$1')}.`
+}
   if (map.size === 0) return 'Memórias: nenhuma ainda.'
 
   const lines: string[] = []
