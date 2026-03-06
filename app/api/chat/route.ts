@@ -100,74 +100,7 @@ function memoryMapFromRows(memRows: any[] | null) {
   return map
 }
 
-function buildDirectAnswer(message: string, memory: Map<string, string>) {
-  const wantsDrivers = /motoristas?/i.test(message)
-  const wantsEmployees = /empregados?|funcion[áa]rios?/i.test(message)
-  const wantsCompanies = /empresas?/i.test(message)
-  const wantsPrazo = /prazo/i.test(message)
-
-  const isQuestion =
-    /\?/.test(message) ||
-    /\bquantos?\b/i.test(message) ||
-    /\bqual\b/i.test(message)
-
-  if (!isQuestion) return null
-
-  const parts: string[] = []
-
-  if (wantsDrivers && memory.has('drivers_count')) {
-    parts.push(`${memory.get('drivers_count')} motoristas`)
-  }
-
-  if (wantsEmployees && memory.has('employees_count')) {
-    parts.push(`${memory.get('employees_count')} empregados`)
-  }
-
-  if (wantsCompanies && memory.has('companies_count')) {
-    parts.push(`${memory.get('companies_count')} empresas`)
-  }
-
-  if (wantsPrazo && memory.has('payment_terms_default')) {
-    parts.push(`prazo atual de ${memory.get('payment_terms_default')}`)
-  }
-
-  if (parts.length === 0) return null
-
-  if (parts.length === 1) {
-    const only = parts[0]
-
-    if (only.includes('prazo atual de')) {
-      return `Seu ${only}.`
-    }
-
-    return `Você tem ${only}.`
-  }
-
-  const last = parts.pop()
-
-  // caso especial: mistura contagens + prazo
-  const countParts = parts.filter((p) => !p.startsWith('prazo atual de'))
-  const prazoPart = [last, ...parts].find((p) => p?.startsWith('prazo atual de'))
-
-  if (prazoPart) {
-    const cleanCounts = [...countParts]
-    let prefix = ''
-
-    if (cleanCounts.length === 1) {
-      prefix = `Você tem ${cleanCounts[0]}`
-    } else if (cleanCounts.length > 1) {
-      prefix = `Você tem ${cleanCounts.slice(0, -1).join(', ')} e ${cleanCounts[cleanCounts.length - 1]}`
-    }
-
-    if (prefix) {
-      return `${prefix} e seu ${prazoPart}.`
-    }
-
-    return `Seu ${prazoPart}.`
-  }
-
-  return `Você tem ${[...parts, last].join(', ').replace(/,([^,]*)$/, ' e$1')}.`
-}
+function buildMemoryBlock(map: Map<string, string>) {
   if (map.size === 0) return 'Memórias: nenhuma ainda.'
 
   const lines: string[] = []
@@ -192,33 +125,45 @@ function buildDirectAnswer(message: string, memory: Map<string, string>) {
 
   if (!isQuestion) return null
 
-  const parts: string[] = []
+  const countParts: string[] = []
+  let prazoPart: string | null = null
 
   if (wantsDrivers && memory.has('drivers_count')) {
-    parts.push(`você tem ${memory.get('drivers_count')} motoristas`)
+    countParts.push(`${memory.get('drivers_count')} motoristas`)
   }
 
   if (wantsEmployees && memory.has('employees_count')) {
-    parts.push(`você tem ${memory.get('employees_count')} empregados`)
+    countParts.push(`${memory.get('employees_count')} empregados`)
   }
 
   if (wantsCompanies && memory.has('companies_count')) {
-    parts.push(`você tem ${memory.get('companies_count')} empresas`)
+    countParts.push(`${memory.get('companies_count')} empresas`)
   }
 
   if (wantsPrazo && memory.has('payment_terms_default')) {
-    parts.push(`seu prazo atual é de ${memory.get('payment_terms_default')}`)
+    prazoPart = `${memory.get('payment_terms_default')}`
   }
 
-  if (parts.length === 0) return null
+  if (countParts.length === 0 && !prazoPart) return null
 
-  if (parts.length === 1) {
-    const sentence = parts[0]
-    return sentence.charAt(0).toUpperCase() + sentence.slice(1) + '.'
+  let countsText = ''
+  if (countParts.length === 1) {
+    countsText = countParts[0]
+  } else if (countParts.length === 2) {
+    countsText = `${countParts[0]} e ${countParts[1]}`
+  } else if (countParts.length > 2) {
+    countsText = `${countParts.slice(0, -1).join(', ')} e ${countParts[countParts.length - 1]}`
   }
 
-  const last = parts.pop()
-  return parts.join(', ') + ' e ' + last + '.'
+  if (countsText && prazoPart) {
+    return `Você tem ${countsText} e seu prazo atual é de ${prazoPart}.`
+  }
+
+  if (countsText) {
+    return `Você tem ${countsText}.`
+  }
+
+  return `Seu prazo atual é de ${prazoPart}.`
 }
 
 export async function POST(req: Request) {
@@ -240,7 +185,6 @@ export async function POST(req: Request) {
       )
     }
 
-    // salva mensagem do usuário
     await supabaseAdmin.from('messages').insert({
       conversation_id: conversationId,
       company_id: companyId,
@@ -249,11 +193,9 @@ export async function POST(req: Request) {
       content: message,
     })
 
-    // extrai e salva fatos da mensagem atual antes da resposta
     const currentFacts = extractFacts(message)
     await upsertFacts(companyId, userId, currentFacts)
 
-    // busca histórico
     const { data: rows } = await supabaseAdmin
       .from('messages')
       .select('role, content')
@@ -265,7 +207,6 @@ export async function POST(req: Request) {
       .map((r: any) => ({ role: r.role as Role, content: String(r.content) }))
       .filter((m) => m.role === 'user' || m.role === 'assistant')
 
-    // busca memórias atualizadas
     const { data: memRows } = await supabaseAdmin
       .from('memories')
       .select('key, value, confidence')
@@ -276,8 +217,6 @@ export async function POST(req: Request) {
 
     const memoryMap = memoryMapFromRows(memRows)
     const memoryBlock = buildMemoryBlock(memoryMap)
-
-    // se a pergunta for objetiva e a resposta já estiver na memória, responde direto
     const directAnswer = buildDirectAnswer(message, memoryMap)
 
     const encoder = new TextEncoder()
@@ -312,7 +251,6 @@ export async function POST(req: Request) {
       })
     }
 
-    // fallback: usa o modelo normalmente
     const stream = await client.chat.completions.create({
       model: 'gpt-4o-mini',
       stream: true,
@@ -342,7 +280,7 @@ Pergunta: "Quantos motoristas eu tenho e qual é o meu prazo?"
 Resposta ideal: "Você tem 18 motoristas e seu prazo padrão é de 30 dias."
 
 Pergunta: "Quantos funcionários tenho, quantas empresas tenho e qual é meu novo prazo?"
-Resposta ideal: "Você tem 100000 empregados, 4000 empresas e seu novo prazo é de 190 dias."
+Resposta ideal: "Você tem 100000 empregados, 4000 empresas e seu prazo atual é de 190 dias."
 
 ${memoryBlock}`,
         },
