@@ -19,36 +19,72 @@ function safeStr(x: any) {
   return typeof x === 'string' ? x : ''
 }
 
+function normalizeNumber(value: string) {
+  return value.replace(/[.\s]/g, '')
+}
+
+function extractAllPrazoDays(text: string) {
+  const matches = [...text.matchAll(/(\d{1,3}(?:\.\d{3})*|\d+)\s*dias?/gi)]
+  const nums = matches.map((m) => normalizeNumber(m[1])).filter(Boolean)
+
+  // remove duplicados mantendo ordem
+  return [...new Set(nums)]
+}
+
 function extractFacts(userText: string): Fact[] {
   const facts: Fact[] = []
 
-  const drivers = userText.match(/(\d+)\s*motoristas?/i)
+  const drivers = userText.match(/(\d{1,3}(?:\.\d{3})*|\d+)\s*motoristas?/i)
   if (drivers) {
-    facts.push({ key: 'drivers_count', value: drivers[1], confidence: 0.98 })
+    facts.push({
+      key: 'drivers_count',
+      value: normalizeNumber(drivers[1]),
+      confidence: 0.98,
+    })
   }
 
   const employees =
-    userText.match(/(\d+)\s*empregados?/i) ||
-    userText.match(/(\d+)\s*funcion[áa]rios?/i)
+    userText.match(/(\d{1,3}(?:\.\d{3})*|\d+)\s*empregados?/i) ||
+    userText.match(/(\d{1,3}(?:\.\d{3})*|\d+)\s*funcion[áa]rios?/i)
 
   if (employees) {
-    facts.push({ key: 'employees_count', value: employees[1], confidence: 0.98 })
+    facts.push({
+      key: 'employees_count',
+      value: normalizeNumber(employees[1]),
+      confidence: 0.98,
+    })
   }
 
-  const companies = userText.match(/(\d+)\s*empresas?/i)
+  const companies = userText.match(/(\d{1,3}(?:\.\d{3})*|\d+)\s*empresas?/i)
   if (companies) {
-    facts.push({ key: 'companies_count', value: companies[1], confidence: 0.98 })
+    facts.push({
+      key: 'companies_count',
+      value: normalizeNumber(companies[1]),
+      confidence: 0.98,
+    })
   }
 
-  const prazo =
-    userText.match(/prazo(?:\s*padr[aã]o)?(?:\s*(?:é|e|de|chega\s*a))?\s*(\d+)\s*dias?/i) ||
-    userText.match(/(\d+)\s*dias?/i)
+  const prazoNums = extractAllPrazoDays(userText)
 
-  if (prazo) {
+  if (prazoNums.length === 1) {
     facts.push({
       key: 'payment_terms_default',
-      value: `${prazo[1]} dias`,
+      value: `${prazoNums[0]} dias`,
       confidence: 0.95,
+    })
+  }
+
+  if (prazoNums.length > 1) {
+    facts.push({
+      key: 'payment_terms_default',
+      value: `${prazoNums[0]} dias`,
+      confidence: 0.9,
+    })
+
+    facts.push({
+      key: 'payment_terms_list',
+      value: prazoNums.map((n) => `${n} dias`).join(', '),
+      confidence: 0.96,
     })
   }
 
@@ -92,6 +128,7 @@ function buildMemoryBlock(map: Map<string, string>) {
   if (map.size === 0) return 'Memórias: nenhuma ainda.'
 
   const lines: string[] = []
+
   for (const [key, value] of map.entries()) {
     lines.push(`- ${key}: ${value}`)
   }
@@ -108,7 +145,8 @@ function buildDirectAnswer(message: string, memory: Map<string, string>) {
   const isQuestion =
     /\?/.test(message) ||
     /\bquantos?\b/i.test(message) ||
-    /\bqual\b/i.test(message)
+    /\bqual\b/i.test(message) ||
+    /\bquais\b/i.test(message)
 
   if (!isQuestion) return null
 
@@ -127,8 +165,12 @@ function buildDirectAnswer(message: string, memory: Map<string, string>) {
     countParts.push(`${memory.get('companies_count')} empresas`)
   }
 
-  if (wantsPrazo && memory.has('payment_terms_default')) {
-    prazoPart = `${memory.get('payment_terms_default')}`
+  if (wantsPrazo) {
+    if (memory.has('payment_terms_list')) {
+      prazoPart = `${memory.get('payment_terms_list')}`
+    } else if (memory.has('payment_terms_default')) {
+      prazoPart = `${memory.get('payment_terms_default')}`
+    }
   }
 
   if (countParts.length === 0 && !prazoPart) return null
@@ -143,14 +185,14 @@ function buildDirectAnswer(message: string, memory: Map<string, string>) {
   }
 
   if (countsText && prazoPart) {
-    return `Você tem ${countsText} e seu prazo atual é de ${prazoPart}.`
+    return `Você tem ${countsText} e seus prazos são ${prazoPart}.`
   }
 
   if (countsText) {
     return `Você tem ${countsText}.`
   }
 
-  return `Seu prazo atual é de ${prazoPart}.`
+  return `Seus prazos são ${prazoPart}.`
 }
 
 async function createEmbedding(text: string) {
