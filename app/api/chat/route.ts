@@ -301,7 +301,35 @@ export async function POST(req: Request) {
     const memoryMap = memoryMapFromRows(memRows)
     const memoryBlock = buildMemoryBlock(memoryMap)
     const vectorContextBlock = buildVectorContextBlock(vectorRows)
-    const directAnswer = buildDirectAnswer(message, memoryMap)
+    const directAnswer = buildDirectAnswer(message, memoryMap)const erpQuestion =
+  /clientes|motoristas|viagens|notas|faturas|pagamentos|receb/i.test(message)
+
+if (erpQuestion) {
+  try {
+    const erpResponse = await fetch(`${process.env.NEXT_PUBLIC_SITE_URL || ''}/api/erp-insights`)
+    const erp = await erpResponse.json()
+
+    if (erp?.ok) {
+      const i = erp.insights || {}
+
+      const answer =
+        `Situação atual do sistema:\n\n` +
+        `Clientes: ${i.clients ?? 0}\n` +
+        `Motoristas: ${i.drivers ?? 0}\n` +
+        `Viagens: ${i.trips ?? 0}\n` +
+        `Notas/Faturas: ${i.invoices ?? 0}\n` +
+        `Pagamentos: ${i.payments ?? 0}\n` +
+        `Recebíveis: ${i.receivables ?? 0}`
+
+      return new Response(
+        JSON.stringify({ reply: answer }),
+        { status: 200, headers: { 'Content-Type': 'application/json' } }
+      )
+    }
+  } catch (e) {
+    console.error('Erro consultando ERP:', e)
+  }
+}
 
     let assistantText = ''
 
