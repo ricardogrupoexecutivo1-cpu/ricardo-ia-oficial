@@ -33,27 +33,33 @@ function extractFacts(userText: string): Fact[] {
 }
 
 async function upsertFacts(companyId: string, userId: string, facts: Fact[]) {
+
   for (const f of facts) {
-    await supabaseAdmin.from('memories').upsert(
-      {
-        company_id: companyId,
-        user_id: userId,
-        key: f.key,
-        value: f.value,
-        confidence: f.confidence,
-        updated_at: new Date().toISOString(),
-      },
-      { onConflict: 'company_id,user_id,key' }
-    )
+
+    await supabaseAdmin
+      .from('memories')
+      .upsert(
+        {
+          company_id: companyId,
+          user_id: userId,
+          key: f.key,
+          value: f.value,
+          updated_at: new Date().toISOString(),
+        },
+        {
+          onConflict: 'company_id,user_id,key',
+        }
+      )
   }
 }
 
-function memoryMapFromRows(memRows: any[] | null) {
+function memoryMapFromRows(rows: any[] | null) {
+
   const map = new Map<string, string>()
 
-  for (const row of memRows || []) {
-    if (row?.key && row?.value) {
-      map.set(row.key, row.value)
+  for (const r of rows || []) {
+    if (r.key && r.value) {
+      map.set(r.key, r.value)
     }
   }
 
@@ -68,12 +74,15 @@ function buildDirectAnswer(message: string, memory: Map<string, string>) {
     normalized.includes('qual é meu nome') ||
     normalized.includes('qual e meu nome') ||
     normalized.includes('qual é o meu nome') ||
-    normalized.includes('qual e o meu nome') ||
-    normalized.includes('você sabe meu nome') ||
-    normalized.includes('voce sabe meu nome')
+    normalized.includes('qual e o meu nome')
 
-  if (asksName && memory.has('user_name')) {
-    return `Seu nome é ${memory.get('user_name')}.`
+  if (asksName) {
+
+    const storedName = memory.get('user_name')
+
+    if (storedName) {
+      return `Seu nome é ${storedName}.`
+    }
   }
 
   const nameIntro = message.match(/meu nome é\s+([A-Za-zÀ-ÿ]+)/i)
@@ -86,6 +95,7 @@ function buildDirectAnswer(message: string, memory: Map<string, string>) {
 }
 
 export async function POST(req: Request) {
+
   try {
 
     const body = await req.json().catch(() => null)
@@ -96,15 +106,18 @@ export async function POST(req: Request) {
     const message = safeStr(body?.message)
 
     if (!userId || !companyId || !conversationId || !message) {
+
       return new Response(
-        JSON.stringify({ error: 'Body inválido.' }),
+        JSON.stringify({ error: 'Body inválido' }),
         { status: 400 }
       )
     }
 
     const facts = extractFacts(message)
 
-    await upsertFacts(companyId, userId, facts)
+    if (facts.length > 0) {
+      await upsertFacts(companyId, userId, facts)
+    }
 
     const { data: memRows } = await supabaseAdmin
       .from('memories')
@@ -117,6 +130,7 @@ export async function POST(req: Request) {
     const directAnswer = buildDirectAnswer(message, memory)
 
     if (directAnswer) {
+
       return new Response(
         JSON.stringify({ reply: directAnswer }),
         { status: 200 }
@@ -156,6 +170,5 @@ export async function POST(req: Request) {
       }),
       { status: 500 }
     )
-
   }
 }
