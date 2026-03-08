@@ -32,6 +32,15 @@ function extractAllPrazoDays(text: string) {
 function extractFacts(userText: string): Fact[] {
   const facts: Fact[] = []
 
+  const userName = userText.match(/meu nome é\s+([A-Za-zÀ-ÿ]+)/i)
+  if (userName) {
+    facts.push({
+      key: 'user_name',
+      value: userName[1],
+      confidence: 0.98,
+    })
+  }
+
   const drivers = userText.match(/(\d{1,3}(?:\.\d{3})*|\d+)\s*motoristas?/i)
   if (drivers) {
     facts.push({
@@ -59,15 +68,12 @@ function extractFacts(userText: string): Fact[] {
     })
   }
 
-  const branchesLocation = userText.match(
-    /filiais?\s+em\s+([A-Za-zÀ-ÿ\s]+?)(?=\s+prazo|\s+nosso|\s+temos|[.!?]|$)/i
-  )
-
+  const branchesLocation = userText.match(/filiais?\s+em\s+([A-Za-zÀ-ÿ\s]+?)(?:[.!?]|$)/i)
   if (branchesLocation) {
     facts.push({
       key: 'branches_location',
       value: branchesLocation[1].trim(),
-      confidence: 0.95,
+      confidence: 0.94,
     })
   }
 
@@ -81,147 +87,136 @@ function extractFacts(userText: string): Fact[] {
     })
   }
 
+  if (prazoNums.length > 1) {
+    facts.push({
+      key: 'payment_terms_default',
+      value: `${prazoNums[0]} dias`,
+      confidence: 0.9,
+    })
+
+    facts.push({
+      key: 'payment_terms_list',
+      value: prazoNums.map((n) => `${n} dias`).join(', '),
+      confidence: 0.96,
+    })
+  }
+
   return facts
 }
 
 async function upsertFacts(companyId: string, userId: string, facts: Fact[]) {
   for (const f of facts) {
-    await supabaseAdmin.from('memories').upsert(
-      {
-        company_id: companyId,
-        user_id: userId,
-        key: f.key,
-        value: f.value,
-        confidence: f.confidence,
-        source_role: 'user',
-        updated_at: new Date().toISOString(),
-      },
-      { onConflict: 'company_id,user_id,key' }
-    )
+    try {
+      await supabaseAdmin.from('memories').upsert(
+        {
+          company_id: companyId,
+          user_id: userId,
+          key: f.key,
+          value: f.value,
+          confidence: f.confidence,
+          source_role: 'user',
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: 'company_id,user_id,key' }
+      )
+    } catch (e) {
+      console.error('Erro ao salvar memória:', e)
+    }
   }
 }
 
 function memoryMapFromRows(memRows: any[] | null) {
   const map = new Map<string, string>()
   for (const row of memRows || []) {
-    map.set(row.key, row.value)
+    if (row?.key && row?.value) {
+      map.set(String(row.key), String(row.value))
+    }
   }
   return map
 }
 
-function buildMemoryConfirmation(facts: Fact[]) {
-  if (!facts.length) return null
-
-  const lines: string[] = []
-
-  for (const f of facts) {
-    if (f.key === 'drivers_count') lines.push(`motoristas: ${f.value}`)
-    if (f.key === 'companies_count') lines.push(`empresas: ${f.value}`)
-    if (f.key === 'branches_count') lines.push(`filiais: ${f.value}`)
-    if (f.key === 'branches_location') lines.push(`local das filiais: ${f.value}`)
-    if (f.key === 'payment_terms_default') lines.push(`prazo padrão: ${f.value}`)
-  }
-
-  return `Informações salvas com sucesso:\n\n- ${lines.join('\n- ')}`
-}
-
 function buildDirectAnswer(message: string, memory: Map<string, string>) {
-  if (/quantos motoristas/i.test(message) && memory.has('drivers_count')) {
-    return `Temos ${memory.get('drivers_count')} motoristas.`
+  const asksName = /qual é meu nome/i.test(message)
+
+  if (asksName && memory.has('user_name')) {
+    return `Seu nome é ${memory.get('user_name')}.`
   }
 
-  if (/quantas empresas/i.test(message) && memory.has('companies_count')) {
-    return `Temos ${memory.get('companies_count')} empresas.`
+  const wantsDrivers = /motoristas?/i.test(message)
+  const wantsCompanies = /empresas?/i.test(message)
+  const wantsBranches = /filiais?/i.test(message)
+
+  if (wantsDrivers && memory.has('drivers_count')) {
+    return `Você tem ${memory.get('drivers_count')} motoristas.`
   }
 
-  if (/quantas filiais/i.test(message) && memory.has('branches_count')) {
-    return `Temos ${memory.get('branches_count')} filiais.`
+  if (wantsCompanies && memory.has('companies_count')) {
+    return `Você tem ${memory.get('companies_count')} empresas.`
   }
 
-  if (/onde ficam.*filiais/i.test(message) && memory.has('branches_location')) {
-    return `Nossas filiais ficam em ${memory.get('branches_location')}.`
-  }
-
-  if (/prazo/i.test(message) && memory.has('payment_terms_default')) {
-    return `Nosso prazo padrão de pagamento é ${memory.get('payment_terms_default')}.`
+  if (wantsBranches && memory.has('branches_location')) {
+    return `Suas filiais ficam em ${memory.get('branches_location')}.`
   }
 
   return null
 }
 
-function isSystemQuestion(message: string) {
-  return /clientes|viagens|faturas|pagamentos|receb/i.test(message)
-}
-
-async function getErpInsights(baseUrl: string) {
-  const response = await fetch(`${baseUrl}/api/erp-insights`, { cache: 'no-store' })
-  if (!response.ok) return null
-  return response.json()
-}
-
 export async function POST(req: Request) {
-  const body = await req.json()
+  try {
+    const body = await req.json().catch(() => null)
 
-  const userId = safeStr(body.userId)
-  const companyId = safeStr(body.companyId)
-  const conversationId = safeStr(body.conversationId)
-  const message = safeStr(body.message)
+    const userId = safeStr(body?.userId)
+    const companyId = safeStr(body?.companyId)
+    const conversationId = safeStr(body?.conversationId)
+    const message = safeStr(body?.message)
 
-  await supabaseAdmin.from('messages').insert({
-    conversation_id: conversationId,
-    company_id: companyId,
-    user_id: userId,
-    role: 'user',
-    content: message,
-  })
+    const currentFacts = extractFacts(message)
+    await upsertFacts(companyId, userId, currentFacts)
 
-  const facts = extractFacts(message)
-  await upsertFacts(companyId, userId, facts)
+    const { data: memRows } = await supabaseAdmin
+      .from('memories')
+      .select('key,value')
+      .eq('company_id', companyId)
+      .eq('user_id', userId)
 
-  const { data: memRows } = await supabaseAdmin
-    .from('memories')
-    .select('key,value')
-    .eq('company_id', companyId)
-    .eq('user_id', userId)
+    const memoryMap = memoryMapFromRows(memRows)
 
-  const memory = memoryMapFromRows(memRows)
+    const directAnswer = buildDirectAnswer(message, memoryMap)
 
-  const confirmation = buildMemoryConfirmation(facts)
-  if (confirmation) {
-    return new Response(JSON.stringify({ reply: confirmation }), { status: 200 })
-  }
-
-  const direct = buildDirectAnswer(message, memory)
-  if (direct) {
-    return new Response(JSON.stringify({ reply: direct }), { status: 200 })
-  }
-
-  if (isSystemQuestion(message)) {
-    const baseUrl = process.env.NEXT_PUBLIC_SITE_URL!
-    const erp = await getErpInsights(baseUrl)
-
-    if (erp?.ok) {
-      const i = erp.insights
-
-      const text =
-        `Situação atual do sistema:\n\n` +
-        `Clientes: ${i.clients}\n` +
-        `Motoristas: ${i.drivers}\n` +
-        `Viagens: ${i.trips}\n` +
-        `Notas/Faturas: ${i.invoices}\n` +
-        `Pagamentos: ${i.payments}\n` +
-        `Recebíveis: ${i.receivables}`
-
-      return new Response(JSON.stringify({ reply: text }), { status: 200 })
+    if (directAnswer) {
+      return new Response(
+        JSON.stringify({ reply: directAnswer }),
+        { status: 200 }
+      )
     }
+
+    const completion = await client.chat.completions.create({
+      model: 'gpt-4o-mini',
+      temperature: 0.3,
+      messages: [
+        {
+          role: 'system',
+          content:
+            'Você é Aurora, a inteligência artificial da RicardoIA. Responda sempre em português.',
+        },
+        { role: 'user', content: message },
+      ],
+    })
+
+    const assistantText =
+      completion.choices?.[0]?.message?.content || 'Sem resposta.'
+
+    return new Response(
+      JSON.stringify({ reply: assistantText }),
+      { status: 200 }
+    )
+  } catch (err: any) {
+    return new Response(
+      JSON.stringify({
+        error: 'Erro no /api/chat',
+        details: String(err?.message ?? err),
+      }),
+      { status: 500 }
+    )
   }
-
-  const completion = await client.chat.completions.create({
-    model: 'gpt-4o-mini',
-    messages: [{ role: 'user', content: message }],
-  })
-
-  const reply = completion.choices[0].message.content || 'Sem resposta.'
-
-  return new Response(JSON.stringify({ reply }), { status: 200 })
 }
