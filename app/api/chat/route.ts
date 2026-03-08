@@ -80,6 +80,18 @@ function extractFacts(userText: string): Fact[] {
     })
   }
 
+  const marketFocus =
+    userText.match(/nosso foco principal [ée]\s+(.+?)(?:[.!?]|$)/i) ||
+    userText.match(/nosso foco de mercado [ée]\s+(.+?)(?:[.!?]|$)/i)
+
+  if (marketFocus) {
+    facts.push({
+      key: 'market_focus',
+      value: marketFocus[1].trim(),
+      confidence: 0.94,
+    })
+  }
+
   const prazoNums = extractAllPrazoDays(userText)
 
   if (prazoNums.length === 1) {
@@ -172,79 +184,82 @@ Se a pergunta do usuário estiver relacionada a essas informações, use-as dire
 `
 }
 
-function buildDirectAnswer(message: string, memory: Map<string, string>) {
-  const wantsDrivers = /motoristas?/i.test(message)
-  const wantsEmployees = /empregados?|funcion[áa]rios?/i.test(message)
-  const wantsCompanies = /empresas?/i.test(message)
-  const wantsPrazo = /prazo/i.test(message)
-  const wantsBranches = /filiais?/i.test(message)
-  const wantsLocation = /onde|localiza|ficam|fica/i.test(message)
+function isSystemQuestion(message: string) {
+  return /quantos clientes|quantos motoristas no sistema|quantas viagens|situa[çc][ãa]o do sistema|resumo do sistema|notas|faturas|pagamentos|receb[íi]veis/i.test(
+    message
+  )
+}
 
-  const isQuestion =
-    /\?/.test(message) ||
-    /\bquantos?\b/i.test(message) ||
-    /\bqual\b/i.test(message) ||
-    /\bquais\b/i.test(message) ||
-    /\bonde\b/i.test(message)
+function buildMemoryConfirmation(facts: Fact[]) {
+  if (!facts.length) return null
 
-  if (!isQuestion) return null
+  const labels: string[] = []
 
-  if (wantsBranches && wantsLocation && memory.has('branches_location')) {
-    const count = memory.get('branches_count')
-    const location = memory.get('branches_location')
-    if (count && location) {
-      return `Suas ${count} filiais ficam em ${location}.`
-    }
-    return `Suas filiais ficam em ${location}.`
+  for (const fact of facts) {
+    if (fact.key === 'drivers_count') labels.push(`motoristas: ${fact.value}`)
+    if (fact.key === 'employees_count') labels.push(`funcionários: ${fact.value}`)
+    if (fact.key === 'companies_count') labels.push(`empresas: ${fact.value}`)
+    if (fact.key === 'branches_count') labels.push(`filiais: ${fact.value}`)
+    if (fact.key === 'branches_location') labels.push(`local das filiais: ${fact.value}`)
+    if (fact.key === 'payment_terms_default') labels.push(`prazo padrão: ${fact.value}`)
+    if (fact.key === 'payment_terms_list') labels.push(`lista de prazos: ${fact.value}`)
+    if (fact.key === 'market_focus') labels.push(`foco principal: ${fact.value}`)
   }
 
-  const countParts: string[] = []
-  let prazoPart: string | null = null
+  if (!labels.length) return null
+
+  return `Informações salvas com sucesso:\n\n- ${labels.join('\n- ')}`
+}
+
+function buildDirectAnswer(message: string, memory: Map<string, string>) {
+  const wantsDrivers = /quantos\s+motoristas?/i.test(message)
+  const wantsEmployees = /quantos\s+(empregados?|funcion[áa]rios?)/i.test(message)
+  const wantsCompanies = /quantas\s+empresas?/i.test(message)
+  const wantsBranches = /quantas\s+filiais?/i.test(message)
+  const wantsBranchLocation =
+    /onde\s+ficam\s+as?\s+filiais?|onde\s+est[aã]o\s+as?\s+filiais?/i.test(message)
+  const wantsPrazo =
+    /prazo padr[ãa]o|prazo de pagamento|qual\s+[ée]\s+o\s+prazo/i.test(message)
+  const wantsMarketFocus =
+    /foco de mercado|foco principal|qual\s+[ée]\s+nosso\s+foco/i.test(message)
 
   if (wantsDrivers && memory.has('drivers_count')) {
-    countParts.push(`${memory.get('drivers_count')} motoristas`)
+    return `Temos ${memory.get('drivers_count')} motoristas.`
   }
 
   if (wantsEmployees && memory.has('employees_count')) {
-    countParts.push(`${memory.get('employees_count')} empregados`)
+    return `Temos ${memory.get('employees_count')} funcionários.`
   }
 
   if (wantsCompanies && memory.has('companies_count')) {
-    countParts.push(`${memory.get('companies_count')} empresas`)
+    return `Temos ${memory.get('companies_count')} empresas.`
+  }
+
+  if (wantsBranches && memory.has('branches_count') && memory.has('branches_location')) {
+    return `Temos ${memory.get('branches_count')} filiais em ${memory.get('branches_location')}.`
   }
 
   if (wantsBranches && memory.has('branches_count')) {
-    countParts.push(`${memory.get('branches_count')} filiais`)
+    return `Temos ${memory.get('branches_count')} filiais.`
   }
 
-  if (wantsPrazo) {
-    if (memory.has('payment_terms_list')) {
-      prazoPart = memory.get('payment_terms_list') || null
-    } else if (memory.has('payment_terms_default')) {
-      prazoPart = memory.get('payment_terms_default') || null
-    }
+  if (wantsBranchLocation && memory.has('branches_location')) {
+    return `Nossas filiais ficam em ${memory.get('branches_location')}.`
   }
 
-  if (countParts.length === 0 && !prazoPart) return null
-
-  let countsText = ''
-  if (countParts.length === 1) {
-    countsText = countParts[0]
-  } else if (countParts.length === 2) {
-    countsText = `${countParts[0]} e ${countParts[1]}`
-  } else if (countParts.length > 2) {
-    countsText = `${countParts.slice(0, -1).join(', ')} e ${countParts[countParts.length - 1]}`
+  if (wantsPrazo && memory.has('payment_terms_default')) {
+    return `Nosso prazo padrão de pagamento é ${memory.get('payment_terms_default')}.`
   }
 
-  if (countsText && prazoPart) {
-    return `Você tem ${countsText} e seus prazos são ${prazoPart}.`
+  if (wantsPrazo && memory.has('payment_terms_list')) {
+    return `Nossos prazos são ${memory.get('payment_terms_list')}.`
   }
 
-  if (countsText) {
-    return `Você tem ${countsText}.`
+  if (wantsMarketFocus && memory.has('market_focus')) {
+    return `Nosso foco principal é ${memory.get('market_focus')}.`
   }
 
-  return `Seus prazos são ${prazoPart}.`
+  return null
 }
 
 async function createEmbedding(text: string) {
@@ -385,8 +400,53 @@ export async function POST(req: Request) {
     const memoryBlock = buildMemoryBlock(memoryMap)
     const vectorContextBlock = buildVectorContextBlock(vectorRows)
     const directAnswer = buildDirectAnswer(message, memoryMap)
+    const memoryConfirmation = buildMemoryConfirmation(currentFacts)
 
-    const erpQuestion = /clientes|motoristas|viagens|notas|faturas|pagamentos|receb/i.test(message)
+    if (currentFacts.length > 0 && memoryConfirmation) {
+      await supabaseAdmin.from('messages').insert({
+        conversation_id: conversationId,
+        company_id: companyId,
+        user_id: userId,
+        role: 'assistant',
+        content: memoryConfirmation,
+      })
+
+      await saveVectorMemory({
+        companyId,
+        userId,
+        conversationId,
+        content: memoryConfirmation,
+      })
+
+      return new Response(JSON.stringify({ reply: memoryConfirmation }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json; charset=utf-8' },
+      })
+    }
+
+    if (directAnswer) {
+      await supabaseAdmin.from('messages').insert({
+        conversation_id: conversationId,
+        company_id: companyId,
+        user_id: userId,
+        role: 'assistant',
+        content: directAnswer,
+      })
+
+      await saveVectorMemory({
+        companyId,
+        userId,
+        conversationId,
+        content: directAnswer,
+      })
+
+      return new Response(JSON.stringify({ reply: directAnswer }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json; charset=utf-8' },
+      })
+    }
+
+    const erpQuestion = isSystemQuestion(message)
 
     if (erpQuestion) {
       const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://127.0.0.1:3000'
@@ -419,29 +479,21 @@ export async function POST(req: Request) {
           content: answer,
         })
 
-        return new Response(
-          JSON.stringify({ reply: answer }),
-          {
-            status: 200,
-            headers: { 'Content-Type': 'application/json; charset=utf-8' },
-          }
-        )
+        return new Response(JSON.stringify({ reply: answer }), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json; charset=utf-8' },
+        })
       }
     }
 
-    let assistantText = ''
-
-    if (directAnswer) {
-      assistantText = directAnswer
-    } else {
-      const completion = await client.chat.completions.create({
-        model: 'gpt-4o-mini',
-        temperature: 0.3,
-        max_tokens: 700,
-        messages: [
-          {
-            role: 'system',
-            content: `Você é a AURORA do RicardoIA.
+    const completion = await client.chat.completions.create({
+      model: 'gpt-4o-mini',
+      temperature: 0.3,
+      max_tokens: 700,
+      messages: [
+        {
+          role: 'system',
+          content: `Você é a AURORA do RicardoIA.
 
 Responda sempre em português do Brasil.
 
@@ -462,13 +514,14 @@ MEMÓRIAS SEMÂNTICAS DE CONVERSAS ANTIGAS:
 ${vectorContextBlock}
 
 Se o usuário perguntar algo que esteja nessas memórias, responda diretamente usando esses dados.`,
-          },
-          ...history,
-        ],
-      })
+        },
+        ...history,
+      ],
+    })
 
-      assistantText = completion.choices?.[0]?.message?.content?.trim() || 'Sem resposta.'
-    }
+    const assistantText =
+      completion.choices?.[0]?.message?.content?.trim() ||
+      'Entendi. Pode continuar que vou analisar com base nos dados e memórias da empresa.'
 
     await supabaseAdmin.from('messages').insert({
       conversation_id: conversationId,
@@ -485,13 +538,10 @@ Se o usuário perguntar algo que esteja nessas memórias, responda diretamente u
       content: assistantText,
     })
 
-    return new Response(
-      JSON.stringify({ reply: assistantText }),
-      {
-        status: 200,
-        headers: { 'Content-Type': 'application/json; charset=utf-8' },
-      }
-    )
+    return new Response(JSON.stringify({ reply: assistantText }), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json; charset=utf-8' },
+    })
   } catch (err: any) {
     return new Response(
       JSON.stringify({
