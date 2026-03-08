@@ -7,10 +7,10 @@ export default function Page() {
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
 
-  async function sendMessage(e?: any) {
+  async function sendMessage(e?: any, preset?: string) {
     if (e) e.preventDefault()
 
-    const text = input.trim()
+    const text = preset || input.trim()
     if (!text) return
 
     setInput('')
@@ -50,9 +50,45 @@ export default function Page() {
     setLoading(false)
   }
 
+  function copyLink() {
+    navigator.clipboard.writeText('https://ricardoiaoficial.com')
+    alert('Link copiado! Compartilhe com seus amigos.')
+  }
+
   return (
-    <div style={{ maxWidth: 700, margin: '40px auto', fontFamily: 'Arial' }}>
-      <h2>Olá! Eu sou a AURORA. Como posso ajudar você hoje?</h2>
+    <div style={{ maxWidth: 750, margin: '40px auto', fontFamily: 'Arial' }}>
+      
+      <h2 style={{ textAlign: 'center' }}>
+        RicardoIA apresenta
+      </h2>
+
+      <h1 style={{ textAlign: 'center', marginTop: 0 }}>
+        Aurora IA Beta
+      </h1>
+
+      <p style={{ textAlign: 'center' }}>
+        Converse com a inteligência artificial agora.
+      </p>
+
+      <p style={{ textAlign: 'center', fontSize: 14 }}>
+        Beta público aberto — teste gratuitamente.
+      </p>
+
+      <div style={{ textAlign: 'center', marginBottom: 20 }}>
+        <button
+          onClick={copyLink}
+          style={{
+            padding: '8px 14px',
+            borderRadius: 6,
+            border: 'none',
+            background: '#333',
+            color: '#fff',
+            cursor: 'pointer',
+          }}
+        >
+          Compartilhar Aurora
+        </button>
+      </div>
 
       <div
         style={{
@@ -72,10 +108,29 @@ export default function Page() {
         {loading && <div>Aurora está pensando...</div>}
       </div>
 
+      {messages.length === 0 && (
+        <div style={{ marginBottom: 20 }}>
+          <b>Experimente perguntar:</b>
+          <div style={{ marginTop: 10 }}>
+            <button onClick={() => sendMessage(null, 'Como ganhar dinheiro online?')} style={exampleBtn}>
+              Como ganhar dinheiro online?
+            </button>
+
+            <button onClick={() => sendMessage(null, 'Me dê uma receita rápida')} style={exampleBtn}>
+              Me dê uma receita rápida
+            </button>
+
+            <button onClick={() => sendMessage(null, 'Explique inteligência artificial')} style={exampleBtn}>
+              Explique inteligência artificial
+            </button>
+          </div>
+        </div>
+      )}
+
       <form onSubmit={sendMessage}>
         <input
           style={{
-            width: '80%',
+            width: '75%',
             padding: 10,
             borderRadius: 6,
             border: '1px solid #ccc',
@@ -102,4 +157,14 @@ export default function Page() {
       </form>
     </div>
   )
+}
+
+const exampleBtn = {
+  display: 'block',
+  marginBottom: 8,
+  padding: '6px 10px',
+  borderRadius: 6,
+  border: '1px solid #ccc',
+  background: '#f5f5f5',
+  cursor: 'pointer',
 }
