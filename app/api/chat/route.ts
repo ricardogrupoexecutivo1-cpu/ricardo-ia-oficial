@@ -41,18 +41,6 @@ function extractFacts(userText: string): Fact[] {
     })
   }
 
-  const employees =
-    userText.match(/(\d{1,3}(?:\.\d{3})*|\d+)\s*empregados?/i) ||
-    userText.match(/(\d{1,3}(?:\.\d{3})*|\d+)\s*funcion[áa]rios?/i)
-
-  if (employees) {
-    facts.push({
-      key: 'employees_count',
-      value: normalizeNumber(employees[1]),
-      confidence: 0.98,
-    })
-  }
-
   const companies = userText.match(/(\d{1,3}(?:\.\d{3})*|\d+)\s*empresas?/i)
   if (companies) {
     facts.push({
@@ -71,24 +59,15 @@ function extractFacts(userText: string): Fact[] {
     })
   }
 
-  const branchesLocation = userText.match(/filiais?\s+em\s+([A-Za-zÀ-ÿ\s]+?)(?:[.!?]|$)/i)
+  const branchesLocation = userText.match(
+    /filiais?\s+em\s+([A-Za-zÀ-ÿ\s]+?)(?=\s+prazo|\s+nosso|\s+temos|[.!?]|$)/i
+  )
+
   if (branchesLocation) {
     facts.push({
       key: 'branches_location',
       value: branchesLocation[1].trim(),
-      confidence: 0.94,
-    })
-  }
-
-  const marketFocus =
-    userText.match(/nosso foco principal [ée]\s+(.+?)(?:[.!?]|$)/i) ||
-    userText.match(/nosso foco de mercado [ée]\s+(.+?)(?:[.!?]|$)/i)
-
-  if (marketFocus) {
-    facts.push({
-      key: 'market_focus',
-      value: marketFocus[1].trim(),
-      confidence: 0.94,
+      confidence: 0.95,
     })
   }
 
@@ -102,456 +81,147 @@ function extractFacts(userText: string): Fact[] {
     })
   }
 
-  if (prazoNums.length > 1) {
-    facts.push({
-      key: 'payment_terms_default',
-      value: `${prazoNums[0]} dias`,
-      confidence: 0.9,
-    })
-
-    facts.push({
-      key: 'payment_terms_list',
-      value: prazoNums.map((n) => `${n} dias`).join(', '),
-      confidence: 0.96,
-    })
-  }
-
   return facts
 }
 
 async function upsertFacts(companyId: string, userId: string, facts: Fact[]) {
   for (const f of facts) {
-    try {
-      await supabaseAdmin.from('memories').upsert(
-        {
-          company_id: companyId,
-          user_id: userId,
-          key: f.key,
-          value: f.value,
-          confidence: f.confidence,
-          source_role: 'user',
-          updated_at: new Date().toISOString(),
-        },
-        { onConflict: 'company_id,user_id,key' }
-      )
-    } catch (e) {
-      console.error('Erro ao salvar memória:', e)
-    }
+    await supabaseAdmin.from('memories').upsert(
+      {
+        company_id: companyId,
+        user_id: userId,
+        key: f.key,
+        value: f.value,
+        confidence: f.confidence,
+        source_role: 'user',
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: 'company_id,user_id,key' }
+    )
   }
 }
 
 function memoryMapFromRows(memRows: any[] | null) {
   const map = new Map<string, string>()
-
   for (const row of memRows || []) {
-    if (row?.key && row?.value) {
-      map.set(String(row.key), String(row.value))
-    }
+    map.set(row.key, row.value)
   }
-
   return map
-}
-
-function buildMemoryBlock(map: Map<string, string>) {
-  if (map.size === 0) return 'Memórias: nenhuma ainda.'
-
-  const lines: string[] = []
-
-  for (const [key, value] of map.entries()) {
-    lines.push(`- ${key}: ${value}`)
-  }
-
-  return 'Memórias do usuário/empresa:\n' + lines.join('\n')
-}
-
-function buildVectorContextBlock(vectorRows: any[] | null) {
-  if (!vectorRows || vectorRows.length === 0) {
-    return ''
-  }
-
-  const lines = vectorRows
-    .filter((r: any) => Number(r?.similarity ?? 0) > 0.25)
-    .slice(0, 5)
-    .map((r: any, i: number) => `Memória relevante ${i + 1}: ${String(r.content)}`)
-
-  if (lines.length === 0) return ''
-
-  return `
-INFORMAÇÕES IMPORTANTES DE CONVERSAS PASSADAS:
-${lines.join('\n')}
-
-Se a pergunta do usuário estiver relacionada a essas informações, use-as diretamente.
-`
-}
-
-function isSystemQuestion(message: string) {
-  return /quantos clientes|quantos motoristas no sistema|quantas viagens|situa[çc][ãa]o do sistema|resumo do sistema|notas|faturas|pagamentos|receb[íi]veis/i.test(
-    message
-  )
 }
 
 function buildMemoryConfirmation(facts: Fact[]) {
   if (!facts.length) return null
 
-  const labels: string[] = []
+  const lines: string[] = []
 
-  for (const fact of facts) {
-    if (fact.key === 'drivers_count') labels.push(`motoristas: ${fact.value}`)
-    if (fact.key === 'employees_count') labels.push(`funcionários: ${fact.value}`)
-    if (fact.key === 'companies_count') labels.push(`empresas: ${fact.value}`)
-    if (fact.key === 'branches_count') labels.push(`filiais: ${fact.value}`)
-    if (fact.key === 'branches_location') labels.push(`local das filiais: ${fact.value}`)
-    if (fact.key === 'payment_terms_default') labels.push(`prazo padrão: ${fact.value}`)
-    if (fact.key === 'payment_terms_list') labels.push(`lista de prazos: ${fact.value}`)
-    if (fact.key === 'market_focus') labels.push(`foco principal: ${fact.value}`)
+  for (const f of facts) {
+    if (f.key === 'drivers_count') lines.push(`motoristas: ${f.value}`)
+    if (f.key === 'companies_count') lines.push(`empresas: ${f.value}`)
+    if (f.key === 'branches_count') lines.push(`filiais: ${f.value}`)
+    if (f.key === 'branches_location') lines.push(`local das filiais: ${f.value}`)
+    if (f.key === 'payment_terms_default') lines.push(`prazo padrão: ${f.value}`)
   }
 
-  if (!labels.length) return null
-
-  return `Informações salvas com sucesso:\n\n- ${labels.join('\n- ')}`
+  return `Informações salvas com sucesso:\n\n- ${lines.join('\n- ')}`
 }
 
 function buildDirectAnswer(message: string, memory: Map<string, string>) {
-  const wantsDrivers = /quantos\s+motoristas?/i.test(message)
-  const wantsEmployees = /quantos\s+(empregados?|funcion[áa]rios?)/i.test(message)
-  const wantsCompanies = /quantas\s+empresas?/i.test(message)
-  const wantsBranches = /quantas\s+filiais?/i.test(message)
-  const wantsBranchLocation =
-    /onde\s+ficam\s+as?\s+filiais?|onde\s+est[aã]o\s+as?\s+filiais?/i.test(message)
-  const wantsPrazo =
-    /prazo padr[ãa]o|prazo de pagamento|qual\s+[ée]\s+o\s+prazo/i.test(message)
-  const wantsMarketFocus =
-    /foco de mercado|foco principal|qual\s+[ée]\s+nosso\s+foco/i.test(message)
-
-  if (wantsDrivers && memory.has('drivers_count')) {
+  if (/quantos motoristas/i.test(message) && memory.has('drivers_count')) {
     return `Temos ${memory.get('drivers_count')} motoristas.`
   }
 
-  if (wantsEmployees && memory.has('employees_count')) {
-    return `Temos ${memory.get('employees_count')} funcionários.`
-  }
-
-  if (wantsCompanies && memory.has('companies_count')) {
+  if (/quantas empresas/i.test(message) && memory.has('companies_count')) {
     return `Temos ${memory.get('companies_count')} empresas.`
   }
 
-  if (wantsBranches && memory.has('branches_count') && memory.has('branches_location')) {
-    return `Temos ${memory.get('branches_count')} filiais em ${memory.get('branches_location')}.`
-  }
-
-  if (wantsBranches && memory.has('branches_count')) {
+  if (/quantas filiais/i.test(message) && memory.has('branches_count')) {
     return `Temos ${memory.get('branches_count')} filiais.`
   }
 
-  if (wantsBranchLocation && memory.has('branches_location')) {
+  if (/onde ficam.*filiais/i.test(message) && memory.has('branches_location')) {
     return `Nossas filiais ficam em ${memory.get('branches_location')}.`
   }
 
-  if (wantsPrazo && memory.has('payment_terms_default')) {
+  if (/prazo/i.test(message) && memory.has('payment_terms_default')) {
     return `Nosso prazo padrão de pagamento é ${memory.get('payment_terms_default')}.`
-  }
-
-  if (wantsPrazo && memory.has('payment_terms_list')) {
-    return `Nossos prazos são ${memory.get('payment_terms_list')}.`
-  }
-
-  if (wantsMarketFocus && memory.has('market_focus')) {
-    return `Nosso foco principal é ${memory.get('market_focus')}.`
   }
 
   return null
 }
 
-async function createEmbedding(text: string) {
-  const response = await client.embeddings.create({
-    model: 'text-embedding-3-small',
-    input: text,
-  })
-
-  return response.data[0].embedding
-}
-
-async function saveVectorMemory(params: {
-  companyId: string
-  userId: string
-  conversationId: string
-  content: string
-}) {
-  try {
-    const embedding = await createEmbedding(params.content)
-
-    await supabaseAdmin.from('memory_vectors').insert({
-      company_id: params.companyId,
-      user_id: params.userId,
-      conversation_id: params.conversationId,
-      content: params.content,
-      embedding,
-    })
-  } catch (e) {
-    console.error('Erro ao salvar memória vetorial:', e)
-  }
-}
-
-async function searchVectorMemory(params: {
-  companyId: string
-  userId: string
-  query: string
-}) {
-  try {
-    const queryEmbedding = await createEmbedding(params.query)
-
-    const { data, error } = await supabaseAdmin.rpc('match_memory_vectors', {
-      query_embedding: queryEmbedding,
-      match_count: 5,
-      filter_company_id: params.companyId,
-      filter_user_id: params.userId,
-    })
-
-    if (error) {
-      console.error('Erro ao buscar memória vetorial:', error)
-      return []
-    }
-
-    return data || []
-  } catch (e) {
-    console.error('Erro ao buscar memória vetorial:', e)
-    return []
-  }
+function isSystemQuestion(message: string) {
+  return /clientes|viagens|faturas|pagamentos|receb/i.test(message)
 }
 
 async function getErpInsights(baseUrl: string) {
-  try {
-    const response = await fetch(`${baseUrl}/api/erp-insights`, {
-      method: 'GET',
-      cache: 'no-store',
-    })
-
-    if (!response.ok) return null
-    return await response.json()
-  } catch (e) {
-    console.error('Erro consultando ERP:', e)
-    return null
-  }
+  const response = await fetch(`${baseUrl}/api/erp-insights`, { cache: 'no-store' })
+  if (!response.ok) return null
+  return response.json()
 }
 
 export async function POST(req: Request) {
-  try {
-    const body = await req.json().catch(() => null)
+  const body = await req.json()
 
-    const userId = safeStr(body?.userId)
-    const companyId = safeStr(body?.companyId)
-    const conversationId = safeStr(body?.conversationId)
-    const message = safeStr(body?.message)
+  const userId = safeStr(body.userId)
+  const companyId = safeStr(body.companyId)
+  const conversationId = safeStr(body.conversationId)
+  const message = safeStr(body.message)
 
-    if (!userId || !companyId || !conversationId || !message) {
-      return new Response(
-        JSON.stringify({ error: 'Body inválido. Envie { userId, companyId, conversationId, message }.' }),
-        {
-          status: 400,
-          headers: { 'Content-Type': 'application/json; charset=utf-8' },
-        }
-      )
-    }
+  await supabaseAdmin.from('messages').insert({
+    conversation_id: conversationId,
+    company_id: companyId,
+    user_id: userId,
+    role: 'user',
+    content: message,
+  })
 
-    await supabaseAdmin.from('messages').insert({
-      conversation_id: conversationId,
-      company_id: companyId,
-      user_id: userId,
-      role: 'user',
-      content: message,
-    })
+  const facts = extractFacts(message)
+  await upsertFacts(companyId, userId, facts)
 
-    const currentFacts = extractFacts(message)
-    await upsertFacts(companyId, userId, currentFacts)
+  const { data: memRows } = await supabaseAdmin
+    .from('memories')
+    .select('key,value')
+    .eq('company_id', companyId)
+    .eq('user_id', userId)
 
-    await saveVectorMemory({
-      companyId,
-      userId,
-      conversationId,
-      content: message,
-    })
+  const memory = memoryMapFromRows(memRows)
 
-    const { data: rows } = await supabaseAdmin
-      .from('messages')
-      .select('role, content')
-      .eq('conversation_id', conversationId)
-      .order('created_at', { ascending: true })
-      .limit(30)
-
-    const history: Msg[] = (rows || [])
-      .map((r: any) => ({ role: r.role as Role, content: String(r.content) }))
-      .filter((m) => m.role === 'user' || m.role === 'assistant')
-
-    const { data: memRows } = await supabaseAdmin
-      .from('memories')
-      .select('key, value, confidence')
-      .eq('company_id', companyId)
-      .eq('user_id', userId)
-      .order('updated_at', { ascending: false })
-      .limit(30)
-
-    const vectorRows = await searchVectorMemory({
-      companyId,
-      userId,
-      query: message,
-    })
-
-    const memoryMap = memoryMapFromRows(memRows)
-    const memoryBlock = buildMemoryBlock(memoryMap)
-    const vectorContextBlock = buildVectorContextBlock(vectorRows)
-    const directAnswer = buildDirectAnswer(message, memoryMap)
-    const memoryConfirmation = buildMemoryConfirmation(currentFacts)
-
-    if (currentFacts.length > 0 && memoryConfirmation) {
-      await supabaseAdmin.from('messages').insert({
-        conversation_id: conversationId,
-        company_id: companyId,
-        user_id: userId,
-        role: 'assistant',
-        content: memoryConfirmation,
-      })
-
-      await saveVectorMemory({
-        companyId,
-        userId,
-        conversationId,
-        content: memoryConfirmation,
-      })
-
-      return new Response(JSON.stringify({ reply: memoryConfirmation }), {
-        status: 200,
-        headers: { 'Content-Type': 'application/json; charset=utf-8' },
-      })
-    }
-
-    if (directAnswer) {
-      await supabaseAdmin.from('messages').insert({
-        conversation_id: conversationId,
-        company_id: companyId,
-        user_id: userId,
-        role: 'assistant',
-        content: directAnswer,
-      })
-
-      await saveVectorMemory({
-        companyId,
-        userId,
-        conversationId,
-        content: directAnswer,
-      })
-
-      return new Response(JSON.stringify({ reply: directAnswer }), {
-        status: 200,
-        headers: { 'Content-Type': 'application/json; charset=utf-8' },
-      })
-    }
-
-    const erpQuestion = isSystemQuestion(message)
-
-    if (erpQuestion) {
-      const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://127.0.0.1:3000'
-      const erp = await getErpInsights(baseUrl)
-
-      if (erp?.ok) {
-        const i = erp.insights || {}
-
-        const answer =
-          `Situação atual do sistema:\n\n` +
-          `Clientes: ${i.clients ?? 0}\n` +
-          `Motoristas: ${i.drivers ?? 0}\n` +
-          `Viagens: ${i.trips ?? 0}\n` +
-          `Notas/Faturas: ${i.invoices ?? 0}\n` +
-          `Pagamentos: ${i.payments ?? 0}\n` +
-          `Recebíveis: ${i.receivables ?? 0}`
-
-        await supabaseAdmin.from('messages').insert({
-          conversation_id: conversationId,
-          company_id: companyId,
-          user_id: userId,
-          role: 'assistant',
-          content: answer,
-        })
-
-        await saveVectorMemory({
-          companyId,
-          userId,
-          conversationId,
-          content: answer,
-        })
-
-        return new Response(JSON.stringify({ reply: answer }), {
-          status: 200,
-          headers: { 'Content-Type': 'application/json; charset=utf-8' },
-        })
-      }
-    }
-
-    const completion = await client.chat.completions.create({
-      model: 'gpt-4o-mini',
-      temperature: 0.3,
-      max_tokens: 700,
-      messages: [
-        {
-          role: 'system',
-          content: `Você é a AURORA do RicardoIA.
-
-Responda sempre em português do Brasil.
-
-REGRAS CRÍTICAS:
-- Use SEMPRE as informações abaixo antes de responder.
-- Elas são memórias reais do usuário.
-- Se a pergunta estiver relacionada a essas memórias, responda usando essas informações.
-- Nunca ignore as memórias se elas responderem à pergunta.
-- Use o histórico, as memórias e o contexto semântico de conversas antigas como contexto real.
-- Quando o usuário fizer uma pergunta objetiva, responda de forma objetiva e direta.
-- Evite frases genéricas.
-- Seja firme, clara e profissional.
-
-MEMÓRIAS DO USUÁRIO:
-${memoryBlock}
-
-MEMÓRIAS SEMÂNTICAS DE CONVERSAS ANTIGAS:
-${vectorContextBlock}
-
-Se o usuário perguntar algo que esteja nessas memórias, responda diretamente usando esses dados.`,
-        },
-        ...history,
-      ],
-    })
-
-    const assistantText =
-      completion.choices?.[0]?.message?.content?.trim() ||
-      'Entendi. Pode continuar que vou analisar com base nos dados e memórias da empresa.'
-
-    await supabaseAdmin.from('messages').insert({
-      conversation_id: conversationId,
-      company_id: companyId,
-      user_id: userId,
-      role: 'assistant',
-      content: assistantText,
-    })
-
-    await saveVectorMemory({
-      companyId,
-      userId,
-      conversationId,
-      content: assistantText,
-    })
-
-    return new Response(JSON.stringify({ reply: assistantText }), {
-      status: 200,
-      headers: { 'Content-Type': 'application/json; charset=utf-8' },
-    })
-  } catch (err: any) {
-    return new Response(
-      JSON.stringify({
-        error: 'Erro no /api/chat',
-        details: String(err?.message ?? err),
-      }),
-      {
-        status: 500,
-        headers: { 'Content-Type': 'application/json; charset=utf-8' },
-      }
-    )
+  const confirmation = buildMemoryConfirmation(facts)
+  if (confirmation) {
+    return new Response(JSON.stringify({ reply: confirmation }), { status: 200 })
   }
+
+  const direct = buildDirectAnswer(message, memory)
+  if (direct) {
+    return new Response(JSON.stringify({ reply: direct }), { status: 200 })
+  }
+
+  if (isSystemQuestion(message)) {
+    const baseUrl = process.env.NEXT_PUBLIC_SITE_URL!
+    const erp = await getErpInsights(baseUrl)
+
+    if (erp?.ok) {
+      const i = erp.insights
+
+      const text =
+        `Situação atual do sistema:\n\n` +
+        `Clientes: ${i.clients}\n` +
+        `Motoristas: ${i.drivers}\n` +
+        `Viagens: ${i.trips}\n` +
+        `Notas/Faturas: ${i.invoices}\n` +
+        `Pagamentos: ${i.payments}\n` +
+        `Recebíveis: ${i.receivables}`
+
+      return new Response(JSON.stringify({ reply: text }), { status: 200 })
+    }
+  }
+
+  const completion = await client.chat.completions.create({
+    model: 'gpt-4o-mini',
+    messages: [{ role: 'user', content: message }],
+  })
+
+  const reply = completion.choices[0].message.content || 'Sem resposta.'
+
+  return new Response(JSON.stringify({ reply }), { status: 200 })
 }
