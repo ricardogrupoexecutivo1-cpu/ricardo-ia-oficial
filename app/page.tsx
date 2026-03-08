@@ -151,51 +151,62 @@ export default function Page() {
         </a>
       </div>
 
-      {messages.length === 0 && (
+      <div
+        style={{
+          textAlign: 'center',
+          marginBottom: 20,
+          border: '1px solid #ddd',
+          borderRadius: 12,
+          padding: 16,
+          background: '#fafafa',
+        }}
+      >
+        <h2 style={{ marginTop: 0, marginBottom: 8 }}>
+          Faça qualquer pergunta para Aurora
+        </h2>
+
+        <p style={{ color: '#555', marginTop: 0 }}>
+          Clique em um exemplo abaixo para começar mais rápido.
+        </p>
+
         <div
           style={{
-            border: '1px solid #ddd',
-            borderRadius: 12,
-            padding: 16,
-            marginBottom: 20,
-            background: '#fafafa',
+            display: 'flex',
+            gap: 10,
+            flexWrap: 'wrap',
+            justifyContent: 'center',
+            marginTop: 12,
           }}
         >
-          <b>Experimente perguntar:</b>
+          <button
+            onClick={() => sendMessage(null, 'Como ganhar dinheiro online?')}
+            style={promptBtn}
+          >
+            💡 Como ganhar dinheiro online?
+          </button>
 
-          <div style={{ marginTop: 12 }}>
-            <button
-              onClick={() => sendMessage(null, 'Como ganhar dinheiro online?')}
-              style={exampleBtn}
-            >
-              Como ganhar dinheiro online?
-            </button>
+          <button
+            onClick={() => sendMessage(null, 'Receita rápida de pão de queijo')}
+            style={promptBtn}
+          >
+            🍞 Receita rápida de pão de queijo
+          </button>
 
-            <button
-              onClick={() => sendMessage(null, 'Me dê uma receita rápida')}
-              style={exampleBtn}
-            >
-              Me dê uma receita rápida
-            </button>
+          <button
+            onClick={() => sendMessage(null, 'Ideias de negócios para começar')}
+            style={promptBtn}
+          >
+            🚀 Ideias de negócios para começar
+          </button>
 
-            <button
-              onClick={() => sendMessage(null, 'Explique inteligência artificial')}
-              style={exampleBtn}
-            >
-              Explique inteligência artificial
-            </button>
-
-            <button
-              onClick={() =>
-                sendMessage(null, 'Quais negócios simples posso começar com pouco dinheiro?')
-              }
-              style={exampleBtn}
-            >
-              Quais negócios simples posso começar com pouco dinheiro?
-            </button>
-          </div>
+          <button
+            onClick={() => sendMessage(null, 'Explique inteligência artificial')}
+            style={promptBtn}
+          >
+            🤖 Explique inteligência artificial
+          </button>
         </div>
-      )}
+      </div>
 
       <div
         style={{
@@ -308,14 +319,12 @@ const secondaryBtn: React.CSSProperties = {
   fontWeight: 700,
 }
 
-const exampleBtn: React.CSSProperties = {
-  display: 'block',
-  width: '100%',
-  textAlign: 'left',
-  marginBottom: 8,
-  padding: '10px 12px',
-  borderRadius: 8,
+const promptBtn: React.CSSProperties = {
+  padding: '10px 14px',
+  borderRadius: 999,
   border: '1px solid #ddd',
   background: '#fff',
+  color: '#111',
   cursor: 'pointer',
+  fontWeight: 700,
 }
