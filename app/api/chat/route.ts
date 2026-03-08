@@ -52,17 +52,28 @@ function memoryMapFromRows(memRows: any[] | null) {
   const map = new Map<string, string>()
 
   for (const row of memRows || []) {
-    map.set(row.key, row.value)
+    if (row?.key && row?.value) {
+      map.set(row.key, row.value)
+    }
   }
 
   return map
 }
 
 function buildDirectAnswer(message: string, memory: Map<string, string>) {
-  if (/qual é meu nome/i.test(message)) {
-    if (memory.has('user_name')) {
-      return `Seu nome é ${memory.get('user_name')}.`
-    }
+
+  const normalized = message.toLowerCase()
+
+  const asksName =
+    normalized.includes('qual é meu nome') ||
+    normalized.includes('qual e meu nome') ||
+    normalized.includes('qual é o meu nome') ||
+    normalized.includes('qual e o meu nome') ||
+    normalized.includes('você sabe meu nome') ||
+    normalized.includes('voce sabe meu nome')
+
+  if (asksName && memory.has('user_name')) {
+    return `Seu nome é ${memory.get('user_name')}.`
   }
 
   const nameIntro = message.match(/meu nome é\s+([A-Za-zÀ-ÿ]+)/i)
@@ -76,12 +87,20 @@ function buildDirectAnswer(message: string, memory: Map<string, string>) {
 
 export async function POST(req: Request) {
   try {
+
     const body = await req.json().catch(() => null)
 
     const userId = safeStr(body?.userId)
     const companyId = safeStr(body?.companyId)
     const conversationId = safeStr(body?.conversationId)
     const message = safeStr(body?.message)
+
+    if (!userId || !companyId || !conversationId || !message) {
+      return new Response(
+        JSON.stringify({ error: 'Body inválido.' }),
+        { status: 400 }
+      )
+    }
 
     const facts = extractFacts(message)
 
@@ -106,13 +125,17 @@ export async function POST(req: Request) {
 
     const completion = await client.chat.completions.create({
       model: 'gpt-4o-mini',
+      temperature: 0.3,
       messages: [
         {
           role: 'system',
           content:
             'Você é Aurora, a inteligência artificial da RicardoIA. Responda sempre em português.',
         },
-        { role: 'user', content: message },
+        {
+          role: 'user',
+          content: message,
+        },
       ],
     })
 
@@ -123,7 +146,9 @@ export async function POST(req: Request) {
       JSON.stringify({ reply: assistantText }),
       { status: 200 }
     )
+
   } catch (err: any) {
+
     return new Response(
       JSON.stringify({
         error: 'Erro no /api/chat',
@@ -131,5 +156,6 @@ export async function POST(req: Request) {
       }),
       { status: 500 }
     )
+
   }
 }
