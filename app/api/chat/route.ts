@@ -139,6 +139,49 @@ function buildDirectAnswer(message: string, memory: Map<string, string>) {
     return `Eu posso ajudar com ideias de negócios, tecnologia, conhecimento, receitas, curiosidades, organização de informações e muito mais. Você pode me usar agora em ${siteUrl}`
   }
 
+  const asksLanguages =
+    normalized.includes('quantas linguas') ||
+    normalized.includes('quantas línguas') ||
+    normalized.includes('quais linguas') ||
+    normalized.includes('quais línguas') ||
+    normalized.includes('fala em todas') ||
+    normalized.includes('você fala inglês') ||
+    normalized.includes('voce fala ingles') ||
+    normalized.includes('você fala espanhol') ||
+    normalized.includes('voce fala espanhol') ||
+    normalized.includes('what languages do you speak') ||
+    normalized.includes('which languages do you speak') ||
+    normalized.includes('do you speak english') ||
+    normalized.includes('do you speak spanish') ||
+    normalized.includes('hablas español') ||
+    normalized.includes('hablas espanol') ||
+    normalized.includes('hablas ingles') ||
+    normalized.includes('qué idiomas hablas') ||
+    normalized.includes('que idiomas hablas')
+
+  if (asksLanguages) {
+    if (
+      normalized.includes('what languages do you speak') ||
+      normalized.includes('which languages do you speak') ||
+      normalized.includes('do you speak english') ||
+      normalized.includes('do you speak spanish')
+    ) {
+      return `I can communicate in multiple languages and I usually reply in the same language used by the user. You can try Aurora IA now at ${siteUrl}`
+    }
+
+    if (
+      normalized.includes('hablas español') ||
+      normalized.includes('hablas espanol') ||
+      normalized.includes('hablas ingles') ||
+      normalized.includes('qué idiomas hablas') ||
+      normalized.includes('que idiomas hablas')
+    ) {
+      return `Puedo comunicarme en varios idiomas y normalmente respondo en el mismo idioma que utiliza el usuario. Puedes probar Aurora IA ahora en ${siteUrl}`
+    }
+
+    return `Eu posso conversar em vários idiomas e normalmente respondo no mesmo idioma em que você falar comigo. Você pode testar a Aurora IA agora em ${siteUrl}`
+  }
+
   return null
 }
 
@@ -187,7 +230,7 @@ export async function POST(req: Request) {
         {
           role: 'system',
           content:
-            'Você é Aurora IA, a inteligência artificial da plataforma RicardoIA. Responda sempre em português do Brasil, de forma clara, útil e amigável. Quando fizer sentido, mencione que a Aurora está disponível em https://ricardoiaoficial.com',
+            'You are Aurora IA, the artificial intelligence of the RicardoIA platform. Always reply in the SAME language used by the user. If the user writes in Portuguese, reply in Portuguese. If the user writes in English, reply in English. If the user writes in Spanish, reply in Spanish. Never force Portuguese if the user writes in another language. Be clear, useful, friendly, and concise. When relevant, mention that Aurora IA is available at https://ricardoiaoficial.com',
         },
         {
           role: 'user',
