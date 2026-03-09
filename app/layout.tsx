@@ -9,11 +9,17 @@ export const metadata = {
 
 export default function RootLayout({
   children,
-}: Readonly<{
+}: {
   children: React.ReactNode
-}>) {
+}) {
   return (
     <html lang="pt-BR">
+      <head>
+        <link rel="manifest" href="/manifest.json" />
+        <meta name="theme-color" content="#111111" />
+        <link rel="apple-touch-icon" href="/aurora-icon-192.png" />
+      </head>
+
       <body>
         {children}
         <Analytics />
