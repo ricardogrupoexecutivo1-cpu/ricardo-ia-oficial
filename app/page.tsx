@@ -30,6 +30,10 @@ export default function Page() {
 
     setUserId(uid)
     setConversationId(cid)
+
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js').catch(() => {})
+    }
   }, [])
 
   async function sendMessage(e?: React.FormEvent, preset?: string) {
