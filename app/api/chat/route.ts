@@ -12,13 +12,14 @@ type Fact = {
   confidence: number
 }
 
+type Msg = { role: 'user' | 'assistant'; content: string }
+
 function safeStr(x: any) {
   return typeof x === 'string' ? x : ''
 }
 
 function extractFacts(userText: string): Fact[] {
   const facts: Fact[] = []
-
   const nameMatch = userText.match(/meu nome é\s+([A-Za-zÀ-ÿ]+)/i)
 
   if (nameMatch) {
@@ -44,22 +45,18 @@ async function upsertFacts(companyId: string, userId: string, facts: Fact[]) {
           value: f.value,
           updated_at: new Date().toISOString(),
         },
-        {
-          onConflict: 'company_id,user_id,key',
-        }
+        { onConflict: 'company_id,user_id,key' }
       )
   }
 }
 
 function memoryMapFromRows(rows: any[] | null) {
   const map = new Map<string, string>()
-
   for (const r of rows || []) {
     if (r?.key && r?.value) {
       map.set(String(r.key), String(r.value))
     }
   }
-
   return map
 }
 
@@ -86,8 +83,6 @@ function buildDirectAnswer(message: string, memory: Map<string, string>) {
     normalized.includes('quem é você') ||
     normalized.includes('quem e voce') ||
     normalized.includes('quem é voce') ||
-    normalized.includes('o que você é') ||
-    normalized.includes('o que voce e') ||
     normalized.includes('quem é a aurora') ||
     normalized.includes('quem e a aurora')
 
@@ -98,83 +93,33 @@ function buildDirectAnswer(message: string, memory: Map<string, string>) {
   const asksLink =
     normalized.includes('qual é seu link') ||
     normalized.includes('qual e seu link') ||
-    normalized.includes('qual é o link') ||
-    normalized.includes('qual e o link') ||
     normalized.includes('onde te acesso') ||
     normalized.includes('como acessar') ||
-    normalized.includes('onde usar') ||
-    normalized.includes('onde encontro a aurora') ||
-    normalized.includes('onde encontro você') ||
-    normalized.includes('onde encontro voce')
+    normalized.includes('onde usar')
 
   if (asksLink) {
     return `Você pode usar a Aurora IA em ${siteUrl}`
   }
 
-  const asksApp =
-    normalized.includes('você tem app') ||
-    normalized.includes('voce tem app') ||
-    normalized.includes('tem app') ||
-    normalized.includes('como baixar') ||
-    normalized.includes('como instalar') ||
-    normalized.includes('baixar no celular') ||
-    normalized.includes('baixar no pc') ||
-    normalized.includes('instalar no celular') ||
-    normalized.includes('tem aplicativo')
-
-  if (asksApp) {
-    return `Você pode acessar a Aurora IA em ${siteUrl}. No celular, abra o site no navegador e use a opção “Adicionar à tela inicial” para instalar como aplicativo. No computador, basta acessar normalmente pelo navegador.`
-  }
-
-  const asksCapabilities =
-    normalized.includes('o que você faz') ||
-    normalized.includes('o que voce faz') ||
-    normalized.includes('o que a aurora faz') ||
-    normalized.includes('no que você ajuda') ||
-    normalized.includes('no que voce ajuda') ||
-    normalized.includes('como você pode ajudar') ||
-    normalized.includes('como voce pode ajudar')
-
-  if (asksCapabilities) {
-    return `Eu posso ajudar com ideias de negócios, tecnologia, conhecimento, receitas, curiosidades, organização de informações e muito mais. Você pode me usar agora em ${siteUrl}`
-  }
-
   const asksLanguages =
     normalized.includes('quantas linguas') ||
     normalized.includes('quantas línguas') ||
-    normalized.includes('quais linguas') ||
-    normalized.includes('quais línguas') ||
-    normalized.includes('fala em todas') ||
-    normalized.includes('você fala inglês') ||
-    normalized.includes('voce fala ingles') ||
-    normalized.includes('você fala espanhol') ||
-    normalized.includes('voce fala espanhol') ||
     normalized.includes('what languages do you speak') ||
     normalized.includes('which languages do you speak') ||
-    normalized.includes('do you speak english') ||
-    normalized.includes('do you speak spanish') ||
     normalized.includes('hablas español') ||
-    normalized.includes('hablas espanol') ||
-    normalized.includes('hablas ingles') ||
-    normalized.includes('qué idiomas hablas') ||
-    normalized.includes('que idiomas hablas')
+    normalized.includes('qué idiomas hablas')
 
   if (asksLanguages) {
     if (
-      normalized.includes('what languages do you speak') ||
-      normalized.includes('which languages do you speak') ||
-      normalized.includes('do you speak english') ||
-      normalized.includes('do you speak spanish')
+      normalized.includes('what languages') ||
+      normalized.includes('which languages')
     ) {
       return `I can communicate in multiple languages and I usually reply in the same language used by the user. You can try Aurora IA now at ${siteUrl}`
     }
 
     if (
-      normalized.includes('hablas español') ||
-      normalized.includes('hablas espanol') ||
-      normalized.includes('hablas ingles') ||
-      normalized.includes('qué idiomas hablas') ||
-      normalized.includes('que idiomas hablas')
+      normalized.includes('hablas') ||
+      normalized.includes('qué idiomas')
     ) {
       return `Puedo comunicarme en varios idiomas y normalmente respondo en el mismo idioma que utiliza el usuario. Puedes probar Aurora IA ahora en ${siteUrl}`
     }
@@ -201,8 +146,16 @@ export async function POST(req: Request) {
       })
     }
 
-    const facts = extractFacts(message)
+    // Salva mensagem do usuário
+    await supabaseAdmin.from('messages').insert({
+      conversation_id: conversationId,
+      company_id: companyId,
+      user_id: userId,
+      role: 'user',
+      content: message,
+    })
 
+    const facts = extractFacts(message)
     if (facts.length > 0) {
       await upsertFacts(companyId, userId, facts)
     }
@@ -214,14 +167,35 @@ export async function POST(req: Request) {
       .eq('user_id', userId)
 
     const memory = memoryMapFromRows(memRows)
-    const directAnswer = buildDirectAnswer(message, memory)
 
+    const directAnswer = buildDirectAnswer(message, memory)
     if (directAnswer) {
+      await supabaseAdmin.from('messages').insert({
+        conversation_id: conversationId,
+        company_id: companyId,
+        user_id: userId,
+        role: 'assistant',
+        content: directAnswer,
+      })
+
       return new Response(JSON.stringify({ reply: directAnswer }), {
         status: 200,
         headers: { 'Content-Type': 'application/json; charset=utf-8' },
       })
     }
+
+    // Busca histórico da conversa
+    const { data: historyRows } = await supabaseAdmin
+      .from('messages')
+      .select('role,content')
+      .eq('conversation_id', conversationId)
+      .order('created_at', { ascending: true })
+      .limit(20)
+
+    const history: Msg[] = (historyRows || []).map((r: any) => ({
+      role: r.role,
+      content: r.content,
+    }))
 
     const completion = await client.chat.completions.create({
       model: 'gpt-4o-mini',
@@ -230,8 +204,9 @@ export async function POST(req: Request) {
         {
           role: 'system',
           content:
-            'You are Aurora IA, the artificial intelligence of the RicardoIA platform. Always reply in the SAME language used by the user. If the user writes in Portuguese, reply in Portuguese. If the user writes in English, reply in English. If the user writes in Spanish, reply in Spanish. Never force Portuguese if the user writes in another language. Be clear, useful, friendly, and concise. When relevant, mention that Aurora IA is available at https://ricardoiaoficial.com',
+            'You are Aurora IA, the artificial intelligence of the RicardoIA platform. Always reply in the SAME language used by the user. Be clear, helpful and friendly. When relevant mention that Aurora IA is available at https://ricardoiaoficial.com',
         },
+        ...history,
         {
           role: 'user',
           content: message,
@@ -241,6 +216,15 @@ export async function POST(req: Request) {
 
     const assistantText =
       completion.choices?.[0]?.message?.content || 'Sem resposta.'
+
+    // Salva resposta
+    await supabaseAdmin.from('messages').insert({
+      conversation_id: conversationId,
+      company_id: companyId,
+      user_id: userId,
+      role: 'assistant',
+      content: assistantText,
+    })
 
     return new Response(JSON.stringify({ reply: assistantText }), {
       status: 200,
