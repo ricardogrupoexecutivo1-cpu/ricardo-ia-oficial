@@ -74,10 +74,13 @@ export default function Page() {
   return (
     <div
       style={{
-        maxWidth: 760,
-        margin: '40px auto',
+        maxWidth: 820,
+        margin: '0 auto',
+        padding: '20px 14px 40px',
         fontFamily: 'Arial, sans-serif',
-        padding: '0 16px',
+        background: '#ffffff',
+        color: '#111111',
+        minHeight: '100vh',
       }}
     >
       <div
@@ -86,26 +89,66 @@ export default function Page() {
           marginBottom: 18,
           padding: '10px 14px',
           borderRadius: 999,
-          background: '#111',
-          color: '#fff',
+          background: '#111111',
+          color: '#ffffff',
           fontWeight: 700,
         }}
       >
         Beta público aberto • Teste gratuitamente hoje
       </div>
 
-      <h2 style={{ textAlign: 'center', marginBottom: 6 }}>RicardoIA apresenta</h2>
-      <h1 style={{ textAlign: 'center', marginTop: 0, marginBottom: 8 }}>Aurora IA Beta</h1>
+      <h2
+        style={{
+          textAlign: 'center',
+          marginBottom: 6,
+          color: '#111111',
+        }}
+      >
+        RicardoIA apresenta
+      </h2>
 
-      <p style={{ textAlign: 'center', fontSize: 18, marginBottom: 8 }}>
+      <h1
+        style={{
+          textAlign: 'center',
+          marginTop: 0,
+          marginBottom: 8,
+          color: '#111111',
+        }}
+      >
+        Aurora IA Beta
+      </h1>
+
+      <p
+        style={{
+          textAlign: 'center',
+          fontSize: 18,
+          marginBottom: 8,
+          color: '#111111',
+        }}
+      >
         🌎 Aberto para testes no mundo todo
       </p>
 
-      <p style={{ textAlign: 'center', marginTop: 0, marginBottom: 8 }}>
+      <p
+        style={{
+          textAlign: 'center',
+          marginTop: 0,
+          marginBottom: 8,
+          color: '#333333',
+          fontWeight: 600,
+        }}
+      >
         Ideias • Negócios • Conhecimento • Curiosidades • Tecnologia
       </p>
 
-      <p style={{ textAlign: 'center', color: '#555', marginTop: 0 }}>
+      <p
+        style={{
+          textAlign: 'center',
+          color: '#555555',
+          marginTop: 0,
+          marginBottom: 24,
+        }}
+      >
         A Aurora está evoluindo diariamente com feedback real dos usuários.
       </p>
 
@@ -113,15 +156,29 @@ export default function Page() {
         style={{
           textAlign: 'center',
           marginBottom: 20,
-          border: '1px solid #ddd',
-          borderRadius: 12,
-          padding: 16,
-          background: '#fafafa',
+          border: '1px solid #dddddd',
+          borderRadius: 16,
+          padding: 18,
+          background: '#f7f7f7',
         }}
       >
-        <h2 style={{ marginTop: 0, marginBottom: 8 }}>Faça qualquer pergunta para Aurora</h2>
+        <h2
+          style={{
+            marginTop: 0,
+            marginBottom: 8,
+            color: '#111111',
+          }}
+        >
+          Faça qualquer pergunta para Aurora
+        </h2>
 
-        <p style={{ color: '#555', marginTop: 0 }}>
+        <p
+          style={{
+            color: '#555555',
+            marginTop: 0,
+            marginBottom: 16,
+          }}
+        >
           Clique em um exemplo abaixo para começar mais rápido.
         </p>
 
@@ -131,22 +188,21 @@ export default function Page() {
             gap: 10,
             flexWrap: 'wrap',
             justifyContent: 'center',
-            marginTop: 12,
           }}
         >
-          <button onClick={() => sendMessage(undefined, 'Como ganhar dinheiro online?')}>
+          <button onClick={() => sendMessage(undefined, 'Como ganhar dinheiro online?')} style={promptBtn}>
             💡 Como ganhar dinheiro online?
           </button>
 
-          <button onClick={() => sendMessage(undefined, 'Receita rápida de pão de queijo')}>
+          <button onClick={() => sendMessage(undefined, 'Receita rápida de pão de queijo')} style={promptBtn}>
             🍞 Receita rápida de pão de queijo
           </button>
 
-          <button onClick={() => sendMessage(undefined, 'Ideias de negócios para começar')}>
+          <button onClick={() => sendMessage(undefined, 'Ideias de negócios para começar')} style={promptBtn}>
             🚀 Ideias de negócios para começar
           </button>
 
-          <button onClick={() => sendMessage(undefined, 'Explique inteligência artificial')}>
+          <button onClick={() => sendMessage(undefined, 'Explique inteligência artificial')} style={promptBtn}>
             🤖 Explique inteligência artificial
           </button>
         </div>
@@ -154,53 +210,113 @@ export default function Page() {
 
       <div
         style={{
-          border: '1px solid #ddd',
-          borderRadius: 12,
-          padding: 20,
+          border: '1px solid #dddddd',
+          borderRadius: 16,
+          padding: 18,
           minHeight: 320,
           marginBottom: 20,
-          background: '#fff',
+          background: '#ffffff',
+          boxShadow: '0 2px 10px rgba(0,0,0,0.04)',
         }}
       >
         {messages.length === 0 && !loading && (
-          <div style={{ color: '#777' }}>Olá! Eu sou a AURORA. Como posso ajudar você hoje?</div>
+          <div
+            style={{
+              color: '#444444',
+              fontSize: 16,
+              lineHeight: 1.5,
+            }}
+          >
+            Olá! Eu sou a AURORA. Como posso ajudar você hoje?
+          </div>
         )}
 
         {messages.map((m, i) => (
           <div
             key={i}
             style={{
-              marginBottom: 12,
-              padding: '10px 12px',
-              borderRadius: 10,
-              background: m.role === 'user' ? '#f3f3f3' : '#eef5ff',
+              marginBottom: 14,
+              padding: '14px 14px',
+              borderRadius: 14,
+              background: m.role === 'user' ? '#f1f1f1' : '#e8f0ff',
+              color: '#111111',
+              border: '1px solid #d9d9d9',
+              lineHeight: 1.6,
+              fontSize: 16,
+              wordBreak: 'break-word',
+              whiteSpace: 'pre-wrap',
             }}
           >
-            <b>{m.role === 'user' ? 'Você:' : 'Aurora:'}</b> {m.content}
+            <b style={{ color: '#111111' }}>
+              {m.role === 'user' ? 'Você:' : 'Aurora:'}
+            </b>{' '}
+            <span style={{ color: '#111111' }}>{m.content}</span>
           </div>
         ))}
 
-        {loading && <div>Aurora está pensando...</div>}
+        {loading && (
+          <div
+            style={{
+              color: '#333333',
+              fontWeight: 600,
+            }}
+          >
+            Aurora está pensando...
+          </div>
+        )}
       </div>
 
       <form onSubmit={sendMessage}>
-        <div style={{ display: 'flex', gap: 10 }}>
+        <div
+          style={{
+            display: 'flex',
+            gap: 10,
+            alignItems: 'stretch',
+          }}
+        >
           <input
             style={{
               flex: 1,
-              padding: 12,
-              borderRadius: 8,
-              border: '1px solid #ccc',
+              padding: 14,
+              borderRadius: 10,
+              border: '1px solid #bbbbbb',
               fontSize: 16,
+              color: '#111111',
+              background: '#ffffff',
+              outline: 'none',
             }}
             value={input}
             onChange={(e) => setInput(e.target.value)}
             placeholder="Digite sua mensagem..."
           />
 
-          <button type="submit">Enviar</button>
+          <button type="submit" style={sendBtn}>
+            Enviar
+          </button>
         </div>
       </form>
     </div>
   )
+}
+
+const promptBtn: React.CSSProperties = {
+  padding: '10px 14px',
+  borderRadius: 999,
+  border: '1px solid #cccccc',
+  background: '#ffffff',
+  color: '#111111',
+  cursor: 'pointer',
+  fontWeight: 700,
+  fontSize: 15,
+}
+
+const sendBtn: React.CSSProperties = {
+  padding: '0 18px',
+  borderRadius: 10,
+  border: 'none',
+  background: '#111111',
+  color: '#ffffff',
+  cursor: 'pointer',
+  fontWeight: 700,
+  fontSize: 16,
 }
