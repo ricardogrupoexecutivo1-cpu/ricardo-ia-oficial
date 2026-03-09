@@ -276,7 +276,35 @@ export default function Page() {
             display: 'flex',
             gap: 10,
             alignItems: 'stretch',
-          }}
+          }}<div style={{marginTop:40, color:"#444", lineHeight:1.6}}>
+<h2>Sobre a Aurora IA</h2>
+
+<p>
+A Aurora IA é uma inteligência artificial desenvolvida pela plataforma RicardoIA.
+O objetivo da Aurora IA é permitir que qualquer pessoa converse com uma inteligência artificial
+capaz de responder perguntas, ajudar com ideias de negócios, explicar tecnologia,
+ensinar receitas, compartilhar conhecimento e responder curiosidades do dia a dia.
+</p>
+
+<p>
+Esta inteligência artificial foi criada para ser simples, rápida e acessível.
+A Aurora IA pode conversar em múltiplos idiomas e está aberta para testes públicos
+em todo o mundo. Usuários podem utilizar a inteligência artificial para aprender,
+pesquisar, desenvolver projetos e encontrar novas oportunidades.
+</p>
+
+<p>
+A plataforma RicardoIA busca evoluir continuamente a Aurora IA utilizando
+feedback real dos usuários. A inteligência artificial aprende com interações
+e melhorias constantes no sistema.
+</p>
+
+<p>
+Se você deseja testar uma inteligência artificial moderna, converse agora com
+a Aurora IA em ricardoiaoficial.com e descubra como a tecnologia de inteligência
+artificial pode ajudar no seu dia a dia.
+</p>
+</div>
         >
           <input
             style={{
