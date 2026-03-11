@@ -1,22 +1,21 @@
 'use client'
 
 import { FormEvent, KeyboardEvent, useEffect, useState } from 'react'
+import { supabase } from '@/lib/supabase'
 
 type ChatMessage = {
   role: 'user' | 'assistant'
   content: string
 }
 
-function generateSessionId() {
-  if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) {
-    return crypto.randomUUID()
-  }
-
-  return `session_${Date.now()}_${Math.random().toString(36).slice(2)}`
-}
+type AuthUser = {
+  id: string
+  email?: string
+} | null
 
 export default function ChatPage() {
-  const [sessionId, setSessionId] = useState('')
+  const [user, setUser] = useState<AuthUser>(null)
+  const [authChecked, setAuthChecked] = useState(false)
   const [message, setMessage] = useState('')
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
@@ -28,23 +27,56 @@ export default function ChatPage() {
   const [error, setError] = useState('')
 
   useEffect(() => {
-    const storageKey = 'aurora_session_id'
-    const existingSessionId = window.localStorage.getItem(storageKey)
+    async function loadUser() {
+      try {
+        const {
+          data: { session },
+        } = await supabase.auth.getSession()
 
-    if (existingSessionId) {
-      setSessionId(existingSessionId)
-      return
+        const accessToken = session?.access_token
+
+        if (!accessToken) {
+          setUser(null)
+          setAuthChecked(true)
+          return
+        }
+
+        const response = await fetch('/api/me', {
+          method: 'GET',
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+          },
+        })
+
+        const data = await response.json()
+
+        if (data?.user) {
+          setUser({
+            id: data.user.id,
+            email: data.user.email,
+          })
+        } else {
+          setUser(null)
+        }
+      } catch {
+        setUser(null)
+      } finally {
+        setAuthChecked(true)
+      }
     }
 
-    const newSessionId = generateSessionId()
-    window.localStorage.setItem(storageKey, newSessionId)
-    setSessionId(newSessionId)
+    loadUser()
   }, [])
 
   async function sendMessage() {
     const trimmedMessage = message.trim()
 
-    if (!trimmedMessage || loading || !sessionId) {
+    if (!trimmedMessage || loading) {
+      return
+    }
+
+    if (!user?.id) {
+      setError('Faça login para usar a memória permanente da Aurora.')
       return
     }
 
@@ -65,7 +97,7 @@ export default function ChatPage() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          sessionId,
+          userId: user.id,
           message: trimmedMessage,
           messages: updatedMessages,
         }),
@@ -124,6 +156,11 @@ export default function ChatPage() {
     }
   }
 
+  async function handleLogout() {
+    await supabase.auth.signOut()
+    window.location.href = '/login'
+  }
+
   function clearChat() {
     setMessage('')
     setError('')
@@ -163,23 +200,53 @@ export default function ChatPage() {
           <div>
             <h1 style={{ margin: 0, fontSize: 30 }}>Chat Aurora IA</h1>
             <p style={{ margin: '8px 0 0 0', color: '#555' }}>
-              Converse com a Aurora IA em estilo ChatGPT com memória de sessão.
+              Converse com a Aurora IA em estilo ChatGPT com memória por usuário.
+            </p>
+            <p style={{ margin: '8px 0 0 0', color: '#666', fontSize: 14 }}>
+              {authChecked
+                ? user?.email
+                  ? `Logado como: ${user.email}`
+                  : 'Usuário não autenticado'
+                : 'Verificando autenticação...'}
             </p>
           </div>
 
-          <a
-            href="/"
+          <div
             style={{
-              padding: '10px 16px',
-              border: '1px solid #000',
-              borderRadius: 8,
-              textDecoration: 'none',
-              color: '#000',
-              background: '#fff',
+              display: 'flex',
+              gap: 10,
+              flexWrap: 'wrap',
             }}
           >
-            Voltar
-          </a>
+            <a
+              href="/"
+              style={{
+                padding: '10px 16px',
+                border: '1px solid #000',
+                borderRadius: 8,
+                textDecoration: 'none',
+                color: '#000',
+                background: '#fff',
+              }}
+            >
+              Voltar
+            </a>
+
+            <button
+              type="button"
+              onClick={handleLogout}
+              style={{
+                padding: '10px 16px',
+                border: '1px solid #000',
+                borderRadius: 8,
+                background: '#fff',
+                color: '#000',
+                cursor: 'pointer',
+              }}
+            >
+              Sair
+            </button>
+          </div>
         </div>
 
         <div
@@ -325,7 +392,7 @@ export default function ChatPage() {
           >
             <button
               type="submit"
-              disabled={loading || !sessionId}
+              disabled={loading || !authChecked || !user?.id}
               style={{
                 padding: '12px 20px',
                 background: '#000',
@@ -333,7 +400,7 @@ export default function ChatPage() {
                 border: 'none',
                 borderRadius: 8,
                 cursor: loading ? 'not-allowed' : 'pointer',
-                opacity: loading || !sessionId ? 0.7 : 1,
+                opacity: loading || !authChecked || !user?.id ? 0.7 : 1,
               }}
             >
               {loading ? 'Enviando...' : 'Enviar'}
@@ -355,17 +422,6 @@ export default function ChatPage() {
             >
               Limpar conversa
             </button>
-          </div>
-
-          <div
-            style={{
-              marginTop: 10,
-              fontSize: 12,
-              color: '#666',
-              wordBreak: 'break-all',
-            }}
-          >
-            Sessão: {sessionId || 'carregando...'}
           </div>
         </form>
       </div>

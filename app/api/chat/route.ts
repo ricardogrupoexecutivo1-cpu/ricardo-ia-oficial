@@ -29,12 +29,11 @@ export async function POST(req: Request) {
       return Response.json({ error: 'Body inválido.' }, { status: 400 })
     }
 
-    const sessionId =
-      typeof body.sessionId === 'string' ? body.sessionId.trim() : ''
+    const userId = typeof body.userId === 'string' ? body.userId.trim() : ''
 
-    if (!sessionId) {
+    if (!userId) {
       return Response.json(
-        { error: 'sessionId não informado.' },
+        { error: 'userId não informado.' },
         { status: 400 }
       )
     }
@@ -67,7 +66,7 @@ export async function POST(req: Request) {
     const { data: memoryRows, error: memoryError } = await supabaseAdmin
       .from('chat_memories')
       .select('role, content, created_at')
-      .eq('session_id', sessionId)
+      .eq('user_id', userId)
       .order('created_at', { ascending: false })
       .limit(12)
 
@@ -99,7 +98,7 @@ export async function POST(req: Request) {
 Você é a Aurora IA, uma assistente empresarial inteligente, clara, objetiva e útil.
 Responda sempre em português do Brasil.
 
-Abaixo está a memória recente desta sessão:
+Abaixo está a memória recente deste usuário:
 ${memoryText}
 
 Use essa memória para manter contexto, continuidade e coerência nas respostas.
@@ -120,12 +119,12 @@ Se a memória não for suficiente, responda normalmente sem inventar fatos.
       .from('chat_memories')
       .insert([
         {
-          session_id: sessionId,
+          user_id: userId,
           role: 'user',
           content: userMessage,
         },
         {
-          session_id: sessionId,
+          user_id: userId,
           role: 'assistant',
           content: reply,
         },
