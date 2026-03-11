@@ -64,7 +64,7 @@ Instruções:
     const result = await openai.images.generate({
       model: 'gpt-image-1',
       prompt: finalPrompt,
-      size: '512x512',
+      size: '1024x1024',
     })
 
     const imageBase64 = result.data?.[0]?.b64_json
