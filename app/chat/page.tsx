@@ -1,13 +1,22 @@
 'use client'
 
-import { FormEvent, KeyboardEvent, useState } from 'react'
+import { FormEvent, KeyboardEvent, useEffect, useState } from 'react'
 
 type ChatMessage = {
   role: 'user' | 'assistant'
   content: string
 }
 
+function generateSessionId() {
+  if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) {
+    return crypto.randomUUID()
+  }
+
+  return `session_${Date.now()}_${Math.random().toString(36).slice(2)}`
+}
+
 export default function ChatPage() {
+  const [sessionId, setSessionId] = useState('')
   const [message, setMessage] = useState('')
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
@@ -18,10 +27,24 @@ export default function ChatPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
+  useEffect(() => {
+    const storageKey = 'aurora_session_id'
+    const existingSessionId = window.localStorage.getItem(storageKey)
+
+    if (existingSessionId) {
+      setSessionId(existingSessionId)
+      return
+    }
+
+    const newSessionId = generateSessionId()
+    window.localStorage.setItem(storageKey, newSessionId)
+    setSessionId(newSessionId)
+  }, [])
+
   async function sendMessage() {
     const trimmedMessage = message.trim()
 
-    if (!trimmedMessage || loading) {
+    if (!trimmedMessage || loading || !sessionId) {
       return
     }
 
@@ -42,6 +65,7 @@ export default function ChatPage() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
+          sessionId,
           message: trimmedMessage,
           messages: updatedMessages,
         }),
@@ -139,7 +163,7 @@ export default function ChatPage() {
           <div>
             <h1 style={{ margin: 0, fontSize: 30 }}>Chat Aurora IA</h1>
             <p style={{ margin: '8px 0 0 0', color: '#555' }}>
-              Converse com a Aurora IA em estilo ChatGPT.
+              Converse com a Aurora IA em estilo ChatGPT com memória de sessão.
             </p>
           </div>
 
@@ -301,7 +325,7 @@ export default function ChatPage() {
           >
             <button
               type="submit"
-              disabled={loading}
+              disabled={loading || !sessionId}
               style={{
                 padding: '12px 20px',
                 background: '#000',
@@ -309,7 +333,7 @@ export default function ChatPage() {
                 border: 'none',
                 borderRadius: 8,
                 cursor: loading ? 'not-allowed' : 'pointer',
-                opacity: loading ? 0.7 : 1,
+                opacity: loading || !sessionId ? 0.7 : 1,
               }}
             >
               {loading ? 'Enviando...' : 'Enviar'}
@@ -331,6 +355,17 @@ export default function ChatPage() {
             >
               Limpar conversa
             </button>
+          </div>
+
+          <div
+            style={{
+              marginTop: 10,
+              fontSize: 12,
+              color: '#666',
+              wordBreak: 'break-all',
+            }}
+          >
+            Sessão: {sessionId || 'carregando...'}
           </div>
         </form>
       </div>
