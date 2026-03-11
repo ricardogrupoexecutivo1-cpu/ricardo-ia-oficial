@@ -30,10 +30,12 @@ export async function POST(req: Request) {
     }
 
     const userId = typeof body.userId === 'string' ? body.userId.trim() : ''
+    const sessionId =
+      typeof body.sessionId === 'string' ? body.sessionId.trim() : ''
 
-    if (!userId) {
+    if (!userId && !sessionId) {
       return Response.json(
-        { error: 'userId não informado.' },
+        { error: 'userId e sessionId ausentes.' },
         { status: 400 }
       )
     }
@@ -63,10 +65,17 @@ export async function POST(req: Request) {
       )
     }
 
-    const { data: memoryRows, error: memoryError } = await supabaseAdmin
+    let query = supabaseAdmin
       .from('chat_memories')
       .select('role, content, created_at')
-      .eq('user_id', userId)
+
+    if (userId) {
+      query = query.eq('user_id', userId)
+    } else {
+      query = query.eq('session_id', sessionId)
+    }
+
+    const { data: memoryRows, error: memoryError } = await query
       .order('created_at', { ascending: false })
       .limit(12)
 
@@ -98,7 +107,7 @@ export async function POST(req: Request) {
 Você é a Aurora IA, uma assistente empresarial inteligente, clara, objetiva e útil.
 Responda sempre em português do Brasil.
 
-Abaixo está a memória recente deste usuário:
+Abaixo está a memória recente disponível:
 ${memoryText}
 
 Use essa memória para manter contexto, continuidade e coerência nas respostas.
@@ -115,9 +124,15 @@ Se a memória não for suficiente, responda normalmente sem inventar fatos.
     const reply =
       response.output_text?.trim() || 'Não consegui gerar uma resposta agora.'
 
-    const { error: insertError } = await supabaseAdmin
-      .from('chat_memories')
-      .insert([
+    const rowsToInsert: Array<{
+      user_id?: string
+      session_id?: string
+      role: 'user' | 'assistant'
+      content: string
+    }> = []
+
+    if (userId) {
+      rowsToInsert.push(
         {
           user_id: userId,
           role: 'user',
@@ -127,8 +142,26 @@ Se a memória não for suficiente, responda normalmente sem inventar fatos.
           user_id: userId,
           role: 'assistant',
           content: reply,
+        }
+      )
+    } else {
+      rowsToInsert.push(
+        {
+          session_id: sessionId,
+          role: 'user',
+          content: userMessage,
         },
-      ])
+        {
+          session_id: sessionId,
+          role: 'assistant',
+          content: reply,
+        }
+      )
+    }
+
+    const { error: insertError } = await supabaseAdmin
+      .from('chat_memories')
+      .insert(rowsToInsert)
 
     if (insertError) {
       return Response.json(

@@ -13,9 +13,18 @@ type AuthUser = {
   email?: string
 } | null
 
+function generateSessionId() {
+  if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) {
+    return crypto.randomUUID()
+  }
+
+  return `session_${Date.now()}_${Math.random().toString(36).slice(2)}`
+}
+
 export default function ChatPage() {
   const [user, setUser] = useState<AuthUser>(null)
   const [authChecked, setAuthChecked] = useState(false)
+  const [sessionId, setSessionId] = useState('')
   const [message, setMessage] = useState('')
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
@@ -27,36 +36,30 @@ export default function ChatPage() {
   const [error, setError] = useState('')
 
   useEffect(() => {
+    const storageKey = 'aurora_session_id'
+    const existingSessionId = window.localStorage.getItem(storageKey)
+
+    if (existingSessionId) {
+      setSessionId(existingSessionId)
+    } else {
+      const newSessionId = generateSessionId()
+      window.localStorage.setItem(storageKey, newSessionId)
+      setSessionId(newSessionId)
+    }
+  }, [])
+
+  useEffect(() => {
     async function loadUser() {
       try {
-        const {
-          data: { session },
-        } = await supabase.auth.getSession()
+        const { data, error } = await supabase.auth.getUser()
 
-        const accessToken = session?.access_token
-
-        if (!accessToken) {
+        if (error || !data.user) {
           setUser(null)
-          setAuthChecked(true)
-          return
-        }
-
-        const response = await fetch('/api/me', {
-          method: 'GET',
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-          },
-        })
-
-        const data = await response.json()
-
-        if (data?.user) {
+        } else {
           setUser({
             id: data.user.id,
             email: data.user.email,
           })
-        } else {
-          setUser(null)
         }
       } catch {
         setUser(null)
@@ -66,17 +69,37 @@ export default function ChatPage() {
     }
 
     loadUser()
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(async () => {
+      try {
+        const { data, error } = await supabase.auth.getUser()
+
+        if (error || !data.user) {
+          setUser(null)
+        } else {
+          setUser({
+            id: data.user.id,
+            email: data.user.email,
+          })
+        }
+      } catch {
+        setUser(null)
+      } finally {
+        setAuthChecked(true)
+      }
+    })
+
+    return () => {
+      subscription.unsubscribe()
+    }
   }, [])
 
   async function sendMessage() {
     const trimmedMessage = message.trim()
 
     if (!trimmedMessage || loading) {
-      return
-    }
-
-    if (!user?.id) {
-      setError('Faça login para usar a memória permanente da Aurora.')
       return
     }
 
@@ -97,7 +120,8 @@ export default function ChatPage() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          userId: user.id,
+          userId: user?.id || null,
+          sessionId: sessionId || null,
           message: trimmedMessage,
           messages: updatedMessages,
         }),
@@ -206,7 +230,7 @@ export default function ChatPage() {
               {authChecked
                 ? user?.email
                   ? `Logado como: ${user.email}`
-                  : 'Usuário não autenticado'
+                  : 'Usuário sem login detectado — usando memória de sessão'
                 : 'Verificando autenticação...'}
             </p>
           </div>
@@ -392,7 +416,7 @@ export default function ChatPage() {
           >
             <button
               type="submit"
-              disabled={loading || !authChecked || !user?.id}
+              disabled={loading || !sessionId}
               style={{
                 padding: '12px 20px',
                 background: '#000',
@@ -400,7 +424,7 @@ export default function ChatPage() {
                 border: 'none',
                 borderRadius: 8,
                 cursor: loading ? 'not-allowed' : 'pointer',
-                opacity: loading || !authChecked || !user?.id ? 0.7 : 1,
+                opacity: loading || !sessionId ? 0.7 : 1,
               }}
             >
               {loading ? 'Enviando...' : 'Enviar'}
