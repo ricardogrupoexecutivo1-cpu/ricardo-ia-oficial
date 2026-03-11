@@ -1,12 +1,13 @@
 'use client'
 
-import { FormEvent, KeyboardEvent, useEffect, useState } from 'react'
+import { FormEvent, KeyboardEvent, useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 
 type ChatMessage = {
   role: 'user' | 'assistant'
   content: string
+  imageUrl?: string
 }
 
 type AuthUser = {
@@ -29,8 +30,33 @@ function generateSessionId() {
   return `session_${Date.now()}_${Math.random().toString(36).slice(2)}`
 }
 
+function isImageRequest(text: string) {
+  const lower = text.toLowerCase()
+
+  const triggers = [
+    'crie uma imagem',
+    'gere uma imagem',
+    'gerar imagem',
+    'faça uma imagem',
+    'fazer uma imagem',
+    'desenhe',
+    'crie um logo',
+    'gere um logo',
+    'faça um logo',
+    'crie uma arte',
+    'gere uma arte',
+    'faça uma arte',
+    'crie um banner',
+    'gere um banner',
+    'faça um banner',
+  ]
+
+  return triggers.some((trigger) => lower.includes(trigger))
+}
+
 export default function ChatPage() {
   const router = useRouter()
+  const authStartedRef = useRef(false)
 
   const [user, setUser] = useState<AuthUser>(null)
   const [authChecked, setAuthChecked] = useState(false)
@@ -83,37 +109,97 @@ export default function ChatPage() {
   }
 
   useEffect(() => {
-    async function loadUser() {
-      try {
-        const { data, error } = await supabase.auth.getUser()
+    if (authStartedRef.current) {
+      return
+    }
 
-        if (error || !data.user) {
-          setUser(null)
-          setAuthChecked(true)
-          router.replace('/login')
+    authStartedRef.current = true
+    let cancelled = false
+
+    async function resolveAuth() {
+      try {
+        const timeoutPromise = new Promise<null>((resolve) =>
+          setTimeout(() => resolve(null), 8000)
+        )
+
+        const sessionResult = await Promise.race([
+          supabase.auth.getSession(),
+          timeoutPromise,
+        ])
+
+        if (cancelled) {
           return
         }
 
-        const authUser = {
-          id: data.user.id,
-          email: data.user.email,
+        if (
+          sessionResult &&
+          typeof sessionResult === 'object' &&
+          'data' in sessionResult
+        ) {
+          const session = sessionResult.data.session
+
+          if (session?.user) {
+            const authUser = {
+              id: session.user.id,
+              email: session.user.email,
+            }
+
+            setUser(authUser)
+            setAuthChecked(true)
+            await loadConversations(authUser.id)
+            return
+          }
         }
 
-        setUser(authUser)
+        const userResult = await Promise.race([
+          supabase.auth.getUser(),
+          timeoutPromise,
+        ])
+
+        if (cancelled) {
+          return
+        }
+
+        if (
+          userResult &&
+          typeof userResult === 'object' &&
+          'data' in userResult &&
+          userResult.data.user
+        ) {
+          const authUser = {
+            id: userResult.data.user.id,
+            email: userResult.data.user.email,
+          }
+
+          setUser(authUser)
+          setAuthChecked(true)
+          await loadConversations(authUser.id)
+          return
+        }
+
+        setUser(null)
         setAuthChecked(true)
-        await loadConversations(authUser.id)
+        router.replace('/login')
       } catch {
+        if (cancelled) {
+          return
+        }
+
         setUser(null)
         setAuthChecked(true)
         router.replace('/login')
       }
     }
 
-    loadUser()
+    resolveAuth()
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (event) => {
+    } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (cancelled) {
+        return
+      }
+
       if (event === 'SIGNED_OUT') {
         setUser(null)
         setAuthChecked(true)
@@ -121,8 +207,24 @@ export default function ChatPage() {
         return
       }
 
+      if (session?.user) {
+        const authUser = {
+          id: session.user.id,
+          email: session.user.email,
+        }
+
+        setUser(authUser)
+        setAuthChecked(true)
+        await loadConversations(authUser.id)
+        return
+      }
+
       try {
         const { data, error } = await supabase.auth.getUser()
+
+        if (cancelled) {
+          return
+        }
 
         if (error || !data.user) {
           setUser(null)
@@ -140,6 +242,10 @@ export default function ChatPage() {
         setAuthChecked(true)
         await loadConversations(authUser.id)
       } catch {
+        if (cancelled) {
+          return
+        }
+
         setUser(null)
         setAuthChecked(true)
         router.replace('/login')
@@ -147,6 +253,7 @@ export default function ChatPage() {
     })
 
     return () => {
+      cancelled = true
       subscription.unsubscribe()
     }
   }, [router])
@@ -203,6 +310,163 @@ export default function ChatPage() {
     }
   }
 
+  async function sendTextMessage(
+    trimmedMessage: string,
+    updatedMessages: ChatMessage[]
+  ) {
+    if (!user?.id) {
+      throw new Error('Usuário não autenticado.')
+    }
+
+    const response = await fetch('/api/chat', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        userId: user.id,
+        sessionId: sessionId || null,
+        conversationId: conversationId || null,
+        message: trimmedMessage,
+        messages: updatedMessages,
+      }),
+    })
+
+    const rawText = await response.text()
+
+    let parsed: any = null
+    try {
+      parsed = JSON.parse(rawText)
+    } catch {
+      parsed = null
+    }
+
+    if (!response.ok) {
+      const apiError =
+        parsed?.error ||
+        parsed?.message ||
+        rawText ||
+        'Erro ao processar a mensagem.'
+
+      throw new Error(apiError)
+    }
+
+    const reply =
+      parsed?.reply ||
+      parsed?.response ||
+      parsed?.message ||
+      parsed?.output_text ||
+      rawText ||
+      'Sem resposta da Aurora.'
+
+    const returnedConversationId =
+      typeof parsed?.conversationId === 'string' ? parsed.conversationId : ''
+
+    if (returnedConversationId) {
+      setConversationId(returnedConversationId)
+    }
+
+    setMessages((prev) => [
+      ...prev,
+      {
+        role: 'assistant',
+        content: reply,
+      },
+    ])
+
+    await loadConversations(user.id)
+  }
+
+  async function sendImageMessage(trimmedMessage: string) {
+    if (!user?.id) {
+      throw new Error('Usuário não autenticado.')
+    }
+
+    const textResponse = await fetch('/api/chat', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        userId: user.id,
+        sessionId: sessionId || null,
+        conversationId: conversationId || null,
+        message: trimmedMessage,
+        messages: [
+          ...messages,
+          { role: 'user', content: trimmedMessage },
+        ],
+      }),
+    })
+
+    const textRaw = await textResponse.text()
+
+    let textParsed: any = null
+    try {
+      textParsed = JSON.parse(textRaw)
+    } catch {
+      textParsed = null
+    }
+
+    if (!textResponse.ok) {
+      throw new Error(
+        textParsed?.error || textRaw || 'Erro ao preparar geração de imagem.'
+      )
+    }
+
+    const returnedConversationId =
+      typeof textParsed?.conversationId === 'string'
+        ? textParsed.conversationId
+        : ''
+
+    if (returnedConversationId) {
+      setConversationId(returnedConversationId)
+    }
+
+    const imageResponse = await fetch('/api/image', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        prompt: trimmedMessage,
+      }),
+    })
+
+    const imageRaw = await imageResponse.text()
+
+    let imageParsed: any = null
+    try {
+      imageParsed = JSON.parse(imageRaw)
+    } catch {
+      imageParsed = null
+    }
+
+    if (!imageResponse.ok) {
+      throw new Error(
+        imageParsed?.error || imageRaw || 'Erro ao gerar imagem.'
+      )
+    }
+
+    const imageUrl =
+      typeof imageParsed?.imageUrl === 'string' ? imageParsed.imageUrl : ''
+
+    if (!imageUrl) {
+      throw new Error('Imagem não retornada pela API.')
+    }
+
+    setMessages((prev) => [
+      ...prev,
+      {
+        role: 'assistant',
+        content: 'Aqui está a imagem que criei para você.',
+        imageUrl,
+      },
+    ])
+
+    await loadConversations(user.id)
+  }
+
   async function sendMessage() {
     const trimmedMessage = message.trim()
 
@@ -227,65 +491,11 @@ export default function ChatPage() {
     setLoading(true)
 
     try {
-      const response = await fetch('/api/chat', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          userId: user.id,
-          sessionId: sessionId || null,
-          conversationId: conversationId || null,
-          message: trimmedMessage,
-          messages: updatedMessages,
-        }),
-      })
-
-      const rawText = await response.text()
-
-      let parsed: any = null
-      try {
-        parsed = JSON.parse(rawText)
-      } catch {
-        parsed = null
+      if (isImageRequest(trimmedMessage)) {
+        await sendImageMessage(trimmedMessage)
+      } else {
+        await sendTextMessage(trimmedMessage, updatedMessages)
       }
-
-      if (!response.ok) {
-        const apiError =
-          parsed?.error ||
-          parsed?.message ||
-          rawText ||
-          'Erro ao processar a mensagem.'
-
-        throw new Error(apiError)
-      }
-
-      const reply =
-        parsed?.reply ||
-        parsed?.response ||
-        parsed?.message ||
-        parsed?.output_text ||
-        rawText ||
-        'Sem resposta da Aurora.'
-
-      const returnedConversationId =
-        typeof parsed?.conversationId === 'string'
-          ? parsed.conversationId
-          : ''
-
-      if (returnedConversationId) {
-        setConversationId(returnedConversationId)
-      }
-
-      setMessages((prev) => [
-        ...prev,
-        {
-          role: 'assistant',
-          content: reply,
-        },
-      ])
-
-      await loadConversations(user.id)
     } catch (err: any) {
       setError(err?.message || 'Erro ao enviar mensagem.')
     } finally {
@@ -594,6 +804,20 @@ export default function ChatPage() {
                         {isUser ? 'Você' : 'Aurora'}
                       </div>
                       <div>{item.content}</div>
+                      {item.imageUrl ? (
+                        <img
+                          src={item.imageUrl}
+                          alt="Imagem gerada pela Aurora"
+                          style={{
+                            marginTop: 12,
+                            width: '100%',
+                            maxWidth: 420,
+                            borderRadius: 12,
+                            border: '1px solid rgba(0,0,0,0.08)',
+                            display: 'block',
+                          }}
+                        />
+                      ) : null}
                     </div>
                   </div>
                 )
