@@ -14,6 +14,10 @@ type MemoryRow = {
   created_at: string
 }
 
+type FactRow = {
+  fact: string
+}
+
 function makeTitleFromMessage(message: string) {
   const clean = message.replace(/\s+/g, ' ').trim()
 
@@ -22,6 +26,71 @@ function makeTitleFromMessage(message: string) {
   }
 
   return clean.length > 60 ? `${clean.slice(0, 60)}...` : clean
+}
+
+function normalizeText(text: string) {
+  return text.replace(/\s+/g, ' ').trim()
+}
+
+function extractFactsFromMessage(message: string) {
+  const text = normalizeText(message)
+  const lower = text.toLowerCase()
+  const facts = new Set<string>()
+
+  const patterns = [
+    {
+      regex: /\bmeu nome é\s+([A-Za-zÀ-ÿ][A-Za-zÀ-ÿ\s'-]{1,60})/i,
+      build: (match: RegExpMatchArray) =>
+        `O nome do usuário é ${normalizeText(match[1])}.`,
+    },
+    {
+      regex: /\beu sou o fundador da\s+([A-Za-zÀ-ÿ0-9][A-Za-zÀ-ÿ0-9\s'-]{1,80})/i,
+      build: (match: RegExpMatchArray) =>
+        `O usuário é o fundador da ${normalizeText(match[1])}.`,
+    },
+    {
+      regex: /\beu sou a fundadora da\s+([A-Za-zÀ-ÿ0-9][A-Za-zÀ-ÿ0-9\s'-]{1,80})/i,
+      build: (match: RegExpMatchArray) =>
+        `A usuária é a fundadora da ${normalizeText(match[1])}.`,
+    },
+    {
+      regex:
+        /\bminha esposa (?:se chama|chama-se|é)\s+([A-Za-zÀ-ÿ][A-Za-zÀ-ÿ\s'-]{1,60})/i,
+      build: (match: RegExpMatchArray) =>
+        `A esposa do usuário se chama ${normalizeText(match[1])}.`,
+    },
+    {
+      regex:
+        /\bmeu marido (?:se chama|chama-se|é)\s+([A-Za-zÀ-ÿ][A-Za-zÀ-ÿ\s'-]{1,60})/i,
+      build: (match: RegExpMatchArray) =>
+        `O marido da usuária se chama ${normalizeText(match[1])}.`,
+    },
+  ]
+
+  for (const pattern of patterns) {
+    const match = text.match(pattern.regex)
+    if (match) {
+      facts.add(pattern.build(match))
+    }
+  }
+
+  if (
+    lower.includes('minha esposa neida') ||
+    lower.includes('minha esposa é neida') ||
+    lower.includes('minha esposa se chama neida')
+  ) {
+    facts.add('A esposa do usuário se chama Neida.')
+  }
+
+  if (
+    lower.includes('eu ricardo') ||
+    lower.includes('sou ricardo') ||
+    lower.includes('me chamo ricardo')
+  ) {
+    facts.add('O nome do usuário é Ricardo.')
+  }
+
+  return Array.from(facts)
 }
 
 export async function POST(req: Request) {
@@ -129,6 +198,26 @@ export async function POST(req: Request) {
       )
     }
 
+    let permanentFacts: FactRow[] = []
+
+    if (userId) {
+      const { data: factRows, error: factError } = await supabaseAdmin
+        .from('user_facts')
+        .select('fact')
+        .eq('user_id', userId)
+        .order('updated_at', { ascending: false })
+        .limit(20)
+
+      if (factError) {
+        return Response.json(
+          { error: `Erro ao buscar fatos: ${factError.message}` },
+          { status: 500 }
+        )
+      }
+
+      permanentFacts = (factRows || []) as FactRow[]
+    }
+
     const orderedMemories = (memoryRows || []) as MemoryRow[]
 
     const historyInput = orderedMemories
@@ -144,13 +233,28 @@ export async function POST(req: Request) {
         content: item.content,
       }))
 
+    const factText =
+      permanentFacts.length > 0
+        ? permanentFacts.map((item) => `- ${item.fact}`).join('\n')
+        : '- Nenhum fato permanente salvo até agora.'
+
     const response = await openai.responses.create({
       model: 'gpt-4.1-mini',
       input: [
         {
           role: 'system',
-          content:
-            'Você é a Aurora IA, uma assistente empresarial inteligente, clara, objetiva e útil. Responda sempre em português do Brasil. Use o histórico anterior da conversa para manter contexto, continuidade e coerência. Quando o usuário informar fatos pessoais, trate esses fatos como contexto da conversa atual e use-os nas respostas seguintes sem inventar informações.',
+          content: `
+Você é a Aurora IA, uma assistente empresarial inteligente, clara, objetiva e útil.
+Responda sempre em português do Brasil.
+
+Fatos permanentes conhecidos sobre este usuário:
+${factText}
+
+Use esses fatos quando forem relevantes.
+Use também o histórico da conversa para manter contexto, continuidade e coerência.
+Quando o usuário informar fatos pessoais ou duradouros, trate esses fatos como contexto útil.
+Não invente dados que o usuário não informou.
+          `.trim(),
         },
         ...historyInput,
         {
@@ -210,6 +314,27 @@ export async function POST(req: Request) {
         { error: `Erro ao salvar memória: ${insertError.message}` },
         { status: 500 }
       )
+    }
+
+    if (userId) {
+      const extractedFacts = extractFactsFromMessage(userMessage)
+
+      for (const fact of extractedFacts) {
+        const normalizedFact = normalizeText(fact)
+
+        const alreadyExists = permanentFacts.some(
+          (item) => normalizeText(item.fact).toLowerCase() === normalizedFact.toLowerCase()
+        )
+
+        if (!alreadyExists) {
+          await supabaseAdmin.from('user_facts').insert([
+            {
+              user_id: userId,
+              fact: normalizedFact,
+            },
+          ])
+        }
+      }
     }
 
     if (conversationId && userId) {
