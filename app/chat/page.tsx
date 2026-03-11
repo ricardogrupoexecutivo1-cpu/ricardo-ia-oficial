@@ -1,6 +1,6 @@
 'use client'
 
-import { FormEvent, KeyboardEvent, useEffect, useRef, useState } from 'react'
+import { FormEvent, KeyboardEvent, useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 
@@ -56,7 +56,6 @@ function isImageRequest(text: string) {
 
 export default function ChatPage() {
   const router = useRouter()
-  const authStartedRef = useRef(false)
 
   const [user, setUser] = useState<AuthUser>(null)
   const [authChecked, setAuthChecked] = useState(false)
@@ -109,94 +108,56 @@ export default function ChatPage() {
   }
 
   useEffect(() => {
-    if (authStartedRef.current) {
-      return
-    }
+    let active = true
 
-    authStartedRef.current = true
-    let cancelled = false
-
-    async function resolveAuth() {
+    async function checkAuth() {
       try {
-        const timeoutPromise = new Promise<null>((resolve) =>
-          setTimeout(() => resolve(null), 8000)
-        )
+        const {
+          data: { session },
+        } = await supabase.auth.getSession()
 
-        const sessionResult = await Promise.race([
-          supabase.auth.getSession(),
-          timeoutPromise,
-        ])
-
-        if (cancelled) {
+        if (!active) {
           return
         }
 
-        if (
-          sessionResult &&
-          typeof sessionResult === 'object' &&
-          'data' in sessionResult
-        ) {
-          const session = sessionResult.data.session
-
-          if (session?.user) {
-            const authUser = {
-              id: session.user.id,
-              email: session.user.email,
-            }
-
-            setUser(authUser)
-            setAuthChecked(true)
-            await loadConversations(authUser.id)
-            return
-          }
-        }
-
-        const userResult = await Promise.race([
-          supabase.auth.getUser(),
-          timeoutPromise,
-        ])
-
-        if (cancelled) {
-          return
-        }
-
-        if (
-          userResult &&
-          typeof userResult === 'object' &&
-          'data' in userResult &&
-          userResult.data.user
-        ) {
-          const authUser = {
-            id: userResult.data.user.id,
-            email: userResult.data.user.email,
-          }
-
-          setUser(authUser)
+        if (!session?.user) {
           setAuthChecked(true)
-          await loadConversations(authUser.id)
+          router.replace('/login')
           return
         }
 
-        setUser(null)
+        const authUser = {
+          id: session.user.id,
+          email: session.user.email,
+        }
+
+        setUser(authUser)
         setAuthChecked(true)
-        router.replace('/login')
+        await loadConversations(authUser.id)
       } catch {
-        if (cancelled) {
+        if (!active) {
           return
         }
 
-        setUser(null)
         setAuthChecked(true)
         router.replace('/login')
       }
     }
 
-    resolveAuth()
+    checkAuth()
+
+    const timeout = setTimeout(() => {
+      if (!active) {
+        return
+      }
+
+      setAuthChecked(true)
+    }, 4000)
 
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (cancelled) {
+      if (!active) {
         return
       }
 
@@ -216,44 +177,12 @@ export default function ChatPage() {
         setUser(authUser)
         setAuthChecked(true)
         await loadConversations(authUser.id)
-        return
-      }
-
-      try {
-        const { data, error } = await supabase.auth.getUser()
-
-        if (cancelled) {
-          return
-        }
-
-        if (error || !data.user) {
-          setUser(null)
-          setAuthChecked(true)
-          router.replace('/login')
-          return
-        }
-
-        const authUser = {
-          id: data.user.id,
-          email: data.user.email,
-        }
-
-        setUser(authUser)
-        setAuthChecked(true)
-        await loadConversations(authUser.id)
-      } catch {
-        if (cancelled) {
-          return
-        }
-
-        setUser(null)
-        setAuthChecked(true)
-        router.replace('/login')
       }
     })
 
     return () => {
-      cancelled = true
+      active = false
+      clearTimeout(timeout)
       subscription.unsubscribe()
     }
   }, [router])
@@ -342,13 +271,9 @@ export default function ChatPage() {
     }
 
     if (!response.ok) {
-      const apiError =
-        parsed?.error ||
-        parsed?.message ||
-        rawText ||
-        'Erro ao processar a mensagem.'
-
-      throw new Error(apiError)
+      throw new Error(
+        parsed?.error || parsed?.message || rawText || 'Erro ao processar a mensagem.'
+      )
     }
 
     const reply =
@@ -392,10 +317,7 @@ export default function ChatPage() {
         sessionId: sessionId || null,
         conversationId: conversationId || null,
         message: trimmedMessage,
-        messages: [
-          ...messages,
-          { role: 'user', content: trimmedMessage },
-        ],
+        messages: [...messages, { role: 'user', content: trimmedMessage }],
       }),
     })
 
@@ -444,7 +366,9 @@ export default function ChatPage() {
 
     if (!imageResponse.ok) {
       throw new Error(
-        imageParsed?.error || imageRaw || 'Erro ao gerar imagem.'
+        imageParsed?.error ||
+          imageRaw ||
+          'Falha ao gerar imagem. Tente novamente com um pedido um pouco mais curto.'
       )
     }
 
