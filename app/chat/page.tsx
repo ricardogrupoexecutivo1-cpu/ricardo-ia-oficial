@@ -1,6 +1,7 @@
 'use client'
 
 import { FormEvent, KeyboardEvent, useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 
 type ChatMessage = {
@@ -22,6 +23,8 @@ function generateSessionId() {
 }
 
 export default function ChatPage() {
+  const router = useRouter()
+
   const [user, setUser] = useState<AuthUser>(null)
   const [authChecked, setAuthChecked] = useState(false)
   const [sessionId, setSessionId] = useState('')
@@ -55,16 +58,20 @@ export default function ChatPage() {
 
         if (error || !data.user) {
           setUser(null)
-        } else {
-          setUser({
-            id: data.user.id,
-            email: data.user.email,
-          })
+          setAuthChecked(true)
+          router.replace('/login')
+          return
         }
+
+        setUser({
+          id: data.user.id,
+          email: data.user.email,
+        })
+        setAuthChecked(true)
       } catch {
         setUser(null)
-      } finally {
         setAuthChecked(true)
+        router.replace('/login')
       }
     }
 
@@ -72,34 +79,51 @@ export default function ChatPage() {
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange(async () => {
+    } = supabase.auth.onAuthStateChange(async (event) => {
+      if (event === 'SIGNED_OUT') {
+        setUser(null)
+        setAuthChecked(true)
+        router.replace('/login')
+        return
+      }
+
       try {
         const { data, error } = await supabase.auth.getUser()
 
         if (error || !data.user) {
           setUser(null)
-        } else {
-          setUser({
-            id: data.user.id,
-            email: data.user.email,
-          })
+          setAuthChecked(true)
+          router.replace('/login')
+          return
         }
+
+        setUser({
+          id: data.user.id,
+          email: data.user.email,
+        })
+        setAuthChecked(true)
       } catch {
         setUser(null)
-      } finally {
         setAuthChecked(true)
+        router.replace('/login')
       }
     })
 
     return () => {
       subscription.unsubscribe()
     }
-  }, [])
+  }, [router])
 
   async function sendMessage() {
     const trimmedMessage = message.trim()
 
     if (!trimmedMessage || loading) {
+      return
+    }
+
+    if (!user?.id) {
+      setError('Usuário não autenticado.')
+      router.replace('/login')
       return
     }
 
@@ -120,7 +144,7 @@ export default function ChatPage() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          userId: user?.id || null,
+          userId: user.id,
           sessionId: sessionId || null,
           message: trimmedMessage,
           messages: updatedMessages,
@@ -196,6 +220,64 @@ export default function ChatPage() {
     ])
   }
 
+  if (!authChecked) {
+    return (
+      <main
+        style={{
+          minHeight: '100vh',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          background: '#f5f5f5',
+          fontFamily: 'Arial, sans-serif',
+          padding: 24,
+        }}
+      >
+        <div
+          style={{
+            background: '#fff',
+            border: '1px solid #e5e5e5',
+            borderRadius: 14,
+            padding: 24,
+            boxShadow: '0 2px 10px rgba(0,0,0,0.05)',
+            textAlign: 'center',
+          }}
+        >
+          Verificando autenticação...
+        </div>
+      </main>
+    )
+  }
+
+  if (!user?.id) {
+    return (
+      <main
+        style={{
+          minHeight: '100vh',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          background: '#f5f5f5',
+          fontFamily: 'Arial, sans-serif',
+          padding: 24,
+        }}
+      >
+        <div
+          style={{
+            background: '#fff',
+            border: '1px solid #e5e5e5',
+            borderRadius: 14,
+            padding: 24,
+            boxShadow: '0 2px 10px rgba(0,0,0,0.05)',
+            textAlign: 'center',
+          }}
+        >
+          Redirecionando para o login...
+        </div>
+      </main>
+    )
+  }
+
   return (
     <main
       style={{
@@ -227,11 +309,7 @@ export default function ChatPage() {
               Converse com a Aurora IA em estilo ChatGPT com memória por usuário.
             </p>
             <p style={{ margin: '8px 0 0 0', color: '#666', fontSize: 14 }}>
-              {authChecked
-                ? user?.email
-                  ? `Logado como: ${user.email}`
-                  : 'Usuário sem login detectado — usando memória de sessão'
-                : 'Verificando autenticação...'}
+              {`Logado como: ${user.email || 'usuário sem e-mail'}`}
             </p>
           </div>
 
