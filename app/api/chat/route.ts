@@ -14,6 +14,16 @@ type MemoryRow = {
   created_at: string
 }
 
+function makeTitleFromMessage(message: string) {
+  const clean = message.replace(/\s+/g, ' ').trim()
+
+  if (!clean) {
+    return 'Nova conversa'
+  }
+
+  return clean.length > 60 ? `${clean.slice(0, 60)}...` : clean
+}
+
 export async function POST(req: Request) {
   try {
     if (!process.env.OPENAI_API_KEY) {
@@ -32,6 +42,10 @@ export async function POST(req: Request) {
     const userId = typeof body.userId === 'string' ? body.userId.trim() : ''
     const sessionId =
       typeof body.sessionId === 'string' ? body.sessionId.trim() : ''
+    let conversationId =
+      typeof body.conversationId === 'string'
+        ? body.conversationId.trim()
+        : ''
 
     if (!userId && !sessionId) {
       return Response.json(
@@ -65,11 +79,40 @@ export async function POST(req: Request) {
       )
     }
 
+    if (userId && !conversationId) {
+      const { data: createdConversation, error: createConversationError } =
+        await supabaseAdmin
+          .from('chat_conversations')
+          .insert([
+            {
+              user_id: userId,
+              title: makeTitleFromMessage(userMessage),
+            },
+          ])
+          .select('id')
+          .single()
+
+      if (createConversationError || !createdConversation?.id) {
+        return Response.json(
+          {
+            error: `Erro ao criar conversa: ${
+              createConversationError?.message || 'sem id'
+            }`,
+          },
+          { status: 500 }
+        )
+      }
+
+      conversationId = createdConversation.id
+    }
+
     let query = supabaseAdmin
       .from('chat_memories')
       .select('role, content, created_at')
 
-    if (userId) {
+    if (conversationId) {
+      query = query.eq('conversation_id', conversationId)
+    } else if (userId) {
       query = query.eq('user_id', userId)
     } else {
       query = query.eq('session_id', sessionId)
@@ -77,7 +120,7 @@ export async function POST(req: Request) {
 
     const { data: memoryRows, error: memoryError } = await query
       .order('created_at', { ascending: false })
-      .limit(12)
+      .limit(20)
 
     if (memoryError) {
       return Response.json(
@@ -127,6 +170,7 @@ Se a memória não for suficiente, responda normalmente sem inventar fatos.
     const rowsToInsert: Array<{
       user_id?: string
       session_id?: string
+      conversation_id?: string
       role: 'user' | 'assistant'
       content: string
     }> = []
@@ -135,11 +179,13 @@ Se a memória não for suficiente, responda normalmente sem inventar fatos.
       rowsToInsert.push(
         {
           user_id: userId,
+          conversation_id: conversationId || undefined,
           role: 'user',
           content: userMessage,
         },
         {
           user_id: userId,
+          conversation_id: conversationId || undefined,
           role: 'assistant',
           content: reply,
         }
@@ -170,7 +216,17 @@ Se a memória não for suficiente, responda normalmente sem inventar fatos.
       )
     }
 
-    return Response.json({ reply })
+    if (conversationId && userId) {
+      await supabaseAdmin
+        .from('chat_conversations')
+        .update({
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', conversationId)
+        .eq('user_id', userId)
+    }
+
+    return Response.json({ reply, conversationId })
   } catch (error: any) {
     return Response.json(
       {
