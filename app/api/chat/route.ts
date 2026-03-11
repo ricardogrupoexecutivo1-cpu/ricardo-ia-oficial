@@ -119,8 +119,8 @@ export async function POST(req: Request) {
     }
 
     const { data: memoryRows, error: memoryError } = await query
-      .order('created_at', { ascending: false })
-      .limit(20)
+      .order('created_at', { ascending: true })
+      .limit(30)
 
     if (memoryError) {
       return Response.json(
@@ -129,34 +129,30 @@ export async function POST(req: Request) {
       )
     }
 
-    const orderedMemories = ((memoryRows || []) as MemoryRow[]).reverse()
+    const orderedMemories = (memoryRows || []) as MemoryRow[]
 
-    const memoryText =
-      orderedMemories.length > 0
-        ? orderedMemories
-            .map((item) => {
-              const speaker = item.role === 'user' ? 'Usuário' : 'Aurora'
-              return `${speaker}: ${item.content}`
-            })
-            .join('\n')
-        : 'Sem memórias anteriores.'
+    const historyInput = orderedMemories
+      .filter(
+        (item) =>
+          item &&
+          (item.role === 'user' || item.role === 'assistant') &&
+          typeof item.content === 'string' &&
+          item.content.trim()
+      )
+      .map((item) => ({
+        role: item.role,
+        content: item.content,
+      }))
 
     const response = await openai.responses.create({
       model: 'gpt-4.1-mini',
       input: [
         {
           role: 'system',
-          content: `
-Você é a Aurora IA, uma assistente empresarial inteligente, clara, objetiva e útil.
-Responda sempre em português do Brasil.
-
-Abaixo está a memória recente disponível:
-${memoryText}
-
-Use essa memória para manter contexto, continuidade e coerência nas respostas.
-Se a memória não for suficiente, responda normalmente sem inventar fatos.
-          `.trim(),
+          content:
+            'Você é a Aurora IA, uma assistente empresarial inteligente, clara, objetiva e útil. Responda sempre em português do Brasil. Use o histórico anterior da conversa para manter contexto, continuidade e coerência. Quando o usuário informar fatos pessoais, trate esses fatos como contexto da conversa atual e use-os nas respostas seguintes sem inventar informações.',
         },
+        ...historyInput,
         {
           role: 'user',
           content: userMessage,
