@@ -57,22 +57,26 @@ function isImageRequest(text: string) {
 function isMarketingRequest(text: string) {
   const lower = text.toLowerCase()
 
-  const triggers = [
-    'crie uma campanha',
-    'gere uma campanha',
-    'faça uma campanha',
-    'campanha de marketing',
-    'crie marketing',
-    'gere marketing',
-    'faça marketing',
-    'divulgar minha empresa',
-    'divulgar meu produto',
-    'divulgar a aurora',
-    'crie uma campanha de marketing',
-    'crie uma campanha para',
-  ]
+  if (
+    lower.includes('campanha') ||
+    lower.includes('marketing') ||
+    lower.includes('divulgar') ||
+    lower.includes('publicidade') ||
+    lower.includes('anúncio') ||
+    lower.includes('propaganda') ||
+    lower.includes('post para instagram') ||
+    lower.includes('post instagram') ||
+    lower.includes('criar campanha') ||
+    lower.includes('crie campanha') ||
+    lower.includes('gerar campanha') ||
+    lower.includes('divulgar empresa') ||
+    lower.includes('divulgar produto') ||
+    lower.includes('divulgar aurora')
+  ) {
+    return true
+  }
 
-  return triggers.some((trigger) => lower.includes(trigger))
+  return false
 }
 
 export default function ChatPage() {
