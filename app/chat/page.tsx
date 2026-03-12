@@ -97,6 +97,8 @@ export default function ChatPage() {
   const [loading, setLoading] = useState(false)
   const [loadingConversations, setLoadingConversations] = useState(false)
   const [error, setError] = useState('')
+  const [isMobile, setIsMobile] = useState(false)
+  const [showSidebar, setShowSidebar] = useState(false)
 
   useEffect(() => {
     const storageKey = 'aurora_session_id'
@@ -109,6 +111,22 @@ export default function ChatPage() {
       window.localStorage.setItem(storageKey, newSessionId)
       setSessionId(newSessionId)
     }
+  }, [])
+
+  useEffect(() => {
+    function handleResize() {
+      const mobile = window.innerWidth < 900
+      setIsMobile(mobile)
+
+      if (!mobile) {
+        setShowSidebar(true)
+      }
+    }
+
+    handleResize()
+    window.addEventListener('resize', handleResize)
+
+    return () => window.removeEventListener('resize', handleResize)
   }, [])
 
   async function loadConversations(userId: string) {
@@ -222,6 +240,9 @@ export default function ChatPage() {
     ])
     setMessage('')
     setError('')
+    if (isMobile) {
+      setShowSidebar(false)
+    }
   }
 
   async function openConversation(selectedConversationId: string) {
@@ -259,6 +280,10 @@ export default function ChatPage() {
             ]
       )
       setError('')
+
+      if (isMobile) {
+        setShowSidebar(false)
+      }
     } catch (err: any) {
       setError(err?.message || 'Erro ao abrir conversa.')
     }
@@ -636,7 +661,7 @@ export default function ChatPage() {
       style={{
         minHeight: '100vh',
         background: '#f5f5f5',
-        padding: '24px 16px',
+        padding: isMobile ? '12px' : '24px 16px',
         fontFamily: 'Arial, sans-serif',
       }}
     >
@@ -645,96 +670,211 @@ export default function ChatPage() {
           maxWidth: 1200,
           margin: '0 auto',
           display: 'grid',
-          gridTemplateColumns: '280px 1fr',
+          gridTemplateColumns: isMobile ? '1fr' : '280px 1fr',
           gap: 16,
         }}
       >
-        <aside
-          style={{
-            background: '#fff',
-            border: '1px solid #e5e5e5',
-            borderRadius: 14,
-            padding: 16,
-            boxShadow: '0 2px 10px rgba(0,0,0,0.05)',
-            height: 'fit-content',
-          }}
-        >
-          <button
-            type="button"
-            onClick={createNewConversation}
-            style={{
-              width: '100%',
-              padding: '12px 16px',
-              background: '#000',
-              color: '#fff',
-              border: 'none',
-              borderRadius: 8,
-              cursor: 'pointer',
-              marginBottom: 14,
-            }}
-          >
-            Nova conversa
-          </button>
-
-          <div style={{ fontWeight: 'bold', marginBottom: 10 }}>
-            Histórico
-          </div>
-
-          {loadingConversations ? (
-            <div style={{ color: '#666', fontSize: 14 }}>Carregando...</div>
-          ) : conversations.length === 0 ? (
-            <div style={{ color: '#666', fontSize: 14 }}>
-              Nenhuma conversa ainda.
-            </div>
-          ) : (
+        {isMobile ? (
+          <>
             <div
               style={{
                 display: 'flex',
-                flexDirection: 'column',
-                gap: 8,
+                gap: 10,
+                marginBottom: 12,
+                flexWrap: 'wrap',
               }}
             >
-              {conversations.map((conversation) => (
-                <button
-                  key={conversation.id}
-                  type="button"
-                  onClick={() => openConversation(conversation.id)}
-                  style={{
-                    textAlign: 'left',
-                    padding: '10px 12px',
-                    borderRadius: 8,
-                    border:
-                      conversation.id === conversationId
-                        ? '1px solid #000'
-                        : '1px solid #ddd',
-                    background:
-                      conversation.id === conversationId ? '#f3f3f3' : '#fff',
-                    cursor: 'pointer',
-                  }}
-                >
-                  <div
-                    style={{
-                      fontSize: 14,
-                      fontWeight: 600,
-                      color: '#111',
-                      marginBottom: 4,
-                    }}
-                  >
-                    {conversation.title}
-                  </div>
-                  <div
-                    style={{
-                      fontSize: 12,
-                      color: '#666',
-                    }}
-                  >
-                    {new Date(conversation.updated_at).toLocaleString('pt-BR')}
-                  </div>
-                </button>
-              ))}
+              <button
+                type="button"
+                onClick={() => setShowSidebar(!showSidebar)}
+                style={{
+                  padding: '10px 14px',
+                  border: '1px solid #000',
+                  borderRadius: 8,
+                  background: '#fff',
+                  color: '#000',
+                  cursor: 'pointer',
+                }}
+              >
+                {showSidebar ? 'Fechar histórico' : 'Abrir histórico'}
+              </button>
+
+              <button
+                type="button"
+                onClick={createNewConversation}
+                style={{
+                  padding: '10px 14px',
+                  background: '#000',
+                  color: '#fff',
+                  border: 'none',
+                  borderRadius: 8,
+                  cursor: 'pointer',
+                }}
+              >
+                Nova conversa
+              </button>
             </div>
-          )}
-        </aside>
+
+            {showSidebar ? (
+              <aside
+                style={{
+                  background: '#fff',
+                  border: '1px solid #e5e5e5',
+                  borderRadius: 14,
+                  padding: 16,
+                  boxShadow: '0 2px 10px rgba(0,0,0,0.05)',
+                  marginBottom: 16,
+                }}
+              >
+                <div style={{ fontWeight: 'bold', marginBottom: 10 }}>
+                  Histórico
+                </div>
+
+                {loadingConversations ? (
+                  <div style={{ color: '#666', fontSize: 14 }}>Carregando...</div>
+                ) : conversations.length === 0 ? (
+                  <div style={{ color: '#666', fontSize: 14 }}>
+                    Nenhuma conversa ainda.
+                  </div>
+                ) : (
+                  <div
+                    style={{
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: 8,
+                    }}
+                  >
+                    {conversations.map((conversation) => (
+                      <button
+                        key={conversation.id}
+                        type="button"
+                        onClick={() => openConversation(conversation.id)}
+                        style={{
+                          textAlign: 'left',
+                          padding: '10px 12px',
+                          borderRadius: 8,
+                          border:
+                            conversation.id === conversationId
+                              ? '1px solid #000'
+                              : '1px solid #ddd',
+                          background:
+                            conversation.id === conversationId ? '#f3f3f3' : '#fff',
+                          cursor: 'pointer',
+                        }}
+                      >
+                        <div
+                          style={{
+                            fontSize: 14,
+                            fontWeight: 600,
+                            color: '#111',
+                            marginBottom: 4,
+                          }}
+                        >
+                          {conversation.title}
+                        </div>
+                        <div
+                          style={{
+                            fontSize: 12,
+                            color: '#666',
+                          }}
+                        >
+                          {new Date(conversation.updated_at).toLocaleString('pt-BR')}
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </aside>
+            ) : null}
+          </>
+        ) : (
+          <aside
+            style={{
+              background: '#fff',
+              border: '1px solid #e5e5e5',
+              borderRadius: 14,
+              padding: 16,
+              boxShadow: '0 2px 10px rgba(0,0,0,0.05)',
+              height: 'fit-content',
+            }}
+          >
+            <button
+              type="button"
+              onClick={createNewConversation}
+              style={{
+                width: '100%',
+                padding: '12px 16px',
+                background: '#000',
+                color: '#fff',
+                border: 'none',
+                borderRadius: 8,
+                cursor: 'pointer',
+                marginBottom: 14,
+              }}
+            >
+              Nova conversa
+            </button>
+
+            <div style={{ fontWeight: 'bold', marginBottom: 10 }}>
+              Histórico
+            </div>
+
+            {loadingConversations ? (
+              <div style={{ color: '#666', fontSize: 14 }}>Carregando...</div>
+            ) : conversations.length === 0 ? (
+              <div style={{ color: '#666', fontSize: 14 }}>
+                Nenhuma conversa ainda.
+              </div>
+            ) : (
+              <div
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 8,
+                }}
+              >
+                {conversations.map((conversation) => (
+                  <button
+                    key={conversation.id}
+                    type="button"
+                    onClick={() => openConversation(conversation.id)}
+                    style={{
+                      textAlign: 'left',
+                      padding: '10px 12px',
+                      borderRadius: 8,
+                      border:
+                        conversation.id === conversationId
+                          ? '1px solid #000'
+                          : '1px solid #ddd',
+                      background:
+                        conversation.id === conversationId ? '#f3f3f3' : '#fff',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    <div
+                      style={{
+                        fontSize: 14,
+                        fontWeight: 600,
+                        color: '#111',
+                        marginBottom: 4,
+                      }}
+                    >
+                      {conversation.title}
+                    </div>
+                    <div
+                      style={{
+                        fontSize: 12,
+                        color: '#666',
+                      }}
+                    >
+                      {new Date(conversation.updated_at).toLocaleString('pt-BR')}
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
+          </aside>
+        )}
 
         <section>
           <div
@@ -748,7 +888,9 @@ export default function ChatPage() {
             }}
           >
             <div>
-              <h1 style={{ margin: 0, fontSize: 30 }}>Chat Aurora IA</h1>
+              <h1 style={{ margin: 0, fontSize: isMobile ? 24 : 30 }}>
+                Chat Aurora IA
+              </h1>
               <p style={{ margin: '8px 0 0 0', color: '#555' }}>
                 Converse com a Aurora IA em estilo ChatGPT com histórico por usuário.
               </p>
@@ -800,7 +942,7 @@ export default function ChatPage() {
               background: '#ffffff',
               border: '1px solid #e5e5e5',
               borderRadius: 14,
-              padding: 20,
+              padding: isMobile ? 12 : 20,
               minHeight: 420,
               boxShadow: '0 2px 10px rgba(0,0,0,0.05)',
             }}
@@ -825,13 +967,14 @@ export default function ChatPage() {
                   >
                     <div
                       style={{
-                        maxWidth: '80%',
+                        maxWidth: isMobile ? '100%' : '80%',
                         padding: '14px 16px',
                         borderRadius: 14,
                         background: isUser ? '#000' : '#f0f0f0',
                         color: isUser ? '#fff' : '#111',
                         whiteSpace: 'pre-wrap',
                         lineHeight: 1.6,
+                        wordBreak: 'break-word',
                       }}
                     >
                       <div
@@ -852,7 +995,7 @@ export default function ChatPage() {
                           style={{
                             marginTop: 12,
                             width: '100%',
-                            maxWidth: 420,
+                            maxWidth: '100%',
                             borderRadius: 12,
                             border: '1px solid rgba(0,0,0,0.08)',
                             display: 'block',
@@ -873,7 +1016,7 @@ export default function ChatPage() {
                 >
                   <div
                     style={{
-                      maxWidth: '80%',
+                      maxWidth: isMobile ? '100%' : '80%',
                       padding: '14px 16px',
                       borderRadius: 14,
                       background: '#f0f0f0',
@@ -920,7 +1063,7 @@ export default function ChatPage() {
               background: '#ffffff',
               border: '1px solid #e5e5e5',
               borderRadius: 14,
-              padding: 16,
+              padding: isMobile ? 12 : 16,
               boxShadow: '0 2px 10px rgba(0,0,0,0.05)',
             }}
           >
