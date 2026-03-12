@@ -244,13 +244,7 @@ export default function HomePage() {
                 color: '#0f172a',
               }}
             >
-              <a
- href="https://www.mercadopago.com.br/subscriptions/checkout?preapproval_plan_id=cc255abd5e32475bae9167c8b6b3926d"
- target="_blank"
- className="bg-purple-600 hover:bg-purple-700 text-white font-semibold px-6 py-3 rounded-lg"
->
-Assinar Plano Founders
-</a>
+              Founders Aurora
             </div>
 
             <div
@@ -295,13 +289,20 @@ Assinar Plano Founders
                 fontSize: 14,
                 color: '#b45309',
                 fontWeight: 800,
+                lineHeight: 1.7,
               }}
             >
-              Oferta inicial limitada para os primeiros usuários.
+              Oferta inicial limitada para os primeiros 500 usuários.
+              <br />
+              Pagamento seguro via Mercado Pago.
+              <br />
+              Pix • Cartão • Assinatura mensal.
             </div>
 
             <a
-              href="/login"
+              href="https://www.mercadopago.com.br/subscriptions/checkout?preapproval_plan_id=cc255abd5e32475bae9167c8b6b3926d"
+              target="_blank"
+              rel="noreferrer"
               style={{
                 marginTop: 18,
                 display: 'block',
@@ -314,7 +315,7 @@ Assinar Plano Founders
                 fontWeight: 800,
               }}
             >
-              Quero entrar agora
+              Assinar Plano Founders
             </a>
           </div>
         </div>
