@@ -217,17 +217,20 @@ export default function HomePage() {
 
           <div
             style={{
-              background: 'rgba(255,255,255,0.08)',
-              border: '1px solid rgba(255,255,255,0.12)',
+              background: '#ffffff',
+              border: '1px solid #dbe2ee',
               borderRadius: 20,
               padding: isMobile ? 18 : 24,
+              boxShadow: '0 10px 30px rgba(0,0,0,0.10)',
+              color: '#111827',
             }}
           >
             <div
               style={{
                 fontSize: 14,
-                color: 'rgba(255,255,255,0.75)',
+                color: '#475569',
                 marginBottom: 10,
+                fontWeight: 700,
               }}
             >
               Plano especial inicial
@@ -238,6 +241,7 @@ export default function HomePage() {
                 fontSize: isMobile ? 28 : 32,
                 fontWeight: 800,
                 marginBottom: 10,
+                color: '#0f172a',
               }}
             >
               Founders Aurora
@@ -247,7 +251,8 @@ export default function HomePage() {
               style={{
                 fontSize: isMobile ? 17 : 18,
                 lineHeight: 1.7,
-                color: 'rgba(255,255,255,0.9)',
+                color: '#1e293b',
+                fontWeight: 700,
               }}
             >
               R$ 29,90/mês
@@ -260,10 +265,11 @@ export default function HomePage() {
                 marginTop: 16,
                 padding: 14,
                 borderRadius: 14,
-                background: 'rgba(255,255,255,0.08)',
+                background: '#f8fafc',
                 lineHeight: 1.7,
-                color: 'rgba(255,255,255,0.88)',
+                color: '#0f172a',
                 fontSize: isMobile ? 15 : 16,
+                border: '1px solid #e2e8f0',
               }}
             >
               ✅ acesso à Aurora IA
@@ -281,8 +287,8 @@ export default function HomePage() {
               style={{
                 marginTop: 16,
                 fontSize: 14,
-                color: '#ffd66b',
-                fontWeight: 700,
+                color: '#b45309',
+                fontWeight: 800,
               }}
             >
               Oferta inicial limitada para os primeiros usuários.
