@@ -54,6 +54,27 @@ function isImageRequest(text: string) {
   return triggers.some((trigger) => lower.includes(trigger))
 }
 
+function isMarketingRequest(text: string) {
+  const lower = text.toLowerCase()
+
+  const triggers = [
+    'crie uma campanha',
+    'gere uma campanha',
+    'faça uma campanha',
+    'campanha de marketing',
+    'crie marketing',
+    'gere marketing',
+    'faça marketing',
+    'divulgar minha empresa',
+    'divulgar meu produto',
+    'divulgar a aurora',
+    'crie uma campanha de marketing',
+    'crie uma campanha para',
+  ]
+
+  return triggers.some((trigger) => lower.includes(trigger))
+}
+
 export default function ChatPage() {
   const router = useRouter()
 
@@ -391,6 +412,96 @@ export default function ChatPage() {
     await loadConversations(user.id)
   }
 
+  async function sendMarketingMessage(trimmedMessage: string) {
+    if (!user?.id) {
+      throw new Error('Usuário não autenticado.')
+    }
+
+    const textResponse = await fetch('/api/chat', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        userId: user.id,
+        sessionId: sessionId || null,
+        conversationId: conversationId || null,
+        message: trimmedMessage,
+        messages: [...messages, { role: 'user', content: trimmedMessage }],
+      }),
+    })
+
+    const textRaw = await textResponse.text()
+
+    let textParsed: any = null
+    try {
+      textParsed = JSON.parse(textRaw)
+    } catch {
+      textParsed = null
+    }
+
+    if (!textResponse.ok) {
+      throw new Error(
+        textParsed?.error || textRaw || 'Erro ao preparar campanha.'
+      )
+    }
+
+    const returnedConversationId =
+      typeof textParsed?.conversationId === 'string'
+        ? textParsed.conversationId
+        : ''
+
+    if (returnedConversationId) {
+      setConversationId(returnedConversationId)
+    }
+
+    const marketingResponse = await fetch('/api/marketing', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        prompt: trimmedMessage,
+      }),
+    })
+
+    const marketingRaw = await marketingResponse.text()
+
+    let marketingParsed: any = null
+    try {
+      marketingParsed = JSON.parse(marketingRaw)
+    } catch {
+      marketingParsed = null
+    }
+
+    if (!marketingResponse.ok) {
+      throw new Error(
+        marketingParsed?.error || marketingRaw || 'Erro ao gerar campanha automática.'
+      )
+    }
+
+    const campaign =
+      typeof marketingParsed?.campaign === 'string'
+        ? marketingParsed.campaign
+        : 'Campanha gerada sem conteúdo textual.'
+
+    const imageUrl =
+      typeof marketingParsed?.imageUrl === 'string'
+        ? marketingParsed.imageUrl
+        : ''
+
+    setMessages((prev) => [
+      ...prev,
+      {
+        role: 'assistant',
+        content: campaign,
+        imageUrl: imageUrl || undefined,
+      },
+    ])
+
+    await loadConversations(user.id)
+  }
+
   async function sendMessage() {
     const trimmedMessage = message.trim()
 
@@ -415,7 +526,9 @@ export default function ChatPage() {
     setLoading(true)
 
     try {
-      if (isImageRequest(trimmedMessage)) {
+      if (isMarketingRequest(trimmedMessage)) {
+        await sendMarketingMessage(trimmedMessage)
+      } else if (isImageRequest(trimmedMessage)) {
         await sendImageMessage(trimmedMessage)
       } else {
         await sendTextMessage(trimmedMessage, updatedMessages)
