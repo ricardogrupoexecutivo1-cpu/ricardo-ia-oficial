@@ -1,10 +1,27 @@
+'use client'
+
+import { useEffect, useState } from 'react'
+
 export default function HomePage() {
+  const [isMobile, setIsMobile] = useState(false)
+
+  useEffect(() => {
+    function handleResize() {
+      setIsMobile(window.innerWidth < 900)
+    }
+
+    handleResize()
+    window.addEventListener('resize', handleResize)
+
+    return () => window.removeEventListener('resize', handleResize)
+  }, [])
+
   return (
     <main
       style={{
         minHeight: '100vh',
         background:
-          'linear-gradient(180deg, #0b1020 0%, #121a33 45%, #f5f7fb 45%, #f5f7fb 100%)',
+          'linear-gradient(180deg, #0b1020 0%, #121a33 42%, #f5f7fb 42%, #f5f7fb 100%)',
         fontFamily: 'Arial, sans-serif',
       }}
     >
@@ -12,7 +29,7 @@ export default function HomePage() {
         style={{
           maxWidth: 1200,
           margin: '0 auto',
-          padding: '32px 16px 24px',
+          padding: isMobile ? '20px 14px 24px' : '32px 16px 24px',
           color: '#fff',
         }}
       >
@@ -20,24 +37,29 @@ export default function HomePage() {
           style={{
             display: 'flex',
             justifyContent: 'space-between',
-            alignItems: 'center',
+            alignItems: isMobile ? 'flex-start' : 'center',
             gap: 12,
             flexWrap: 'wrap',
             marginBottom: 24,
           }}
         >
-          <div style={{ fontSize: 28, fontWeight: 700 }}>Aurora IA</div>
+          <div style={{ fontSize: isMobile ? 24 : 28, fontWeight: 700 }}>
+            Aurora IA
+          </div>
 
           <div
             style={{
               display: 'flex',
               gap: 10,
               flexWrap: 'wrap',
+              width: isMobile ? '100%' : 'auto',
             }}
           >
             <a
               href="/chat"
               style={{
+                flex: isMobile ? 1 : 'unset',
+                textAlign: 'center',
                 padding: '10px 16px',
                 borderRadius: 10,
                 textDecoration: 'none',
@@ -52,6 +74,8 @@ export default function HomePage() {
             <a
               href="/login"
               style={{
+                flex: isMobile ? 1 : 'unset',
+                textAlign: 'center',
                 padding: '10px 16px',
                 borderRadius: 10,
                 textDecoration: 'none',
@@ -68,8 +92,8 @@ export default function HomePage() {
         <div
           style={{
             display: 'grid',
-            gridTemplateColumns: '1.2fr 0.8fr',
-            gap: 20,
+            gridTemplateColumns: isMobile ? '1fr' : '1.2fr 0.8fr',
+            gap: 16,
           }}
         >
           <div
@@ -77,7 +101,7 @@ export default function HomePage() {
               background: 'rgba(255,255,255,0.06)',
               border: '1px solid rgba(255,255,255,0.12)',
               borderRadius: 20,
-              padding: 24,
+              padding: isMobile ? 18 : 24,
               backdropFilter: 'blur(8px)',
             }}
           >
@@ -97,7 +121,7 @@ export default function HomePage() {
             <h1
               style={{
                 margin: '0 0 14px 0',
-                fontSize: 42,
+                fontSize: isMobile ? 30 : 42,
                 lineHeight: 1.08,
               }}
             >
@@ -108,7 +132,7 @@ export default function HomePage() {
             <p
               style={{
                 margin: 0,
-                fontSize: 18,
+                fontSize: isMobile ? 16 : 18,
                 lineHeight: 1.7,
                 color: 'rgba(255,255,255,0.88)',
                 maxWidth: 760,
@@ -122,6 +146,7 @@ export default function HomePage() {
             <div
               style={{
                 display: 'flex',
+                flexDirection: isMobile ? 'column' : 'row',
                 gap: 12,
                 flexWrap: 'wrap',
                 marginTop: 24,
@@ -130,6 +155,7 @@ export default function HomePage() {
               <a
                 href="/chat"
                 style={{
+                  textAlign: 'center',
                   padding: '14px 20px',
                   borderRadius: 12,
                   textDecoration: 'none',
@@ -144,6 +170,7 @@ export default function HomePage() {
               <a
                 href="/login"
                 style={{
+                  textAlign: 'center',
                   padding: '14px 20px',
                   borderRadius: 12,
                   textDecoration: 'none',
@@ -153,6 +180,21 @@ export default function HomePage() {
                 }}
               >
                 Criar Conta
+              </a>
+
+              <a
+                href="/planos"
+                style={{
+                  textAlign: 'center',
+                  padding: '14px 20px',
+                  borderRadius: 12,
+                  textDecoration: 'none',
+                  border: '1px solid rgba(255,255,255,0.3)',
+                  color: '#fff',
+                  fontWeight: 700,
+                }}
+              >
+                Ver Planos
               </a>
             </div>
 
@@ -178,7 +220,7 @@ export default function HomePage() {
               background: 'rgba(255,255,255,0.08)',
               border: '1px solid rgba(255,255,255,0.12)',
               borderRadius: 20,
-              padding: 24,
+              padding: isMobile ? 18 : 24,
             }}
           >
             <div
@@ -193,7 +235,7 @@ export default function HomePage() {
 
             <div
               style={{
-                fontSize: 32,
+                fontSize: isMobile ? 28 : 32,
                 fontWeight: 800,
                 marginBottom: 10,
               }}
@@ -203,7 +245,7 @@ export default function HomePage() {
 
             <div
               style={{
-                fontSize: 18,
+                fontSize: isMobile ? 17 : 18,
                 lineHeight: 1.7,
                 color: 'rgba(255,255,255,0.9)',
               }}
@@ -221,6 +263,7 @@ export default function HomePage() {
                 background: 'rgba(255,255,255,0.08)',
                 lineHeight: 1.7,
                 color: 'rgba(255,255,255,0.88)',
+                fontSize: isMobile ? 15 : 16,
               }}
             >
               ✅ acesso à Aurora IA
@@ -249,7 +292,8 @@ export default function HomePage() {
               href="/login"
               style={{
                 marginTop: 18,
-                display: 'inline-block',
+                display: 'block',
+                textAlign: 'center',
                 padding: '14px 20px',
                 borderRadius: 12,
                 textDecoration: 'none',
@@ -268,13 +312,15 @@ export default function HomePage() {
         style={{
           maxWidth: 1200,
           margin: '0 auto',
-          padding: '24px 16px 48px',
+          padding: isMobile ? '18px 14px 38px' : '24px 16px 48px',
         }}
       >
         <div
           style={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
+            gridTemplateColumns: isMobile
+              ? '1fr'
+              : 'repeat(3, minmax(0, 1fr))',
             gap: 16,
           }}
         >
@@ -338,7 +384,7 @@ export default function HomePage() {
             marginTop: 20,
             background: '#fff',
             borderRadius: 20,
-            padding: 24,
+            padding: isMobile ? 18 : 24,
             border: '1px solid #e8edf5',
             boxShadow: '0 6px 20px rgba(10,18,35,0.05)',
           }}
@@ -346,7 +392,7 @@ export default function HomePage() {
           <h2
             style={{
               margin: '0 0 12px 0',
-              fontSize: 28,
+              fontSize: isMobile ? 24 : 28,
               color: '#111',
             }}
           >
@@ -369,6 +415,7 @@ export default function HomePage() {
           <div
             style={{
               display: 'flex',
+              flexDirection: isMobile ? 'column' : 'row',
               gap: 12,
               flexWrap: 'wrap',
               marginTop: 18,
@@ -377,6 +424,7 @@ export default function HomePage() {
             <a
               href="/chat"
               style={{
+                textAlign: 'center',
                 padding: '12px 18px',
                 borderRadius: 10,
                 textDecoration: 'none',
@@ -391,6 +439,7 @@ export default function HomePage() {
             <a
               href="https://ricardoiaoficial.com"
               style={{
+                textAlign: 'center',
                 padding: '12px 18px',
                 borderRadius: 10,
                 textDecoration: 'none',
