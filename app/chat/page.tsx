@@ -33,27 +33,43 @@ function generateSessionId() {
 function isImageRequest(text: string) {
   const lower = text.toLowerCase()
 
-  if (
-    lower.includes('crie uma imagem') ||
-    lower.includes('gere uma imagem') ||
-    lower.includes('faça uma imagem') ||
-    lower.includes('fazer uma imagem') ||
-    lower.includes('imagem de') ||
-    lower.includes('desenhe') ||
-    lower.includes('crie um banner') ||
-    lower.includes('crie uma arte') ||
-    lower.includes('gere uma arte') ||
-    lower.includes('faça uma arte') ||
-    lower.includes('crie um logo') ||
-    lower.includes('gere um logo') ||
-    lower.includes('faça um logo') ||
-    lower.includes('me faz uma imagem') ||
-    lower.includes('me faça uma imagem')
-  ) {
-    return true
-  }
+  const imageWords = [
+    'crie uma imagem',
+    'gere uma imagem',
+    'faça uma imagem',
+    'fazer uma imagem',
+    'imagem de',
+    'desenhe',
+    'crie um banner',
+    'crie uma arte',
+    'gere uma arte',
+    'faça uma arte',
+    'crie um logo',
+    'gere um logo',
+    'faça um logo',
+    'me faz uma imagem',
+    'me faça uma imagem',
+    'crie uma foto',
+    'gere uma foto',
+    'faça uma foto',
+  ]
 
-  return false
+  const marketingWords = [
+    'campanha',
+    'marketing',
+    'divulgar',
+    'propaganda',
+    'anúncio',
+    'post instagram',
+    'post para instagram',
+  ]
+
+  const wantsImage = imageWords.some((word) => lower.includes(word))
+  const wantsMarketing = marketingWords.some((word) => lower.includes(word))
+
+  if (wantsMarketing) return false
+
+  return wantsImage
 }
 
 function isMarketingRequest(text: string) {
@@ -325,7 +341,10 @@ export default function ChatPage() {
 
     if (!response.ok) {
       throw new Error(
-        parsed?.error || parsed?.message || rawText || 'Erro ao processar a mensagem.'
+        parsed?.error ||
+          parsed?.message ||
+          rawText ||
+          'Erro ao processar a mensagem.'
       )
     }
 
@@ -508,7 +527,9 @@ export default function ChatPage() {
 
     if (!marketingResponse.ok) {
       throw new Error(
-        marketingParsed?.error || marketingRaw || 'Erro ao gerar campanha automática.'
+        marketingParsed?.error ||
+          marketingRaw ||
+          'Erro ao gerar campanha automática.'
       )
     }
 
@@ -734,7 +755,9 @@ export default function ChatPage() {
                 </div>
 
                 {loadingConversations ? (
-                  <div style={{ color: '#666', fontSize: 14 }}>Carregando...</div>
+                  <div style={{ color: '#666', fontSize: 14 }}>
+                    Carregando...
+                  </div>
                 ) : conversations.length === 0 ? (
                   <div style={{ color: '#666', fontSize: 14 }}>
                     Nenhuma conversa ainda.
@@ -761,7 +784,9 @@ export default function ChatPage() {
                               ? '1px solid #000'
                               : '1px solid #ddd',
                           background:
-                            conversation.id === conversationId ? '#f3f3f3' : '#fff',
+                            conversation.id === conversationId
+                              ? '#f3f3f3'
+                              : '#fff',
                           cursor: 'pointer',
                         }}
                       >
@@ -781,7 +806,9 @@ export default function ChatPage() {
                             color: '#666',
                           }}
                         >
-                          {new Date(conversation.updated_at).toLocaleString('pt-BR')}
+                          {new Date(conversation.updated_at).toLocaleString(
+                            'pt-BR'
+                          )}
                         </div>
                       </button>
                     ))}
@@ -850,7 +877,9 @@ export default function ChatPage() {
                           ? '1px solid #000'
                           : '1px solid #ddd',
                       background:
-                        conversation.id === conversationId ? '#f3f3f3' : '#fff',
+                        conversation.id === conversationId
+                          ? '#f3f3f3'
+                          : '#fff',
                       cursor: 'pointer',
                     }}
                   >
@@ -870,7 +899,9 @@ export default function ChatPage() {
                         color: '#666',
                       }}
                     >
-                      {new Date(conversation.updated_at).toLocaleString('pt-BR')}
+                      {new Date(conversation.updated_at).toLocaleString(
+                        'pt-BR'
+                      )}
                     </div>
                   </button>
                 ))}
@@ -895,7 +926,8 @@ export default function ChatPage() {
                 Chat Aurora IA
               </h1>
               <p style={{ margin: '8px 0 0 0', color: '#555' }}>
-                Converse com a Aurora IA em estilo ChatGPT com histórico por usuário.
+                Converse com a Aurora IA em estilo ChatGPT com histórico por
+                usuário.
               </p>
               <p style={{ margin: '8px 0 0 0', color: '#666', fontSize: 14 }}>
                 {`Logado como: ${user.email || 'usuário sem e-mail'}`}
