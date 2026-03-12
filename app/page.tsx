@@ -244,7 +244,13 @@ export default function HomePage() {
                 color: '#0f172a',
               }}
             >
-              Founders Aurora
+              <a
+ href="https://www.mercadopago.com.br/subscriptions/checkout?preapproval_plan_id=cc255abd5e32475bae9167c8b6b3926d"
+ target="_blank"
+ className="bg-purple-600 hover:bg-purple-700 text-white font-semibold px-6 py-3 rounded-lg"
+>
+Assinar Plano Founders
+</a>
             </div>
 
             <div
