@@ -33,25 +33,27 @@ function generateSessionId() {
 function isImageRequest(text: string) {
   const lower = text.toLowerCase()
 
-  const triggers = [
-    'crie uma imagem',
-    'gere uma imagem',
-    'gerar imagem',
-    'faça uma imagem',
-    'fazer uma imagem',
-    'desenhe',
-    'crie um logo',
-    'gere um logo',
-    'faça um logo',
-    'crie uma arte',
-    'gere uma arte',
-    'faça uma arte',
-    'crie um banner',
-    'gere um banner',
-    'faça um banner',
-  ]
+  if (
+    lower.includes('crie uma imagem') ||
+    lower.includes('gere uma imagem') ||
+    lower.includes('faça uma imagem') ||
+    lower.includes('fazer uma imagem') ||
+    lower.includes('imagem de') ||
+    lower.includes('desenhe') ||
+    lower.includes('crie um banner') ||
+    lower.includes('crie uma arte') ||
+    lower.includes('gere uma arte') ||
+    lower.includes('faça uma arte') ||
+    lower.includes('crie um logo') ||
+    lower.includes('gere um logo') ||
+    lower.includes('faça um logo') ||
+    lower.includes('me faz uma imagem') ||
+    lower.includes('me faça uma imagem')
+  ) {
+    return true
+  }
 
-  return triggers.some((trigger) => lower.includes(trigger))
+  return false
 }
 
 function isMarketingRequest(text: string) {
@@ -240,6 +242,7 @@ export default function ChatPage() {
     ])
     setMessage('')
     setError('')
+
     if (isMobile) {
       setShowSidebar(false)
     }
