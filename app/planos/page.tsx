@@ -1,163 +1,74 @@
-export default function Planos() {
+"use client";
+
+export default function PlanosPage() {
+
+  function abrirPagamento() {
+    window.open("https://www.asaas.com/c/ayfhkldtnk1osf37", "_blank");
+  }
+
   return (
-    <main
-      style={{
-        minHeight: "100vh",
-        background: "#0f172a",
-        color: "white",
-        fontFamily: "Arial, sans-serif",
-        padding: "40px 20px"
-      }}
-    >
-      <div style={{ maxWidth: 1100, margin: "0 auto" }}>
+    <main style={{maxWidth:800,margin:"0 auto",padding:"40px"}}>
 
-        <h1 style={{ fontSize: 40, textAlign: "center", marginBottom: 10 }}>
-          Planos Aurora IA
-        </h1>
+      <h1 style={{fontSize:"32px",fontWeight:"bold"}}>
+        Planos Aurora IA
+      </h1>
 
-        <p style={{ textAlign: "center", opacity: 0.8, marginBottom: 40 }}>
-          Inteligência Artificial brasileira aberta para o mundo
+      <p style={{marginTop:"10px"}}>
+        Escolha o plano inicial da Aurora IA e tenha acesso completo à plataforma.
+      </p>
+
+      <div
+        style={{
+          border:"1px solid #ddd",
+          borderRadius:"16px",
+          padding:"30px",
+          marginTop:"30px",
+          background:"#fafafa"
+        }}
+      >
+
+        <h2 style={{fontSize:"26px",fontWeight:"bold"}}>
+          Founders Aurora
+        </h2>
+
+        <p style={{fontSize:"22px",marginTop:"10px"}}>
+          <strong>R$ 29,90 / mês</strong>
         </p>
 
-        <div
+        <p style={{marginTop:"10px"}}>
+          Preço garantido por até 24 meses para os primeiros usuários.
+        </p>
+
+        <ul style={{marginTop:"20px",lineHeight:"28px"}}>
+          <li>✔ acesso à Aurora IA</li>
+          <li>✔ chat inteligente com memória</li>
+          <li>✔ geração de imagens com IA</li>
+          <li>✔ criação de campanhas de marketing</li>
+          <li>✔ suporte na fase inicial</li>
+        </ul>
+
+        <button
+          onClick={abrirPagamento}
           style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(260px,1fr))",
-            gap: 25
+            marginTop:"30px",
+            padding:"14px 24px",
+            fontSize:"18px",
+            borderRadius:"10px",
+            background:"#000",
+            color:"#fff",
+            cursor:"pointer"
           }}
         >
+          Assinar Plano Founders
+        </button>
 
-          {/* Plano Gratuito */}
-
-          <div
-            style={{
-              background: "#1e293b",
-              padding: 25,
-              borderRadius: 14
-            }}
-          >
-            <h2>Plano Gratuito</h2>
-
-            <h3 style={{ fontSize: 28 }}>R$ 0</h3>
-
-            <p>Ideal para testar a Aurora IA.</p>
-
-            <ul style={{ lineHeight: 1.8 }}>
-              <li>✔ Chat com IA</li>
-              <li>✔ Geração de imagens limitada</li>
-              <li>✔ Marketing básico</li>
-              <li>✔ Acesso inicial</li>
-            </ul>
-
-            <a
-              href="/chat"
-              style={{
-                display: "inline-block",
-                marginTop: 15,
-                background: "#3b82f6",
-                padding: "10px 18px",
-                borderRadius: 8,
-                color: "white",
-                textDecoration: "none"
-              }}
-            >
-              Começar grátis
-            </a>
-          </div>
-
-          {/* Plano Evolução */}
-
-          <div
-            style={{
-              background: "#1e293b",
-              padding: 25,
-              borderRadius: 14,
-              border: "2px solid #8b5cf6"
-            }}
-          >
-            <h2>Plano Evolução</h2>
-
-            <h3 style={{ fontSize: 28 }}>R$ 29,90 / mês</h3>
-
-            <p>Plano completo para produtividade com IA.</p>
-
-            <ul style={{ lineHeight: 1.8 }}>
-              <li>✔ Chat avançado</li>
-              <li>✔ Mais geração de imagens</li>
-              <li>✔ Marketing automático</li>
-              <li>✔ Memória inteligente</li>
-              <li>✔ Atualizações constantes</li>
-            </ul>
-
-            <a
-              href="/login"
-              style={{
-                display: "inline-block",
-                marginTop: 15,
-                background: "#8b5cf6",
-                padding: "10px 18px",
-                borderRadius: 8,
-                color: "white",
-                textDecoration: "none"
-              }}
-            >
-              Contratar
-            </a>
-          </div>
-
-          {/* Plano Fundador */}
-
-          <div
-            style={{
-              background: "#1e293b",
-              padding: 25,
-              borderRadius: 14
-            }}
-          >
-            <h2>Plano Fundador</h2>
-
-            <h3 style={{ fontSize: 28 }}>R$ 29,90</h3>
-
-            <p>Preço especial para os primeiros usuários.</p>
-
-            <ul style={{ lineHeight: 1.8 }}>
-              <li>✔ Tudo do plano evolução</li>
-              <li>✔ Preço garantido por até 24 meses</li>
-              <li>✔ Acesso antecipado a novidades</li>
-              <li>✔ Suporte prioritário</li>
-            </ul>
-
-            <a
-              href="/login"
-              style={{
-                display: "inline-block",
-                marginTop: 15,
-                background: "#22c55e",
-                padding: "10px 18px",
-                borderRadius: 8,
-                color: "white",
-                textDecoration: "none"
-              }}
-            >
-              Quero ser fundador
-            </a>
-          </div>
-
-        </div>
-
-        <div style={{ textAlign: "center", marginTop: 50 }}>
-          <a
-            href="/"
-            style={{
-              color: "#94a3b8",
-              textDecoration: "none"
-            }}
-          >
-            ← Voltar para Aurora IA
-          </a>
-        </div>
+        <p style={{marginTop:"20px",fontSize:"14px"}}>
+          Pagamento seguro via Asaas.  
+          Pix • Cartão • Boleto • Assinatura mensal.
+        </p>
 
       </div>
+
     </main>
-  )
+  );
 }
