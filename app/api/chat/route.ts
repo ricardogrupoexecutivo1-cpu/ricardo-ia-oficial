@@ -70,16 +70,20 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
+      return NextResponse.json(
+        { error: "Variáveis do Supabase não configuradas." },
+        { status: 500 }
+      );
+    }
+
     let currentPlan = "free";
     let messagesRemaining = 20;
 
-    const canUseSupabase =
-      !!SUPABASE_URL && !!SUPABASE_SERVICE_ROLE_KEY && !!userEmail;
-
-    if (canUseSupabase) {
+    if (userEmail) {
       const supabase = createClient(
-        SUPABASE_URL!,
-        SUPABASE_SERVICE_ROLE_KEY!,
+        SUPABASE_URL,
+        SUPABASE_SERVICE_ROLE_KEY,
         {
           auth: {
             autoRefreshToken: false,
@@ -220,8 +224,7 @@ Regras principais:
   } catch (error) {
     return NextResponse.json(
       {
-        error:
-          error instanceof Error ? error.message : "Erro interno ao processar a mensagem.",
+        error: error instanceof Error ? error.message : "Erro interno ao processar a mensagem.",
       },
       { status: 500 }
     );
