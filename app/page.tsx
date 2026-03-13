@@ -226,6 +226,9 @@ export default function HomePage() {
             <Link href="/chat" className="btn-primary">
               Testar agora
             </Link>
+<Link href="/ganhe" className="btn-secondary">
+  💰 Ganhar indicando Aurora
+</Link>
 
             <Link href="/planos" className="btn-secondary">
               Ver planos
