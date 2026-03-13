@@ -45,8 +45,8 @@ export async function POST(req: NextRequest) {
       language === "en"
         ? "English"
         : language === "es"
-        ? "Español"
-        : "Português";
+          ? "Español"
+          : "Português";
 
     const userMessage = (body.message || "").trim();
     const userEmail = (body.email || "").trim().toLowerCase();
@@ -70,86 +70,89 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
-      return NextResponse.json(
-        { error: "Variáveis do Supabase não configuradas." },
-        { status: 500 }
-      );
-    }
-
     let currentPlan = "free";
     let messagesRemaining = 20;
 
-    if (userEmail) {
-      const supabase = createClient(
-        SUPABASE_URL,
-        SUPABASE_SERVICE_ROLE_KEY,
-        {
-          auth: {
-            autoRefreshToken: false,
-            persistSession: false,
-          },
-        }
-      );
+    const canUseSupabase =
+      !!SUPABASE_URL && !!SUPABASE_SERVICE_ROLE_KEY && !!userEmail;
 
-      const { data: subscription } = await supabase
-        .from("aurora_subscriptions")
-        .select("plan, status")
-        .eq("email", userEmail)
-        .maybeSingle();
-
-      const isActivePaid =
-        subscription &&
-        subscription.status === "active" &&
-        (subscription.plan === "pro" || subscription.plan === "influencer");
-
-      const limits = getLimitsByPlan(isActivePaid ? subscription?.plan : "free");
-      currentPlan = limits.plan;
-
-      const today = new Date().toISOString().slice(0, 10);
-
-      const { data: usage } = await supabase
-        .from("aurora_daily_usage")
-        .select("id, messages_count")
-        .eq("email", userEmail)
-        .eq("usage_date", today)
-        .maybeSingle();
-
-      const messagesUsed = Number(usage?.messages_count || 0);
-
-      if (limits.messagesPerDay !== -1 && messagesUsed >= limits.messagesPerDay) {
-        return NextResponse.json(
+    if (canUseSupabase) {
+      try {
+        const supabase = createClient(
+          SUPABASE_URL!,
+          SUPABASE_SERVICE_ROLE_KEY!,
           {
-            error:
-              "Você atingiu o limite diário do seu plano. Faça upgrade para continuar usando a Aurora IA.",
-            plan: currentPlan,
-            messagesRemaining: 0,
-          },
-          { status: 403 }
+            auth: {
+              autoRefreshToken: false,
+              persistSession: false,
+            },
+          }
         );
-      }
 
-      if (usage?.id) {
-        await supabase
+        const { data: subscription } = await supabase
+          .from("aurora_subscriptions")
+          .select("plan, status")
+          .eq("email", userEmail)
+          .maybeSingle();
+
+        const isActivePaid =
+          !!subscription &&
+          subscription.status === "active" &&
+          (subscription.plan === "pro" || subscription.plan === "influencer");
+
+        const limits = getLimitsByPlan(isActivePaid ? subscription.plan : "free");
+        currentPlan = limits.plan;
+
+        const today = new Date().toISOString().slice(0, 10);
+
+        const { data: usage } = await supabase
           .from("aurora_daily_usage")
-          .update({
-            messages_count: messagesUsed + 1,
-            updated_at: new Date().toISOString(),
-          })
-          .eq("id", usage.id);
-      } else {
-        await supabase.from("aurora_daily_usage").insert({
-          email: userEmail,
-          usage_date: today,
-          messages_count: 1,
-          images_count: 0,
-        });
-      }
+          .select("id, messages_count")
+          .eq("email", userEmail)
+          .eq("usage_date", today)
+          .maybeSingle();
 
-      messagesRemaining =
-        limits.messagesPerDay === -1
-          ? -1
-          : Math.max(limits.messagesPerDay - (messagesUsed + 1), 0);
+        const messagesUsed = Number(usage?.messages_count || 0);
+
+        if (
+          limits.messagesPerDay !== -1 &&
+          messagesUsed >= limits.messagesPerDay
+        ) {
+          return NextResponse.json(
+            {
+              error:
+                "Você atingiu o limite diário do seu plano. Faça upgrade para continuar usando a Aurora IA.",
+              plan: currentPlan,
+              messagesRemaining: 0,
+            },
+            { status: 403 }
+          );
+        }
+
+        if (usage?.id) {
+          await supabase
+            .from("aurora_daily_usage")
+            .update({
+              messages_count: messagesUsed + 1,
+              updated_at: new Date().toISOString(),
+            })
+            .eq("id", usage.id);
+        } else {
+          await supabase.from("aurora_daily_usage").insert({
+            email: userEmail,
+            usage_date: today,
+            messages_count: 1,
+            images_count: 0,
+          });
+        }
+
+        messagesRemaining =
+          limits.messagesPerDay === -1
+            ? -1
+            : Math.max(limits.messagesPerDay - (messagesUsed + 1), 0);
+      } catch (supabaseError) {
+        console.error("SUPABASE CHAT WARNING:", supabaseError);
+      }
     }
 
     const systemPrompt = `
@@ -168,22 +171,32 @@ Regras principais:
 - Se o usuário perguntar "onde está a Aurora", explique que você é a própria Aurora IA.
 `;
 
+    const historyMessages = incomingMessages
+      .filter(
+        (msg) =>
+          msg &&
+          (msg.role === "user" ||
+            msg.role === "assistant" ||
+            msg.role === "system") &&
+          typeof msg.content === "string" &&
+          msg.content.trim() !== ""
+      )
+      .slice(-10)
+      .map((msg) => ({
+        role: msg.role,
+        content: msg.content,
+      }));
+
     const messagesForModel = [
       {
         role: "system",
         content: systemPrompt,
       },
-      ...incomingMessages
-        .filter(
-          (msg) =>
-            msg &&
-            (msg.role === "user" ||
-              msg.role === "assistant" ||
-              msg.role === "system") &&
-            typeof msg.content === "string" &&
-            msg.content.trim() !== ""
-        )
-        .slice(-10),
+      ...historyMessages,
+      {
+        role: "user",
+        content: userMessage,
+      },
     ];
 
     const response = await fetch("https://api.openai.com/v1/chat/completions", {
@@ -200,15 +213,24 @@ Regras principais:
       cache: "no-store",
     });
 
-    const data = await response.json();
+    const rawText = await response.text();
+
+    let data: any = null;
+    try {
+      data = rawText ? JSON.parse(rawText) : null;
+    } catch {
+      data = { rawText };
+    }
 
     if (!response.ok) {
       return NextResponse.json(
         {
-          error: "Erro ao processar a mensagem.",
+          error: "Erro OpenAI",
+          statusCode: response.status,
           details: data,
+          rawText,
         },
-        { status: 500 }
+        { status: response.status || 500 }
       );
     }
 
@@ -224,7 +246,10 @@ Regras principais:
   } catch (error) {
     return NextResponse.json(
       {
-        error: error instanceof Error ? error.message : "Erro interno ao processar a mensagem.",
+        error:
+          error instanceof Error
+            ? error.message
+            : "Erro interno ao processar a mensagem.",
       },
       { status: 500 }
     );
