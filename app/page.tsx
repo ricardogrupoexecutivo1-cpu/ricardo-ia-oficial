@@ -177,6 +177,22 @@ export default function HomePage() {
       <div className="footer-note">
         Comece hoje • Teste a plataforma, conheça os recursos e faça upgrade quando quiser.
       </div>
+
+      <div
+        style={{
+          marginTop: 18,
+          textAlign: "center",
+          color: "#94a3b8",
+          fontSize: "13px",
+          lineHeight: 1.6,
+          maxWidth: "900px",
+          marginLeft: "auto",
+          marginRight: "auto",
+        }}
+      >
+        Você está conversando com uma inteligência artificial. Sempre confira as informações,
+        pois pode haver erros, interpretações incorretas ou respostas imprecisas.
+      </div>
     </main>
   );
 }

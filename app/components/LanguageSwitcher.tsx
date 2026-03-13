@@ -34,9 +34,9 @@ export default function LanguageSwitcher() {
   }, []);
 
   function changeLanguage(newLang: string) {
-    const langValue = (newLang as Lang) || "pt";
-    localStorage.setItem("aurora_lang", langValue);
-    setLang(langValue);
+    const value = (newLang as Lang) || "pt";
+    localStorage.setItem("aurora_lang", value);
+    setLang(value);
     window.location.reload();
   }
 
@@ -47,11 +47,12 @@ export default function LanguageSwitcher() {
         top: 16,
         right: 16,
         zIndex: 9999,
-        background: "rgba(255,255,255,0.96)",
-        border: "1px solid #ddd",
+        background: "rgba(15, 23, 42, 0.92)",
+        border: "1px solid rgba(255,255,255,0.12)",
         borderRadius: 12,
         padding: 8,
-        boxShadow: "0 4px 14px rgba(0,0,0,0.08)",
+        boxShadow: "0 10px 24px rgba(0,0,0,0.25)",
+        backdropFilter: "blur(8px)",
       }}
     >
       <select
@@ -60,15 +61,16 @@ export default function LanguageSwitcher() {
         style={{
           border: "none",
           background: "transparent",
+          color: "white",
           fontSize: 14,
           outline: "none",
           cursor: "pointer",
         }}
-        aria-label="Select language"
+        aria-label="Selecionar idioma"
       >
-        <option value="pt">🇧🇷 Português</option>
-        <option value="en">🇺🇸 English</option>
-        <option value="es">🇪🇸 Español</option>
+        <option value="pt" style={{ color: "black" }}>🇧🇷 Português</option>
+        <option value="en" style={{ color: "black" }}>🇺🇸 English</option>
+        <option value="es" style={{ color: "black" }}>🇪🇸 Español</option>
       </select>
     </div>
   );

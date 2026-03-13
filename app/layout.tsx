@@ -1,9 +1,11 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import LanguageSwitcher from "./components/LanguageSwitcher";
 
 export const metadata: Metadata = {
   title: "RicardoIA",
-  description: "Inteligência artificial para atendimento, produtividade, marketing e crescimento empresarial.",
+  description:
+    "Inteligência artificial para atendimento, produtividade, marketing e crescimento empresarial.",
 };
 
 export default function RootLayout({
@@ -13,7 +15,10 @@ export default function RootLayout({
 }) {
   return (
     <html lang="pt-BR">
-      <body>{children}</body>
+      <body>
+        <LanguageSwitcher />
+        {children}
+      </body>
     </html>
   );
 }
