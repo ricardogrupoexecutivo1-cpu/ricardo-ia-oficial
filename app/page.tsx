@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import ReferralTracker from "./components/ReferralTracker";
 
 export default function HomePage() {
   function openPro() {
@@ -12,10 +13,18 @@ export default function HomePage() {
   }
 
   async function shareAurora() {
+    const ref =
+      typeof window !== "undefined"
+        ? localStorage.getItem("aurora_ref") || ""
+        : "";
+
+    const baseUrl = "https://ricardoiaoficial.com";
+    const shareUrl = ref ? `${baseUrl}?ref=${encodeURIComponent(ref)}` : baseUrl;
+
     const shareData = {
       title: "Aurora IA",
       text: "Conheça a Aurora IA: inteligência artificial para atendimento, produtividade, marketing e geração de imagens.",
-      url: "https://ricardoiaoficial.com",
+      url: shareUrl,
     };
 
     try {
@@ -24,8 +33,8 @@ export default function HomePage() {
         return;
       }
 
-      await navigator.clipboard.writeText(shareData.url);
-      alert("Link copiado com sucesso: https://ricardoiaoficial.com");
+      await navigator.clipboard.writeText(shareUrl);
+      alert(`Link copiado com sucesso: ${shareUrl}`);
     } catch (error) {
       console.error("Erro ao compartilhar:", error);
     }
@@ -64,6 +73,8 @@ export default function HomePage() {
           </Link>
         </nav>
       </header>
+
+      <ReferralTracker />
 
       <div
         style={{
