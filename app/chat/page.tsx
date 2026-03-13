@@ -38,6 +38,10 @@ export default function ChatPage() {
     },
   ]);
 
+  function fillPrompt(text: string) {
+    setInput(text);
+  }
+
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
 
@@ -235,6 +239,66 @@ export default function ChatPage() {
               Planos
             </Link>
           </div>
+        </div>
+
+        <div
+          style={{
+            marginBottom: "16px",
+            display: "flex",
+            gap: "10px",
+            flexWrap: "wrap",
+          }}
+        >
+          <button
+            type="button"
+            onClick={() =>
+              fillPrompt("Crie uma campanha de marketing para divulgar a Aurora IA nas redes sociais.")
+            }
+            style={{
+              padding: "10px 14px",
+              borderRadius: "999px",
+              border: "1px solid rgba(255,255,255,0.12)",
+              background: "rgba(255,255,255,0.05)",
+              color: "white",
+              cursor: "pointer",
+            }}
+          >
+            Criar campanha
+          </button>
+
+          <button
+            type="button"
+            onClick={() =>
+              fillPrompt("Gere uma imagem futurista da Aurora IA disponível para o mundo inteiro.")
+            }
+            style={{
+              padding: "10px 14px",
+              borderRadius: "999px",
+              border: "1px solid rgba(255,255,255,0.12)",
+              background: "rgba(255,255,255,0.05)",
+              color: "white",
+              cursor: "pointer",
+            }}
+          >
+            Gerar imagem
+          </button>
+
+          <button
+            type="button"
+            onClick={() =>
+              fillPrompt("Me dê uma ideia de negócio lucrativa usando inteligência artificial.")
+            }
+            style={{
+              padding: "10px 14px",
+              borderRadius: "999px",
+              border: "1px solid rgba(255,255,255,0.12)",
+              background: "rgba(255,255,255,0.05)",
+              color: "white",
+              cursor: "pointer",
+            }}
+          >
+            Ideia de negócio
+          </button>
         </div>
 
         <div

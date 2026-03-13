@@ -43,6 +43,22 @@ export default function HomePage() {
         </nav>
       </header>
 
+      <div
+        style={{
+          marginTop: "18px",
+          marginBottom: "12px",
+          padding: "12px 16px",
+          borderRadius: "16px",
+          border: "1px solid rgba(74, 222, 128, 0.22)",
+          background: "rgba(74, 222, 128, 0.08)",
+          color: "#dcfce7",
+          fontWeight: 700,
+          textAlign: "center",
+        }}
+      >
+        🌍 Aurora IA já está disponível para o mundo com suporte a vários idiomas.
+      </div>
+
       <section className="hero">
         <div className="hero-left">
           <div className="badge">IA brasileira pronta para o mundo</div>
@@ -54,6 +70,19 @@ export default function HomePage() {
           <p className="hero-subtitle">
             Converse, gere imagens, crie campanhas, acelere tarefas e transforme a Aurora IA em sua plataforma de apoio diário para crescer com mais velocidade.
           </p>
+
+          <div
+            style={{
+              padding: "14px 16px",
+              borderRadius: "16px",
+              border: "1px solid rgba(255,255,255,0.10)",
+              background: "rgba(255,255,255,0.05)",
+              color: "#dbeafe",
+              lineHeight: 1.6,
+            }}
+          >
+            Uma inteligência artificial criada no Brasil para ajudar pessoas e empresas no mundo inteiro.
+          </div>
 
           <div className="hero-list">
             <div className="hero-item">⚡ Chat inteligente e rápido</div>
