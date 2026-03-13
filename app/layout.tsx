@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import LanguageSwitcher from "./components/LanguageSwitcher";
+import { Analytics } from "@vercel/analytics/next";
 
 export const metadata: Metadata = {
-  title: "RicardoIA",
+  title: "Aurora IA",
   description:
     "Inteligência artificial para atendimento, produtividade, marketing e crescimento empresarial.",
 };
@@ -18,6 +19,7 @@ export default function RootLayout({
       <body>
         <LanguageSwitcher />
         {children}
+        <Analytics />
       </body>
     </html>
   );
