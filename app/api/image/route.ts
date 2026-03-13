@@ -32,7 +32,7 @@ export async function POST(req: NextRequest) {
         Authorization: `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        model: "gpt-image-1",
+        model: "gpt-image-1-mini",
         prompt,
         size: "1024x1024",
         quality: "medium",
@@ -43,6 +43,16 @@ export async function POST(req: NextRequest) {
 
     const rawText = await response.text();
 
+    if (!response.ok) {
+      return NextResponse.json(
+        {
+          error: rawText || "A API de imagem retornou erro sem texto.",
+          statusCode: response.status,
+        },
+        { status: response.status || 500 }
+      );
+    }
+
     let data: any = null;
 
     try {
@@ -50,23 +60,10 @@ export async function POST(req: NextRequest) {
     } catch {
       return NextResponse.json(
         {
-          error: "Resposta inválida da API de imagem.",
-          details: rawText || "Sem conteúdo retornado.",
-          statusCode: response.status,
+          error: "Resposta da API não veio em JSON.",
+          rawText,
         },
         { status: 500 }
-      );
-    }
-
-    if (!response.ok) {
-      return NextResponse.json(
-        {
-          error: "Erro retornado pela API de imagem.",
-          statusCode: response.status,
-          details: data,
-          raw: rawText,
-        },
-        { status: response.status || 500 }
       );
     }
 
@@ -76,9 +73,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(
         {
           error: "A API respondeu, mas não retornou b64_json.",
-          statusCode: response.status,
-          details: data,
-          raw: rawText,
+          rawText,
         },
         { status: 500 }
       );
@@ -91,8 +86,10 @@ export async function POST(req: NextRequest) {
   } catch (error) {
     return NextResponse.json(
       {
-        error: "Erro interno ao gerar imagem.",
-        details: error instanceof Error ? error.message : String(error),
+        error:
+          error instanceof Error
+            ? error.message
+            : "Erro interno ao gerar imagem.",
       },
       { status: 500 }
     );

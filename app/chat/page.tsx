@@ -139,13 +139,16 @@ export default function ChatPage() {
       const data = await response.json();
 
       if (!response.ok) {
-        const prettyError = JSON.stringify(data, null, 2);
+        const errorText =
+          typeof data?.error === "string"
+            ? data.error
+            : JSON.stringify(data, null, 2);
 
         setMessages((prev) => [
           ...prev,
           {
             role: "assistant",
-            content: `Erro ao gerar imagem:\n${prettyError}`,
+            content: `Erro ao gerar imagem:\n${errorText}`,
           },
         ]);
         return;
