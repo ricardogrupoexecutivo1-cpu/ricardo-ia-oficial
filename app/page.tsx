@@ -9,7 +9,7 @@ export default function HomePage() {
   }
 
   function openInfluencer() {
-    window.open("https://www.asaas.com/c/m2co5t8qj55fvn2d", "_blank");
+    window.open("https://www.asaas.com/c/ej715gfx5qpvlh1v", "_blank");
   }
 
   return (
