@@ -141,11 +141,17 @@ export default function ChatPage() {
       const data = await response.json();
 
       if (!response.ok) {
+        const errorMessage =
+          data?.error ||
+          data?.details?.error?.message ||
+          data?.details?.message ||
+          "Erro ao gerar imagem.";
+
         setMessages((prev) => [
           ...prev,
           {
             role: "assistant",
-            content: data?.error || "Erro ao gerar imagem.",
+            content: `Erro ao gerar imagem: ${errorMessage}`,
           },
         ]);
         return;

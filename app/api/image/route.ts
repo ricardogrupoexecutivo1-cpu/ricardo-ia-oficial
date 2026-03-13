@@ -41,17 +41,36 @@ export async function POST(req: NextRequest) {
       cache: "no-store",
     });
 
-    const data = await response.json();
+    const rawText = await response.text();
+
+    let data: any = null;
+
+    try {
+      data = rawText ? JSON.parse(rawText) : null;
+    } catch {
+      return NextResponse.json(
+        {
+          error: "Resposta inválida da API de imagem.",
+          details: rawText || "Sem conteúdo retornado.",
+        },
+        { status: 500 }
+      );
+    }
 
     if (!response.ok) {
       console.error("OpenAI image error:", data);
 
+      const apiMessage =
+        data?.error?.message ||
+        data?.message ||
+        "Erro retornado pela API de imagem.";
+
       return NextResponse.json(
         {
-          error: "Erro ao gerar imagem.",
+          error: apiMessage,
           details: data,
         },
-        { status: 500 }
+        { status: response.status || 500 }
       );
     }
 
@@ -59,7 +78,10 @@ export async function POST(req: NextRequest) {
 
     if (!imageBase64) {
       return NextResponse.json(
-        { error: "A API não retornou imagem." },
+        {
+          error: "A API respondeu, mas não retornou b64_json da imagem.",
+          details: data,
+        },
         { status: 500 }
       );
     }
@@ -72,7 +94,10 @@ export async function POST(req: NextRequest) {
     console.error("API /api/image error:", error);
 
     return NextResponse.json(
-      { error: "Erro interno ao gerar imagem." },
+      {
+        error: "Erro interno ao gerar imagem.",
+        details: error instanceof Error ? error.message : String(error),
+      },
       { status: 500 }
     );
   }
