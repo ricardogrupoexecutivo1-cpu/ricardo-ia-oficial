@@ -8,6 +8,23 @@ type Message = {
   content: string;
 };
 
+function isImageRequest(text: string) {
+  const value = text.toLowerCase();
+
+  return (
+    value.includes("crie uma imagem") ||
+    value.includes("gere uma imagem") ||
+    value.includes("criar imagem") ||
+    value.includes("gerar imagem") ||
+    value.includes("faça uma imagem") ||
+    value.includes("desenhe") ||
+    value.includes("imagem de") ||
+    value.includes("image of") ||
+    value.includes("create an image") ||
+    value.includes("generate an image")
+  );
+}
+
 export default function ChatPage() {
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
@@ -17,7 +34,7 @@ export default function ChatPage() {
     {
       role: "assistant",
       content:
-        "Olá! Eu sou a RicardoIA. Posso conversar com você ou gerar uma imagem.",
+        "Olá! Eu sou a Aurora IA. Posso conversar com você ou gerar uma imagem.",
     },
   ]);
 
@@ -25,7 +42,12 @@ export default function ChatPage() {
     e.preventDefault();
 
     const text = input.trim();
-    if (!text || loading) return;
+    if (!text || loading || imageLoading) return;
+
+    if (isImageRequest(text)) {
+      await handleGenerateImage(text);
+      return;
+    }
 
     const currentLang =
       typeof window !== "undefined"
@@ -89,8 +111,8 @@ export default function ChatPage() {
     }
   }
 
-  async function handleGenerateImage() {
-    const prompt = input.trim();
+  async function handleGenerateImage(customPrompt?: string) {
+    const prompt = (customPrompt || input).trim();
 
     if (!prompt || imageLoading) return;
 
@@ -177,7 +199,7 @@ export default function ChatPage() {
           }}
         >
           <div>
-            <h1 style={{ fontSize: "32px", marginBottom: "8px" }}>RicardoIA</h1>
+            <h1 style={{ fontSize: "32px", marginBottom: "8px" }}>Aurora IA</h1>
             <p style={{ opacity: 0.85 }}>
               Conversa inteligente e geração de imagens.
             </p>
@@ -294,7 +316,7 @@ export default function ChatPage() {
             <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
               <button
                 type="submit"
-                disabled={loading}
+                disabled={loading || imageLoading}
                 style={{
                   padding: "14px 18px",
                   borderRadius: "14px",
@@ -310,8 +332,8 @@ export default function ChatPage() {
 
               <button
                 type="button"
-                onClick={handleGenerateImage}
-                disabled={imageLoading}
+                onClick={() => handleGenerateImage()}
+                disabled={imageLoading || loading}
                 style={{
                   padding: "14px 18px",
                   borderRadius: "14px",

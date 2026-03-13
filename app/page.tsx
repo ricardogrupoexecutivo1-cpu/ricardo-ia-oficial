@@ -14,7 +14,7 @@ export default function HomePage() {
   return (
     <main className="home-shell">
       <header className="topbar">
-        <div className="logo">RicardoIA</div>
+        <div className="logo">Aurora IA</div>
 
         <nav className="top-actions">
           <Link href="/chat" className="top-link">
@@ -38,7 +38,7 @@ export default function HomePage() {
           </h1>
 
           <p className="hero-subtitle">
-            Converse, gere imagens, crie campanhas, acelere tarefas e transforme a RicardoIA em sua plataforma de apoio diário para crescer com mais velocidade.
+            Converse, gere imagens, crie campanhas, acelere tarefas e transforme a Aurora IA em sua plataforma de apoio diário para crescer com mais velocidade.
           </p>
 
           <div className="hero-list">
