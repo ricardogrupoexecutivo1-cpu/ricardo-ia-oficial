@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import Link from "next/link";
 
 type Message = {
@@ -27,6 +27,10 @@ function isImageRequest(text: string) {
 
 export default function ChatPage() {
   const [input, setInput] = useState("");
+  const [email, setEmail] = useState("");
+  const [plan, setPlan] = useState("free");
+  const [messagesRemaining, setMessagesRemaining] = useState<number | null>(null);
+  const [imagesRemaining, setImagesRemaining] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
   const [imageLoading, setImageLoading] = useState(false);
   const [generatedImage, setGeneratedImage] = useState("");
@@ -38,8 +42,51 @@ export default function ChatPage() {
     },
   ]);
 
+  useEffect(() => {
+    const savedEmail = localStorage.getItem("aurora_email") || "";
+    if (savedEmail) {
+      setEmail(savedEmail);
+      loadUsage(savedEmail);
+    }
+  }, []);
+
+  async function loadUsage(currentEmail: string) {
+    if (!currentEmail) return;
+
+    try {
+      const response = await fetch("/api/usage/status", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email: currentEmail,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        setPlan(data?.plan || "free");
+        setMessagesRemaining(
+          typeof data?.messagesRemaining === "number" ? data.messagesRemaining : null
+        );
+        setImagesRemaining(
+          typeof data?.imagesRemaining === "number" ? data.imagesRemaining : null
+        );
+      }
+    } catch (error) {
+      console.error("Erro ao carregar uso:", error);
+    }
+  }
+
   function fillPrompt(text: string) {
     setInput(text);
+  }
+
+  function saveEmail(value: string) {
+    setEmail(value);
+    localStorage.setItem("aurora_email", value);
   }
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
@@ -77,6 +124,7 @@ export default function ChatPage() {
         body: JSON.stringify({
           message: text,
           messages: nextMessages,
+          email,
         }),
       });
 
@@ -90,8 +138,16 @@ export default function ChatPage() {
             content: data?.error || "Erro ao processar a mensagem.",
           },
         ]);
+        await loadUsage(email);
         return;
       }
+
+      setPlan(data?.plan || plan);
+      setMessagesRemaining(
+        typeof data?.messagesRemaining === "number"
+          ? data.messagesRemaining
+          : messagesRemaining
+      );
 
       setMessages((prev) => [
         ...prev,
@@ -137,6 +193,7 @@ export default function ChatPage() {
         },
         body: JSON.stringify({
           prompt,
+          email,
         }),
       });
 
@@ -155,8 +212,17 @@ export default function ChatPage() {
             content: `Erro ao gerar imagem:\n${errorText}`,
           },
         ]);
+
+        await loadUsage(email);
         return;
       }
+
+      setPlan(data?.plan || plan);
+      setImagesRemaining(
+        typeof data?.imagesRemaining === "number"
+          ? data.imagesRemaining
+          : imagesRemaining
+      );
 
       const src = `data:${data.mimeType};base64,${data.imageBase64}`;
       setGeneratedImage(src);
@@ -239,6 +305,45 @@ export default function ChatPage() {
               Planos
             </Link>
           </div>
+        </div>
+
+        <div
+          style={{
+            marginBottom: "14px",
+            padding: "14px 16px",
+            borderRadius: "16px",
+            border: "1px solid rgba(255,255,255,0.10)",
+            background: "rgba(255,255,255,0.05)",
+            display: "grid",
+            gap: "8px",
+          }}
+        >
+          <div><strong>Plano atual:</strong> {plan.toUpperCase()}</div>
+          <div>
+            <strong>Mensagens restantes hoje:</strong>{" "}
+            {messagesRemaining === -1 ? "ilimitado" : messagesRemaining ?? "-"}
+          </div>
+          <div>
+            <strong>Imagens restantes hoje:</strong>{" "}
+            {imagesRemaining === -1 ? "ilimitado" : imagesRemaining ?? "-"}
+          </div>
+
+          <input
+            type="email"
+            value={email}
+            onChange={(e) => saveEmail(e.target.value)}
+            onBlur={() => loadUsage(email)}
+            placeholder="Digite seu e-mail para controle do seu plano"
+            style={{
+              marginTop: "8px",
+              padding: "12px 14px",
+              borderRadius: "12px",
+              border: "1px solid rgba(255,255,255,0.12)",
+              background: "rgba(255,255,255,0.06)",
+              color: "white",
+              outline: "none",
+            }}
+          />
         </div>
 
         <div

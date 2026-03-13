@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { createClient } from "@supabase/supabase-js";
 
 type ChatMessage = {
   role: "user" | "assistant" | "system";
@@ -8,7 +9,31 @@ type ChatMessage = {
 type ChatRequestBody = {
   message?: string;
   messages?: ChatMessage[];
+  email?: string;
 };
+
+function getLimitsByPlan(plan: string | null) {
+  const normalized = (plan || "free").toLowerCase();
+
+  if (normalized === "pro") {
+    return {
+      plan: "pro",
+      messagesPerDay: -1,
+    };
+  }
+
+  if (normalized === "influencer") {
+    return {
+      plan: "influencer",
+      messagesPerDay: 200,
+    };
+  }
+
+  return {
+    plan: "free",
+    messagesPerDay: 20,
+  };
+}
 
 export async function POST(req: NextRequest) {
   try {
@@ -24,6 +49,7 @@ export async function POST(req: NextRequest) {
         : "Português";
 
     const userMessage = (body.message || "").trim();
+    const userEmail = (body.email || "").trim().toLowerCase();
     const incomingMessages = Array.isArray(body.messages) ? body.messages : [];
 
     if (!userMessage) {
@@ -34,12 +60,96 @@ export async function POST(req: NextRequest) {
     }
 
     const apiKey = process.env.OPENAI_API_KEY;
+    const SUPABASE_URL = process.env.SUPABASE_URL;
+    const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
     if (!apiKey) {
       return NextResponse.json(
         { error: "OPENAI_API_KEY não configurada." },
         { status: 500 }
       );
+    }
+
+    if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
+      return NextResponse.json(
+        { error: "Variáveis do Supabase não configuradas." },
+        { status: 500 }
+      );
+    }
+
+    let currentPlan = "free";
+    let messagesRemaining = 20;
+
+    if (userEmail) {
+      const supabase = createClient(
+        SUPABASE_URL,
+        SUPABASE_SERVICE_ROLE_KEY,
+        {
+          auth: {
+            autoRefreshToken: false,
+            persistSession: false,
+          },
+        }
+      );
+
+      const { data: subscription } = await supabase
+        .from("aurora_subscriptions")
+        .select("plan, status")
+        .eq("email", userEmail)
+        .maybeSingle();
+
+      const isActivePaid =
+        subscription &&
+        subscription.status === "active" &&
+        (subscription.plan === "pro" || subscription.plan === "influencer");
+
+      const limits = getLimitsByPlan(isActivePaid ? subscription?.plan : "free");
+      currentPlan = limits.plan;
+
+      const today = new Date().toISOString().slice(0, 10);
+
+      const { data: usage } = await supabase
+        .from("aurora_daily_usage")
+        .select("id, messages_count")
+        .eq("email", userEmail)
+        .eq("usage_date", today)
+        .maybeSingle();
+
+      const messagesUsed = Number(usage?.messages_count || 0);
+
+      if (limits.messagesPerDay !== -1 && messagesUsed >= limits.messagesPerDay) {
+        return NextResponse.json(
+          {
+            error:
+              "Você atingiu o limite diário do seu plano. Faça upgrade para continuar usando a Aurora IA.",
+            plan: currentPlan,
+            messagesRemaining: 0,
+          },
+          { status: 403 }
+        );
+      }
+
+      if (usage?.id) {
+        await supabase
+          .from("aurora_daily_usage")
+          .update({
+            messages_count: messagesUsed + 1,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", usage.id);
+      } else {
+        await supabase.from("aurora_daily_usage").insert({
+          email: userEmail,
+          usage_date: today,
+          messages_count: 1,
+          images_count: 0,
+        });
+      }
+
+      messagesRemaining =
+        limits.messagesPerDay === -1
+          ? -1
+          : Math.max(limits.messagesPerDay - (messagesUsed + 1), 0);
     }
 
     const systemPrompt = `
@@ -56,7 +166,6 @@ Regras principais:
 - Nunca misture idiomas sem necessidade.
 - Seja natural, útil e direta.
 - Se o usuário perguntar "onde está a Aurora", explique que você é a própria Aurora IA.
-- Se o usuário pedir geração de imagem dentro do chat, explique de forma curta que a imagem pode ser gerada pelo botão "Gerar imagem" abaixo, sem enrolar.
 `;
 
     const messagesForModel = [
@@ -94,8 +203,6 @@ Regras principais:
     const data = await response.json();
 
     if (!response.ok) {
-      console.error("OpenAI error:", data);
-
       return NextResponse.json(
         {
           error: "Erro ao processar a mensagem.",
@@ -111,12 +218,14 @@ Regras principais:
 
     return NextResponse.json({
       reply,
+      plan: currentPlan,
+      messagesRemaining,
     });
   } catch (error) {
-    console.error("API /api/chat error:", error);
-
     return NextResponse.json(
-      { error: "Erro interno ao processar a mensagem." },
+      {
+        error: error instanceof Error ? error.message : "Erro interno ao processar a mensagem.",
+      },
       { status: 500 }
     );
   }
