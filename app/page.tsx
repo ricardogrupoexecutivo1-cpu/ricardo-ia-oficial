@@ -3,7 +3,6 @@
 import Link from "next/link";
 
 export default function HomePage() {
-
   function openPro() {
     window.open("https://www.asaas.com/c/ayfhkldtnk1osf37", "_blank");
   }
@@ -12,9 +11,28 @@ export default function HomePage() {
     window.open("https://www.asaas.com/c/ej715gfx5qpvlh1v", "_blank");
   }
 
+  async function shareAurora() {
+    const shareData = {
+      title: "Aurora IA",
+      text: "Conheça a Aurora IA: inteligência artificial para atendimento, produtividade, marketing e geração de imagens.",
+      url: "https://ricardoiaoficial.com",
+    };
+
+    try {
+      if (navigator.share) {
+        await navigator.share(shareData);
+        return;
+      }
+
+      await navigator.clipboard.writeText(shareData.url);
+      alert("Link copiado com sucesso: https://ricardoiaoficial.com");
+    } catch (error) {
+      console.error("Erro ao compartilhar:", error);
+    }
+  }
+
   return (
     <main className="home-shell">
-
       <div className="neon-network">
         <div className="neon-line" style={{ width: "280px", top: "12%", left: "8%", transform: "rotate(18deg)" }}></div>
         <div className="neon-line" style={{ width: "220px", top: "22%", left: "28%", transform: "rotate(-12deg)" }}></div>
@@ -64,9 +82,7 @@ export default function HomePage() {
       </div>
 
       <section className="hero">
-
         <div className="hero-left">
-
           <div className="badge">
             IA brasileira pronta para o mundo
           </div>
@@ -108,14 +124,15 @@ export default function HomePage() {
             <Link href="/planos" className="btn-secondary">
               Ver planos
             </Link>
-          </div>
 
+            <button onClick={shareAurora} className="btn-secondary">
+              Compartilhar Aurora IA
+            </button>
+          </div>
         </div>
 
         <div className="hero-visual">
-
           <div className="visual-card">
-
             <div className="float-tag tag-1">⚡ IA rápida</div>
             <div className="float-tag tag-2">🎨 Imagens</div>
             <div className="float-tag tag-3">🌍 Global</div>
@@ -124,9 +141,7 @@ export default function HomePage() {
             <div className="robot-laptop"></div>
 
             <div className="robot-core">
-
               <div className="robot-head">
-
                 <div className="robot-ear-left"></div>
                 <div className="robot-ear-right"></div>
 
@@ -135,25 +150,18 @@ export default function HomePage() {
                   <div className="eye"></div>
                   <div className="mouth"></div>
                 </div>
-
               </div>
 
               <div className="robot-arm-left"></div>
               <div className="robot-arm-right"></div>
               <div className="robot-body"></div>
-
             </div>
-
           </div>
-
         </div>
-
       </section>
 
       <section className="plans">
-
         <div className="plan-card plan-highlight">
-
           <div className="plan-badge">
             POPULAR
           </div>
@@ -182,11 +190,9 @@ export default function HomePage() {
               Assinar agora
             </button>
           </div>
-
         </div>
 
         <div className="plan-card">
-
           <div className="plan-badge">
             NOVO
           </div>
@@ -215,9 +221,7 @@ export default function HomePage() {
               Assinar influencer
             </button>
           </div>
-
         </div>
-
       </section>
 
       <section
@@ -230,7 +234,6 @@ export default function HomePage() {
           lineHeight: 1.7
         }}
       >
-
         <h2 style={{ fontSize: "28px", marginBottom: "16px" }}>
           O futuro da Aurora IA
         </h2>
@@ -243,15 +246,14 @@ export default function HomePage() {
         </p>
 
         <div style={{ marginTop: "16px", color: "#e2e8f0" }}>
-          • ERP empresarial e pessoal  
+          • ERP empresarial e pessoal
           <br />
-          • Plataforma de venda de veículos de locadoras  
+          • Plataforma de venda de veículos de locadoras
           <br />
-          • Novos aplicativos e soluções digitais  
+          • Novos aplicativos e soluções digitais
           <br />
           • Ferramentas criadas para facilitar a vida humana
         </div>
-
       </section>
 
       <div className="footer-note">
@@ -273,7 +275,6 @@ export default function HomePage() {
         Você está conversando com uma inteligência artificial.
         Sempre confira as informações pois podem existir erros ou interpretações incorretas.
       </div>
-
     </main>
   );
 }
