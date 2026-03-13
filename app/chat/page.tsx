@@ -17,11 +17,11 @@ function isImageRequest(text: string) {
     value.includes("criar imagem") ||
     value.includes("gerar imagem") ||
     value.includes("faça uma imagem") ||
-    value.includes("desenhe") ||
     value.includes("imagem de") ||
-    value.includes("image of") ||
+    value.includes("desenhe") ||
     value.includes("create an image") ||
-    value.includes("generate an image")
+    value.includes("generate an image") ||
+    value.includes("image of")
   );
 }
 
@@ -97,8 +97,6 @@ export default function ChatPage() {
         },
       ]);
     } catch (error) {
-      console.error("Erro no chat:", error);
-
       setMessages((prev) => [
         ...prev,
         {
@@ -141,17 +139,13 @@ export default function ChatPage() {
       const data = await response.json();
 
       if (!response.ok) {
-        const errorMessage =
-          data?.error ||
-          data?.details?.error?.message ||
-          data?.details?.message ||
-          "Erro ao gerar imagem.";
+        const prettyError = JSON.stringify(data, null, 2);
 
         setMessages((prev) => [
           ...prev,
           {
             role: "assistant",
-            content: `Erro ao gerar imagem: ${errorMessage}`,
+            content: `Erro ao gerar imagem:\n${prettyError}`,
           },
         ]);
         return;
@@ -170,13 +164,13 @@ export default function ChatPage() {
 
       setInput("");
     } catch (error) {
-      console.error("Erro ao gerar imagem:", error);
-
       setMessages((prev) => [
         ...prev,
         {
           role: "assistant",
-          content: "Erro ao gerar imagem.",
+          content: `Erro ao gerar imagem: ${
+            error instanceof Error ? error.message : String(error)
+          }`,
         },
       ]);
     } finally {
