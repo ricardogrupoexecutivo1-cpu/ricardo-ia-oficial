@@ -96,7 +96,7 @@ export default function ChatPage() {
           content: data?.reply || "Resposta vazia.",
         },
       ]);
-    } catch (error) {
+    } catch {
       setMessages((prev) => [
         ...prev,
         {
@@ -274,6 +274,21 @@ export default function ChatPage() {
             ))}
           </div>
 
+          {imageLoading ? (
+            <div className="image-status">
+              <div className="loader-row">
+                <div className="loader-dot"></div>
+                <div className="loader-dot"></div>
+                <div className="loader-dot"></div>
+                <div className="loader-text">
+                  <strong>Aurora IA está criando sua imagem...</strong>
+                  <br />
+                  Isso pode levar alguns segundos.
+                </div>
+              </div>
+            </div>
+          ) : null}
+
           {generatedImage ? (
             <div style={{ marginTop: "18px" }}>
               <img
@@ -324,10 +339,10 @@ export default function ChatPage() {
                   padding: "14px 18px",
                   borderRadius: "14px",
                   border: "none",
-                  background: loading ? "#334155" : "#06b6d4",
+                  background: loading || imageLoading ? "#334155" : "#06b6d4",
                   color: "white",
                   fontWeight: "bold",
-                  cursor: loading ? "not-allowed" : "pointer",
+                  cursor: loading || imageLoading ? "not-allowed" : "pointer",
                 }}
               >
                 {loading ? "Enviando..." : "Enviar mensagem"}
@@ -344,7 +359,7 @@ export default function ChatPage() {
                   background: imageLoading ? "#1e293b" : "rgba(255,255,255,0.06)",
                   color: "white",
                   fontWeight: "bold",
-                  cursor: imageLoading ? "not-allowed" : "pointer",
+                  cursor: imageLoading || loading ? "not-allowed" : "pointer",
                 }}
               >
                 {imageLoading ? "Gerando imagem..." : "Gerar imagem"}

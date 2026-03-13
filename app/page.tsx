@@ -13,6 +13,20 @@ export default function HomePage() {
 
   return (
     <main className="home-shell">
+      <div className="neon-network">
+        <div className="neon-line" style={{ width: "280px", top: "12%", left: "8%", transform: "rotate(18deg)" }}></div>
+        <div className="neon-line" style={{ width: "220px", top: "22%", left: "28%", transform: "rotate(-12deg)" }}></div>
+        <div className="neon-line" style={{ width: "320px", top: "36%", left: "58%", transform: "rotate(10deg)" }}></div>
+        <div className="neon-line" style={{ width: "240px", top: "68%", left: "12%", transform: "rotate(-16deg)" }}></div>
+        <div className="neon-line" style={{ width: "300px", top: "78%", left: "54%", transform: "rotate(14deg)" }}></div>
+
+        <div className="neon-dot" style={{ top: "11%", left: "9%" }}></div>
+        <div className="neon-dot" style={{ top: "21%", left: "43%" }}></div>
+        <div className="neon-dot" style={{ top: "34%", left: "76%" }}></div>
+        <div className="neon-dot" style={{ top: "67%", left: "20%" }}></div>
+        <div className="neon-dot" style={{ top: "77%", left: "70%" }}></div>
+      </div>
+
       <header className="topbar">
         <div className="logo">Aurora IA</div>
 
