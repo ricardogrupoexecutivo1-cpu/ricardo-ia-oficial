@@ -17,6 +17,21 @@ export default function RootLayout({
   return (
     <html lang="pt-BR">
       <body>
+        <div
+          style={{
+            width: "100%",
+            background: "#facc15",
+            color: "#111827",
+            textAlign: "center",
+            fontSize: "14px",
+            fontWeight: 700,
+            padding: "10px 12px",
+            lineHeight: 1.5,
+          }}
+        >
+          🚀 Aurora IA Beta — novas funções sendo lançadas diariamente.
+        </div>
+
         <LanguageSwitcher />
         {children}
         <Analytics />

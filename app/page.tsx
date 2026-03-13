@@ -70,11 +70,51 @@ export default function HomePage() {
   return (
     <main className="home-shell">
       <div className="neon-network">
-        <div className="neon-line" style={{ width: "280px", top: "12%", left: "8%", transform: "rotate(18deg)" }}></div>
-        <div className="neon-line" style={{ width: "220px", top: "22%", left: "28%", transform: "rotate(-12deg)" }}></div>
-        <div className="neon-line" style={{ width: "320px", top: "36%", left: "58%", transform: "rotate(10deg)" }}></div>
-        <div className="neon-line" style={{ width: "240px", top: "68%", left: "12%", transform: "rotate(-16deg)" }}></div>
-        <div className="neon-line" style={{ width: "300px", top: "78%", left: "54%", transform: "rotate(14deg)" }}></div>
+        <div
+          className="neon-line"
+          style={{
+            width: "280px",
+            top: "12%",
+            left: "8%",
+            transform: "rotate(18deg)",
+          }}
+        ></div>
+        <div
+          className="neon-line"
+          style={{
+            width: "220px",
+            top: "22%",
+            left: "28%",
+            transform: "rotate(-12deg)",
+          }}
+        ></div>
+        <div
+          className="neon-line"
+          style={{
+            width: "320px",
+            top: "36%",
+            left: "58%",
+            transform: "rotate(10deg)",
+          }}
+        ></div>
+        <div
+          className="neon-line"
+          style={{
+            width: "240px",
+            top: "68%",
+            left: "12%",
+            transform: "rotate(-16deg)",
+          }}
+        ></div>
+        <div
+          className="neon-line"
+          style={{
+            width: "300px",
+            top: "78%",
+            left: "54%",
+            transform: "rotate(14deg)",
+          }}
+        ></div>
 
         <div className="neon-dot" style={{ top: "11%", left: "9%" }}></div>
         <div className="neon-dot" style={{ top: "21%", left: "43%" }}></div>
@@ -114,6 +154,7 @@ export default function HomePage() {
           color: "#dcfce7",
           fontWeight: 700,
           textAlign: "center",
+          lineHeight: 1.5,
         }}
       >
         🌍 Aurora IA já está disponível para o mundo com suporte a vários idiomas.
@@ -121,17 +162,17 @@ export default function HomePage() {
 
       <section className="hero">
         <div className="hero-left">
-          <div className="badge">
-            IA brasileira pronta para o mundo
-          </div>
+          <div className="badge">IA brasileira pronta para o mundo</div>
 
           <h1 className="hero-title">
-            Sua inteligência artificial para <span>atendimento, produtividade, marketing e crescimento</span>
+            Sua inteligência artificial para{" "}
+            <span>atendimento, produtividade, marketing e crescimento</span>
           </h1>
 
           <p className="hero-subtitle">
-            Converse, gere imagens, crie campanhas, acelere tarefas e transforme a Aurora IA
-            em sua plataforma de apoio diário para crescer com mais velocidade.
+            Converse, gere imagens, crie campanhas, acelere tarefas e transforme
+            a Aurora IA em sua plataforma de apoio diário para crescer com mais
+            velocidade.
           </p>
 
           <div
@@ -144,7 +185,34 @@ export default function HomePage() {
               lineHeight: 1.6,
             }}
           >
-            Uma inteligência artificial criada no Brasil para ajudar pessoas e empresas no mundo inteiro.
+            Uma inteligência artificial criada no Brasil para ajudar pessoas e
+            empresas no mundo inteiro.
+          </div>
+
+          <div
+            style={{
+              marginTop: "18px",
+              padding: "16px",
+              borderRadius: "18px",
+              border: "1px solid rgba(255,255,255,0.10)",
+              background: "rgba(15,23,42,0.55)",
+              color: "#e2e8f0",
+              lineHeight: 1.7,
+            }}
+          >
+            <div
+              style={{
+                fontWeight: 800,
+                marginBottom: "10px",
+                color: "#ffffff",
+              }}
+            >
+              Experimente pedir agora:
+            </div>
+
+            <div>• Crie uma campanha de marketing para Instagram</div>
+            <div>• Gere uma imagem futurista de cidade tecnológica</div>
+            <div>• Me dê uma ideia de negócio lucrativa</div>
           </div>
 
           <div className="hero-list">
@@ -166,6 +234,41 @@ export default function HomePage() {
             <button onClick={shareAurora} className="btn-secondary">
               Compartilhar Aurora IA
             </button>
+          </div>
+
+          <Link
+            href="/chat"
+            style={{
+              display: "block",
+              marginTop: "18px",
+              width: "100%",
+              textAlign: "center",
+              padding: "16px 18px",
+              borderRadius: "18px",
+              background: "linear-gradient(135deg, #facc15, #f59e0b)",
+              color: "#111827",
+              fontWeight: 900,
+              fontSize: "18px",
+              textDecoration: "none",
+              boxShadow: "0 16px 40px rgba(250, 204, 21, 0.18)",
+            }}
+          >
+            Começar a conversar com a Aurora
+          </Link>
+
+          <div
+            style={{
+              marginTop: "14px",
+              padding: "14px 16px",
+              borderRadius: "16px",
+              border: "1px solid rgba(250, 204, 21, 0.22)",
+              background: "rgba(250, 204, 21, 0.08)",
+              color: "#fef3c7",
+              lineHeight: 1.6,
+            }}
+          >
+            Estamos lançando novidades e novas funções com frequência. Durante
+            esta fase podem ocorrer pequenos ajustes ou instabilidades pontuais.
           </div>
         </div>
 
@@ -200,17 +303,11 @@ export default function HomePage() {
 
       <section className="plans">
         <div className="plan-card plan-highlight">
-          <div className="plan-badge">
-            POPULAR
-          </div>
+          <div className="plan-badge">POPULAR</div>
 
-          <div className="plan-title">
-            Plano PRO
-          </div>
+          <div className="plan-title">Plano PRO</div>
 
-          <div className="plan-price">
-            R$ 29,90/mês
-          </div>
+          <div className="plan-price">R$ 29,90/mês</div>
 
           <div className="plan-desc">
             Ideal para quem quer usar a IA com mais força no dia a dia.
@@ -231,20 +328,15 @@ export default function HomePage() {
         </div>
 
         <div className="plan-card">
-          <div className="plan-badge">
-            NOVO
-          </div>
+          <div className="plan-badge">NOVO</div>
 
-          <div className="plan-title">
-            Plano Influencer
-          </div>
+          <div className="plan-title">Plano Influencer</div>
 
-          <div className="plan-price">
-            R$ 9,90/mês
-          </div>
+          <div className="plan-price">R$ 9,90/mês</div>
 
           <div className="plan-desc">
-            Ideal para criadores e pessoas que desejam divulgar e crescer com a Aurora IA.
+            Ideal para criadores e pessoas que desejam divulgar e crescer com a
+            Aurora IA.
           </div>
 
           <div className="plan-list">
@@ -269,7 +361,7 @@ export default function HomePage() {
           borderRadius: "22px",
           border: "1px solid rgba(255,255,255,0.08)",
           background: "rgba(255,255,255,0.05)",
-          lineHeight: 1.7
+          lineHeight: 1.7,
         }}
       >
         <h2 style={{ fontSize: "28px", marginBottom: "16px" }}>
@@ -277,10 +369,10 @@ export default function HomePage() {
         </h2>
 
         <p style={{ color: "#dbeafe" }}>
-          Estamos construindo muito mais do que uma inteligência artificial.
-          A Aurora IA evolui para um ecossistema de soluções reais,
-          pensado para unir tecnologia, produtividade, gestão,
-          negócios e praticidade no dia a dia.
+          Estamos construindo muito mais do que uma inteligência artificial. A
+          Aurora IA evolui para um ecossistema de soluções reais, pensado para
+          unir tecnologia, produtividade, gestão, negócios e praticidade no dia
+          a dia.
         </p>
 
         <div style={{ marginTop: "16px", color: "#e2e8f0" }}>
@@ -295,7 +387,8 @@ export default function HomePage() {
       </section>
 
       <div className="footer-note">
-        Comece hoje • Teste a plataforma e descubra como a Aurora IA pode ajudar você.
+        Comece hoje • Teste a plataforma e descubra como a Aurora IA pode ajudar
+        você.
       </div>
 
       <div
@@ -310,8 +403,8 @@ export default function HomePage() {
           marginRight: "auto",
         }}
       >
-        Você está conversando com uma inteligência artificial.
-        Sempre confira as informações pois podem existir erros ou interpretações incorretas.
+        Você está conversando com uma inteligência artificial. Sempre confira as
+        informações pois podem existir erros ou interpretações incorretas.
       </div>
     </main>
   );
