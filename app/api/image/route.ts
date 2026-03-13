@@ -25,18 +25,18 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const response = await fetch("https://api.openai.com/v1/images", {
+    const response = await fetch("https://api.openai.com/v1/images/generations", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        model: "gpt-image-1-mini",
+        model: "gpt-image-1",
         prompt,
         size: "1024x1024",
         quality: "medium",
-        output_format: "png",
+        output_format: "png"
       }),
       cache: "no-store",
     });
