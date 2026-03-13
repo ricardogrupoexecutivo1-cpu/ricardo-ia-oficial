@@ -4,11 +4,38 @@ import Link from "next/link";
 import ReferralTracker from "./components/ReferralTracker";
 
 export default function HomePage() {
-  function openPro() {
+  async function captureReferral(plan: "pro" | "influencer") {
+    try {
+      const refCode =
+        typeof window !== "undefined"
+          ? (localStorage.getItem("aurora_ref") || "").trim()
+          : "";
+
+      if (!refCode) return;
+
+      await fetch("/api/referral/capture", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          refCode,
+          planClicked: plan,
+          sourceUrl: typeof window !== "undefined" ? window.location.href : "",
+        }),
+      });
+    } catch (error) {
+      console.error("Erro ao capturar referência:", error);
+    }
+  }
+
+  async function openPro() {
+    await captureReferral("pro");
     window.open("https://www.asaas.com/c/ayfhkldtnk1osf37", "_blank");
   }
 
-  function openInfluencer() {
+  async function openInfluencer() {
+    await captureReferral("influencer");
     window.open("https://www.asaas.com/c/ej715gfx5qpvlh1v", "_blank");
   }
 
