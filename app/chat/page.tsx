@@ -11,10 +11,13 @@ type Message = {
 export default function ChatPage() {
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+  const [imageLoading, setImageLoading] = useState(false);
+  const [generatedImage, setGeneratedImage] = useState("");
   const [messages, setMessages] = useState<Message[]>([
     {
       role: "assistant",
-      content: "Olá! Eu sou a RicardoIA. Como posso ajudar você hoje?",
+      content:
+        "Olá! Eu sou a RicardoIA. Posso conversar com você ou gerar uma imagem.",
     },
   ]);
 
@@ -51,96 +54,26 @@ export default function ChatPage() {
         }),
       });
 
-      const contentType = response.headers.get("content-type") || "";
+      const data = await response.json();
 
       if (!response.ok) {
-        let errorText = "Erro ao processar a mensagem.";
-
-        try {
-          if (contentType.includes("application/json")) {
-            const errorData = await response.json();
-            errorText = errorData?.error || errorText;
-          } else {
-            const rawText = await response.text();
-            if (rawText) errorText = rawText;
-          }
-        } catch {
-          // mantém mensagem padrão
-        }
-
         setMessages((prev) => [
           ...prev,
           {
             role: "assistant",
-            content: errorText,
+            content: data?.error || "Erro ao processar a mensagem.",
           },
         ]);
-
         return;
       }
-
-      if (contentType.includes("application/json")) {
-        const data = await response.json();
-
-        const reply =
-          data?.reply ||
-          data?.message ||
-          data?.output_text ||
-          "Recebi sua mensagem, mas a resposta veio vazia.";
-
-        setMessages((prev) => [
-          ...prev,
-          {
-            role: "assistant",
-            content: String(reply),
-          },
-        ]);
-
-        return;
-      }
-
-      const reader = response.body?.getReader();
-
-      if (!reader) {
-        const fallbackText = await response.text();
-
-        setMessages((prev) => [
-          ...prev,
-          {
-            role: "assistant",
-            content: fallbackText || "Resposta recebida.",
-          },
-        ]);
-
-        return;
-      }
-
-      const decoder = new TextDecoder();
-      let fullText = "";
 
       setMessages((prev) => [
         ...prev,
         {
           role: "assistant",
-          content: "",
+          content: data?.reply || "Resposta vazia.",
         },
       ]);
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-
-        fullText += decoder.decode(value, { stream: true });
-
-        setMessages((prev) => {
-          const updated = [...prev];
-          updated[updated.length - 1] = {
-            role: "assistant",
-            content: fullText,
-          };
-          return updated;
-        });
-      }
     } catch (error) {
       console.error("Erro no chat:", error);
 
@@ -156,35 +89,97 @@ export default function ChatPage() {
     }
   }
 
+  async function handleGenerateImage() {
+    const prompt = input.trim();
+
+    if (!prompt || imageLoading) return;
+
+    setGeneratedImage("");
+    setImageLoading(true);
+
+    setMessages((prev) => [
+      ...prev,
+      {
+        role: "user",
+        content: prompt,
+      },
+    ]);
+
+    try {
+      const response = await fetch("/api/image", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          prompt,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        setMessages((prev) => [
+          ...prev,
+          {
+            role: "assistant",
+            content: data?.error || "Erro ao gerar imagem.",
+          },
+        ]);
+        return;
+      }
+
+      const src = `data:${data.mimeType};base64,${data.imageBase64}`;
+      setGeneratedImage(src);
+
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: "assistant",
+          content: "Imagem gerada com sucesso.",
+        },
+      ]);
+
+      setInput("");
+    } catch (error) {
+      console.error("Erro ao gerar imagem:", error);
+
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: "assistant",
+          content: "Erro ao gerar imagem.",
+        },
+      ]);
+    } finally {
+      setImageLoading(false);
+    }
+  }
+
   return (
     <main
       style={{
         minHeight: "100vh",
-        background: "linear-gradient(135deg, #0f172a, #1e293b, #020617)",
+        background: "linear-gradient(135deg, #020617, #0f172a, #081225)",
         color: "white",
         padding: "24px",
       }}
     >
-      <div
-        style={{
-          maxWidth: "900px",
-          margin: "0 auto",
-        }}
-      >
+      <div style={{ maxWidth: "980px", margin: "0 auto" }}>
         <div
           style={{
             display: "flex",
             justifyContent: "space-between",
-            alignItems: "center",
             gap: "12px",
+            alignItems: "center",
             flexWrap: "wrap",
-            marginBottom: "24px",
+            marginBottom: "20px",
           }}
         >
           <div>
             <h1 style={{ fontSize: "32px", marginBottom: "8px" }}>RicardoIA</h1>
             <p style={{ opacity: 0.85 }}>
-              Atendimento, produtividade, marketing e crescimento empresarial.
+              Conversa inteligente e geração de imagens.
             </p>
           </div>
 
@@ -194,9 +189,9 @@ export default function ChatPage() {
               style={{
                 color: "white",
                 textDecoration: "none",
-                border: "1px solid rgba(255,255,255,0.2)",
+                border: "1px solid rgba(255,255,255,0.14)",
                 padding: "10px 14px",
-                borderRadius: "10px",
+                borderRadius: "12px",
               }}
             >
               Início
@@ -207,52 +202,46 @@ export default function ChatPage() {
               style={{
                 color: "white",
                 textDecoration: "none",
-                border: "1px solid rgba(255,255,255,0.2)",
+                border: "1px solid rgba(255,255,255,0.14)",
                 padding: "10px 14px",
-                borderRadius: "10px",
+                borderRadius: "12px",
               }}
             >
-              Ver planos
+              Planos
             </Link>
           </div>
         </div>
 
         <div
           style={{
-            border: "1px solid rgba(255,255,255,0.12)",
-            borderRadius: "18px",
+            border: "1px solid rgba(255,255,255,0.1)",
+            borderRadius: "22px",
             background: "rgba(255,255,255,0.05)",
             padding: "18px",
-            minHeight: "420px",
-            display: "flex",
-            flexDirection: "column",
-            gap: "14px",
           }}
         >
           <div
             style={{
+              minHeight: "320px",
               display: "flex",
               flexDirection: "column",
               gap: "12px",
-              flex: 1,
-              overflowY: "auto",
             }}
           >
             {messages.map((message, index) => (
               <div
                 key={`${message.role}-${index}`}
                 style={{
-                  alignSelf:
-                    message.role === "user" ? "flex-end" : "flex-start",
+                  alignSelf: message.role === "user" ? "flex-end" : "flex-start",
                   maxWidth: "85%",
-                  padding: "14px 16px",
-                  borderRadius: "14px",
-                  background:
-                    message.role === "user"
-                      ? "#4f46e5"
-                      : "rgba(255,255,255,0.08)",
                   whiteSpace: "pre-wrap",
                   lineHeight: 1.5,
+                  padding: "14px 16px",
+                  borderRadius: "16px",
+                  background:
+                    message.role === "user"
+                      ? "#2563eb"
+                      : "rgba(255,255,255,0.08)",
                 }}
               >
                 {message.content}
@@ -260,47 +249,82 @@ export default function ChatPage() {
             ))}
           </div>
 
+          {generatedImage ? (
+            <div style={{ marginTop: "18px" }}>
+              <img
+                src={generatedImage}
+                alt="Imagem gerada por IA"
+                style={{
+                  width: "100%",
+                  maxWidth: "520px",
+                  borderRadius: "18px",
+                  border: "1px solid rgba(255,255,255,0.1)",
+                  display: "block",
+                }}
+              />
+            </div>
+          ) : null}
+
           <form
             onSubmit={handleSubmit}
             style={{
+              marginTop: "18px",
               display: "flex",
+              flexDirection: "column",
               gap: "12px",
-              flexWrap: "wrap",
-              marginTop: "10px",
             }}
           >
-            <input
-              type="text"
+            <textarea
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              placeholder="Digite sua mensagem..."
+              placeholder="Digite sua mensagem ou descreva a imagem que deseja..."
+              rows={4}
               style={{
-                flex: 1,
-                minWidth: "240px",
-                padding: "14px 16px",
-                borderRadius: "12px",
-                border: "1px solid rgba(255,255,255,0.15)",
-                background: "rgba(255,255,255,0.08)",
+                width: "100%",
+                padding: "14px",
+                borderRadius: "16px",
+                border: "1px solid rgba(255,255,255,0.12)",
+                background: "rgba(255,255,255,0.06)",
                 color: "white",
+                resize: "vertical",
                 outline: "none",
               }}
             />
 
-            <button
-              type="submit"
-              disabled={loading}
-              style={{
-                padding: "14px 20px",
-                borderRadius: "12px",
-                border: "none",
-                background: loading ? "#475569" : "#6366f1",
-                color: "white",
-                fontWeight: "bold",
-                cursor: loading ? "not-allowed" : "pointer",
-              }}
-            >
-              {loading ? "Enviando..." : "Enviar"}
-            </button>
+            <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
+              <button
+                type="submit"
+                disabled={loading}
+                style={{
+                  padding: "14px 18px",
+                  borderRadius: "14px",
+                  border: "none",
+                  background: loading ? "#334155" : "#06b6d4",
+                  color: "white",
+                  fontWeight: "bold",
+                  cursor: loading ? "not-allowed" : "pointer",
+                }}
+              >
+                {loading ? "Enviando..." : "Enviar mensagem"}
+              </button>
+
+              <button
+                type="button"
+                onClick={handleGenerateImage}
+                disabled={imageLoading}
+                style={{
+                  padding: "14px 18px",
+                  borderRadius: "14px",
+                  border: "1px solid rgba(255,255,255,0.14)",
+                  background: imageLoading ? "#1e293b" : "rgba(255,255,255,0.06)",
+                  color: "white",
+                  fontWeight: "bold",
+                  cursor: imageLoading ? "not-allowed" : "pointer",
+                }}
+              >
+                {imageLoading ? "Gerando imagem..." : "Gerar imagem"}
+              </button>
+            </div>
           </form>
         </div>
       </div>

@@ -1,92 +1,79 @@
-import OpenAI from 'openai'
+import { NextRequest, NextResponse } from "next/server";
 
-export const runtime = 'nodejs'
-export const maxDuration = 60
+type ImageRequestBody = {
+  prompt?: string;
+};
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-})
-
-function normalizePrompt(text: string) {
-  return text.replace(/\s+/g, ' ').trim()
-}
-
-function shortenPrompt(text: string, maxLength = 700) {
-  if (text.length <= maxLength) {
-    return text
-  }
-
-  return `${text.slice(0, maxLength)}...`
-}
-
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
   try {
-    if (!process.env.OPENAI_API_KEY) {
-      return Response.json(
-        { error: 'OPENAI_API_KEY não configurada.' },
-        { status: 500 }
-      )
-    }
+    const body = (await req.json()) as ImageRequestBody;
+    const prompt = (body.prompt || "").trim();
 
-    const body = await req.json().catch(() => null)
-
-    if (!body || typeof body !== 'object') {
-      return Response.json({ error: 'Body inválido.' }, { status: 400 })
-    }
-
-    const rawPrompt = typeof body.prompt === 'string' ? body.prompt : ''
-    const normalizedPrompt = normalizePrompt(rawPrompt)
-
-    if (!normalizedPrompt) {
-      return Response.json(
-        { error: 'Prompt da imagem não informado.' },
+    if (!prompt) {
+      return NextResponse.json(
+        { error: "Prompt da imagem não enviado." },
         { status: 400 }
-      )
+      );
     }
 
-    const safePrompt = shortenPrompt(normalizedPrompt, 700)
+    const apiKey = process.env.OPENAI_API_KEY;
 
-    const finalPrompt = `
-Crie uma imagem de alta qualidade com base no pedido abaixo.
+    if (!apiKey) {
+      return NextResponse.json(
+        { error: "OPENAI_API_KEY não configurada." },
+        { status: 500 }
+      );
+    }
 
-Pedido do usuário:
-"${safePrompt}"
+    const response = await fetch("https://api.openai.com/v1/images", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model: "gpt-image-1",
+        prompt,
+        size: "1024x1024",
+        quality: "medium",
+        output_format: "png",
+      }),
+      cache: "no-store",
+    });
 
-Instruções:
-- imagem visualmente forte
-- composição profissional
-- adequada para divulgação digital
-- estilo moderno e chamativo
-- texto dentro da imagem apenas se o pedido realmente solicitar
-- resposta visual limpa e bem organizada
-    `.trim()
+    const data = await response.json();
 
-    const result = await openai.images.generate({
-      model: 'gpt-image-1',
-      prompt: finalPrompt,
-      size: '1024x1024',
-    })
+    if (!response.ok) {
+      console.error("OpenAI image error:", data);
 
-    const imageBase64 = result.data?.[0]?.b64_json
+      return NextResponse.json(
+        {
+          error: "Erro ao gerar imagem.",
+          details: data,
+        },
+        { status: 500 }
+      );
+    }
+
+    const imageBase64 = data?.data?.[0]?.b64_json;
 
     if (!imageBase64) {
-      return Response.json(
-        { error: 'Não foi possível gerar a imagem.' },
+      return NextResponse.json(
+        { error: "A API não retornou imagem." },
         { status: 500 }
-      )
+      );
     }
 
-    const imageUrl = `data:image/png;base64,${imageBase64}`
+    return NextResponse.json({
+      imageBase64,
+      mimeType: "image/png",
+    });
+  } catch (error) {
+    console.error("API /api/image error:", error);
 
-    return Response.json({ imageUrl }, { status: 200 })
-  } catch (error: any) {
-    return Response.json(
-      {
-        error:
-          error?.message ||
-          'Falha ao gerar imagem. Tente novamente com um pedido um pouco mais curto.',
-      },
+    return NextResponse.json(
+      { error: "Erro interno ao gerar imagem." },
       { status: 500 }
-    )
+    );
   }
 }
