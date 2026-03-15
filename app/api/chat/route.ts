@@ -79,8 +79,8 @@ export async function POST(req: NextRequest) {
     if (canUseSupabase) {
       try {
         const supabase = createClient(
-          SUPABASE_URL!,
-          SUPABASE_SERVICE_ROLE_KEY!,
+          SUPABASE_URL,
+          SUPABASE_SERVICE_ROLE_KEY,
           {
             auth: {
               autoRefreshToken: false,
@@ -168,8 +168,12 @@ Regras principais:
 - Se o idioma for Português, responda em Português.
 - Nunca misture idiomas sem necessidade.
 - Seja natural, útil e direta.
+- Evite repetir frases prontas sem necessidade.
+- Quando o usuário pedir criatividade, responda de forma criativa.
+- Quando o usuário pedir algo curto, seja curta.
+- Quando o usuário pedir algo comercial, seja persuasiva e clara.
 - Se o usuário perguntar "onde está a Aurora", explique que você é a própria Aurora IA.
-`;
+`.trim();
 
     const historyMessages = incomingMessages
       .filter(
@@ -184,7 +188,7 @@ Regras principais:
       .slice(-10)
       .map((msg) => ({
         role: msg.role,
-        content: msg.content,
+        content: msg.content.trim(),
       }));
 
     const messagesForModel = [
@@ -208,7 +212,7 @@ Regras principais:
       body: JSON.stringify({
         model: "gpt-4o-mini",
         messages: messagesForModel,
-        temperature: 0.7,
+        temperature: 0.8,
       }),
       cache: "no-store",
     });
@@ -216,6 +220,7 @@ Regras principais:
     const rawText = await response.text();
 
     let data: any = null;
+
     try {
       data = rawText ? JSON.parse(rawText) : null;
     } catch {

@@ -116,6 +116,7 @@ export default function ChatClient() {
   const [input, setInput] = useState("");
   const [email, setEmail] = useState("ricardogrupoexecutivo1@gmail.com");
   const [plan, setPlan] = useState("free");
+  const [messagesRemaining, setMessagesRemaining] = useState<number | null>(null);
   const [messages, setMessages] = useState<Message[]>([
     {
       role: "assistant",
@@ -162,11 +163,28 @@ export default function ChatClient() {
     }, 2500);
   }
 
-  async function generateImageFromPrompt(promptText: string) {
+  function getBrowserLanguage() {
+    if (typeof navigator === "undefined") return "pt";
+    const lang = (navigator.language || "pt").toLowerCase();
+
+    if (lang.startsWith("en")) return "en";
+    if (lang.startsWith("es")) return "es";
+    return "pt";
+  }
+
+  async function generateImageFromPrompt(
+    promptText: string,
+    options?: { skipUserMessage?: boolean }
+  ) {
     const cleanText = promptText.trim();
     if (!cleanText || loadingChat || loadingImage) return;
 
-    setMessages((prev) => [...prev, { role: "user", content: cleanText }]);
+    const skipUserMessage = options?.skipUserMessage ?? false;
+
+    if (!skipUserMessage) {
+      setMessages((prev) => [...prev, { role: "user", content: cleanText }]);
+    }
+
     setLoadingImage(true);
 
     try {
@@ -240,36 +258,84 @@ export default function ChatClient() {
     const cleanText = messageText.trim();
     if (!cleanText || loadingChat || loadingImage) return;
 
+    if (isLikelyUrl(cleanText)) {
+      setMessages((prev) => [
+        ...prev,
+        { role: "user", content: cleanText },
+        {
+          role: "assistant",
+          content:
+            "Recebi um link. Para gerar uma nova imagem, descreva a imagem desejada no campo de texto e clique em Gerar imagem.",
+        },
+      ]);
+      setInput("");
+      return;
+    }
+
+    if (isImageRequest(cleanText)) {
+      setMessages((prev) => [...prev, { role: "user", content: cleanText }]);
+      await generateImageFromPrompt(cleanText, { skipUserMessage: true });
+      return;
+    }
+
+    const historyForApi = messages.slice(-10).map((msg) => ({
+      role: msg.role,
+      content: msg.content,
+    }));
+
     setMessages((prev) => [...prev, { role: "user", content: cleanText }]);
     setLoadingChat(true);
 
     try {
-      if (isLikelyUrl(cleanText)) {
+      const res = await fetch("/api/chat", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-language": getBrowserLanguage(),
+        },
+        body: JSON.stringify({
+          message: cleanText,
+          messages: historyForApi,
+          email,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
         setMessages((prev) => [
           ...prev,
           {
             role: "assistant",
             content:
-              "Recebi um link. Para gerar uma nova imagem, descreva a imagem desejada no campo de texto e clique em Gerar imagem.",
+              data?.error ||
+              data?.details?.error?.message ||
+              "Erro ao conversar com a Aurora IA.",
           },
         ]);
-        setInput("");
         return;
       }
 
-      if (isImageRequest(cleanText)) {
-        setLoadingChat(false);
-        await generateImageFromPrompt(cleanText);
-        return;
-      }
+      const reply =
+        typeof data?.reply === "string" && data.reply.trim()
+          ? data.reply.trim()
+          : "Recebi sua mensagem, mas não consegui responder agora.";
 
       setMessages((prev) => [
         ...prev,
         {
           role: "assistant",
-          content: "Olá! Como posso ajudar você hoje?",
+          content: reply,
         },
       ]);
+
+      if (typeof data?.plan === "string") {
+        setPlan(normalizePlan(data.plan));
+      }
+
+      if (typeof data?.messagesRemaining === "number") {
+        setMessagesRemaining(data.messagesRemaining);
+      }
 
       setInput("");
     } catch (error) {
@@ -417,12 +483,30 @@ export default function ChatClient() {
             />
           </div>
 
-          <div>
+          <div style={{ marginBottom: 12 }}>
             <label style={{ display: "block", marginBottom: 6 }}>Plano</label>
             <input
               type="text"
               value={plan}
               onChange={(e) => setPlan(normalizePlan(e.target.value))}
+              style={inputStyle}
+            />
+          </div>
+
+          <div>
+            <label style={{ display: "block", marginBottom: 6 }}>
+              Mensagens restantes hoje
+            </label>
+            <input
+              type="text"
+              value={
+                messagesRemaining === null
+                  ? "-"
+                  : messagesRemaining === -1
+                    ? "ilimitado"
+                    : String(messagesRemaining)
+              }
+              readOnly
               style={inputStyle}
             />
           </div>
