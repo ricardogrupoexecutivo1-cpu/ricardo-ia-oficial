@@ -1,75 +1,42 @@
-import type { MetadataRoute } from "next";
+import { createClient } from "@supabase/supabase-js";
 
-function getBaseUrl() {
-  const siteUrl =
-    process.env.NEXT_PUBLIC_SITE_URL ||
-    process.env.SITE_URL ||
-    process.env.VERCEL_PROJECT_PRODUCTION_URL ||
-    process.env.VERCEL_URL ||
-    "http://localhost:3000";
+export default async function sitemap() {
 
-  if (
-    siteUrl.startsWith("http://") ||
-    siteUrl.startsWith("https://")
-  ) {
-    return siteUrl.replace(/\/$/, "");
-  }
+  const baseUrl = "https://ricardoiaoficial.com";
 
-  return `https://${siteUrl.replace(/\/$/, "")}`;
-}
+  const supabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  );
 
-export default function sitemap(): MetadataRoute.Sitemap {
-  const baseUrl = getBaseUrl();
-  const now = new Date();
+  const { data: images } = await supabase
+    .from("images")
+    .select("id,created_at")
+    .eq("is_public", true)
+    .limit(5000);
+
+  const imagePages = (images || []).map((img) => ({
+    url: `${baseUrl}/i/${img.id}`,
+    lastModified: img.created_at,
+  }));
 
   return [
     {
-      url: `${baseUrl}/`,
-      lastModified: now,
-      changeFrequency: "daily",
-      priority: 1,
-    },
-    {
-      url: `${baseUrl}/explorar`,
-      lastModified: now,
-      changeFrequency: "daily",
-      priority: 0.95,
-    },
-    {
-      url: `${baseUrl}/planos`,
-      lastModified: now,
-      changeFrequency: "weekly",
-      priority: 0.8,
-    },
-    {
-      url: `${baseUrl}/privacidade`,
-      lastModified: now,
-      changeFrequency: "monthly",
-      priority: 0.5,
-    },
-    {
-      url: `${baseUrl}/login`,
-      lastModified: now,
-      changeFrequency: "monthly",
-      priority: 0.4,
+      url: `${baseUrl}`,
+      lastModified: new Date(),
     },
     {
       url: `${baseUrl}/chat`,
-      lastModified: now,
-      changeFrequency: "daily",
-      priority: 0.85,
+      lastModified: new Date(),
     },
     {
-      url: `${baseUrl}/app`,
-      lastModified: now,
-      changeFrequency: "daily",
-      priority: 0.7,
+      url: `${baseUrl}/explorar`,
+      lastModified: new Date(),
     },
     {
-      url: `${baseUrl}/sitemap-images.xml`,
-      lastModified: now,
-      changeFrequency: "daily",
-      priority: 0.9,
+      url: `${baseUrl}/planilha`,
+      lastModified: new Date(),
     },
+    ...imagePages,
   ];
 }

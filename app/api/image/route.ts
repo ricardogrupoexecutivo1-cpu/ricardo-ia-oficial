@@ -69,7 +69,13 @@ function getLimitsByPlan(plan: string | null | undefined) {
   };
 }
 
+function normalizePrompt(prompt: string) {
+  return prompt.replace(/\s+/g, " ").trim();
+}
+
 async function generateImageBase64(prompt: string, apiKey: string) {
+  const optimizedPrompt = normalizePrompt(prompt);
+
   const response = await fetch("https://api.openai.com/v1/images/generations", {
     method: "POST",
     headers: {
@@ -78,11 +84,12 @@ async function generateImageBase64(prompt: string, apiKey: string) {
     },
     body: JSON.stringify({
       model: "gpt-image-1",
-      prompt,
+      prompt: optimizedPrompt,
       size: "1024x1024",
-      quality: "medium",
-      output_format: "png",
+      quality: "low",
+      output_format: "jpeg",
     }),
+    cache: "no-store",
   });
 
   const data = await response.json();
@@ -102,11 +109,57 @@ async function generateImageBase64(prompt: string, apiKey: string) {
   return b64 as string;
 }
 
+async function registerUsage(params: {
+  supabase: ReturnType<typeof createClient>;
+  email: string;
+  prompt: string;
+  imageUrl: string;
+  dayKey: string;
+  plan: string;
+}) {
+  const { supabase, email, prompt, imageUrl, dayKey, plan } = params;
+
+  const { error: usageError } = await supabase.from(USAGE_TABLE).insert({
+    email,
+    prompt,
+    image_url: imageUrl,
+    day_key: dayKey,
+    plan,
+  });
+
+  if (usageError) {
+    throw new Error(
+      `Imagem salva, mas falhou ao registrar uso diário: ${usageError.message}`
+    );
+  }
+}
+
+async function getImagesRemaining(params: {
+  supabase: ReturnType<typeof createClient>;
+  email: string;
+  dayKey: string;
+  imagesPerDay: number;
+}) {
+  const { supabase, email, dayKey, imagesPerDay } = params;
+
+  if (imagesPerDay === -1) {
+    return null;
+  }
+
+  const { count } = await supabase
+    .from(USAGE_TABLE)
+    .select("*", { count: "exact", head: true })
+    .eq("email", email)
+    .eq("day_key", dayKey);
+
+  return Math.max(0, imagesPerDay - (count || 0));
+}
+
 export async function POST(req: NextRequest) {
   try {
     const body = (await req.json()) as ImageRequestBody;
 
-    const prompt = (body.prompt || "").trim();
+    const prompt = normalizePrompt(body.prompt || "");
     const email = normalizeEmail(body.email);
 
     if (!prompt) {
@@ -148,11 +201,15 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const supabase = createClient(supabaseUrl, supabaseServiceRoleKey);
+    const supabase = createClient(supabaseUrl, supabaseServiceRoleKey, {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false,
+      },
+    });
 
-    let finalPlan = "free";
+    let finalPlan = normalizePlan(body.plan);
 
-    // Admin fixo para testes internos
     if (email === "ricardogrupoexecutivo1@gmail.com") {
       finalPlan = "pro";
     } else {
@@ -167,7 +224,7 @@ export async function POST(req: NextRequest) {
           finalPlan = normalizePlan(String(profile.plan));
         }
       } catch {
-        finalPlan = "free";
+        finalPlan = normalizePlan(body.plan);
       }
     }
 
@@ -206,19 +263,67 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    const { data: cachedImages, error: cacheError } = await supabase
+      .from(IMAGES_TABLE)
+      .select("id, image_url, prompt")
+      .eq("prompt", prompt)
+      .eq("is_public", true)
+      .limit(1);
+
+    if (cacheError) {
+      console.error("CACHE IMAGE WARNING:", cacheError.message);
+    }
+
+    const cachedImage =
+      Array.isArray(cachedImages) && cachedImages.length > 0
+        ? cachedImages[0]
+        : null;
+
+    if (cachedImage?.image_url) {
+      await registerUsage({
+        supabase,
+        email,
+        prompt,
+        imageUrl: cachedImage.image_url,
+        dayKey: todayKey,
+        plan: limits.plan,
+      });
+
+      const imagesRemaining = await getImagesRemaining({
+        supabase,
+        email,
+        dayKey: todayKey,
+        imagesPerDay: limits.imagesPerDay,
+      });
+
+      return NextResponse.json({
+        success: true,
+        imageId: cachedImage.id || null,
+        imageUrl: cachedImage.image_url,
+        saved: true,
+        cached: true,
+        plan: limits.plan,
+        unlimited: limits.imagesPerDay === -1,
+        imagesRemaining,
+        quality: "low",
+        format: "jpeg",
+        size: "1024x1024",
+      });
+    }
+
     const imageBase64 = await generateImageBase64(prompt, openAiApiKey);
     const imageBuffer = Buffer.from(imageBase64, "base64");
 
     const safeEmail = slugifyEmail(email);
     const fileName = `${Date.now()}-${Math.random()
       .toString(36)
-      .slice(2)}.png`;
+      .slice(2)}.jpg`;
     const storagePath = `${todayKey}/${safeEmail}/${fileName}`;
 
     const { error: uploadError } = await supabase.storage
       .from(STORAGE_BUCKET)
       .upload(storagePath, imageBuffer, {
-        contentType: "image/png",
+        contentType: "image/jpeg",
         upsert: false,
       });
 
@@ -260,49 +365,34 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const { error: usageError } = await supabase.from(USAGE_TABLE).insert({
+    await registerUsage({
+      supabase,
       email,
       prompt,
-      image_url: publicUrl,
-      day_key: todayKey,
+      imageUrl: publicUrl,
+      dayKey: todayKey,
       plan: limits.plan,
     });
 
-    if (usageError) {
-      return NextResponse.json(
-        {
-          error: "Imagem salva, mas falhou ao registrar uso diário.",
-          details: usageError.message,
-          imageUrl: publicUrl,
-          imageId: insertedImage?.id || null,
-        },
-        { status: 500 }
-      );
-    }
-
-    let imagesRemaining: number | null = null;
-
-    if (limits.imagesPerDay !== -1) {
-      const { count: usedAfterInsert } = await supabase
-        .from(USAGE_TABLE)
-        .select("*", { count: "exact", head: true })
-        .eq("email", email)
-        .eq("day_key", todayKey);
-
-      imagesRemaining = Math.max(
-        0,
-        limits.imagesPerDay - (usedAfterInsert || 0)
-      );
-    }
+    const imagesRemaining = await getImagesRemaining({
+      supabase,
+      email,
+      dayKey: todayKey,
+      imagesPerDay: limits.imagesPerDay,
+    });
 
     return NextResponse.json({
       success: true,
       imageId: insertedImage?.id || null,
       imageUrl: insertedImage?.image_url || publicUrl,
       saved: true,
+      cached: false,
       plan: limits.plan,
       unlimited: limits.imagesPerDay === -1,
       imagesRemaining,
+      quality: "low",
+      format: "jpeg",
+      size: "1024x1024",
     });
   } catch (error) {
     const message =
