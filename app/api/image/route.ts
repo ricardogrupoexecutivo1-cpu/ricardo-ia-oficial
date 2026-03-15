@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
+import { createClient, SupabaseClient } from "@supabase/supabase-js";
 
 type ImageRequestBody = {
   prompt?: string;
@@ -7,9 +7,16 @@ type ImageRequestBody = {
   plan?: string | null;
 };
 
+type UsageInsertRow = {
+  email: string;
+  prompt: string;
+  image_url: string;
+  day_key: string;
+  plan: string;
+};
+
 const STORAGE_BUCKET = "aurora-images";
 const IMAGES_TABLE = "images";
-const USAGE_TABLE = "image_usage";
 
 function normalizeEmail(value: string | null | undefined) {
   return (value || "").trim().toLowerCase();
@@ -110,7 +117,7 @@ async function generateImageBase64(prompt: string, apiKey: string) {
 }
 
 async function registerUsage(params: {
-  supabase: ReturnType<typeof createClient>;
+  supabase: SupabaseClient;
   email: string;
   prompt: string;
   imageUrl: string;
@@ -119,13 +126,17 @@ async function registerUsage(params: {
 }) {
   const { supabase, email, prompt, imageUrl, dayKey, plan } = params;
 
-  const { error: usageError } = await supabase.from(USAGE_TABLE).insert({
+  const usageRow: UsageInsertRow = {
     email,
     prompt,
     image_url: imageUrl,
     day_key: dayKey,
     plan,
-  });
+  };
+
+  const { error: usageError } = await supabase
+    .from("image_usage")
+    .insert(usageRow as never);
 
   if (usageError) {
     throw new Error(
@@ -135,7 +146,7 @@ async function registerUsage(params: {
 }
 
 async function getImagesRemaining(params: {
-  supabase: ReturnType<typeof createClient>;
+  supabase: SupabaseClient;
   email: string;
   dayKey: string;
   imagesPerDay: number;
@@ -147,7 +158,7 @@ async function getImagesRemaining(params: {
   }
 
   const { count } = await supabase
-    .from(USAGE_TABLE)
+    .from("image_usage")
     .select("*", { count: "exact", head: true })
     .eq("email", email)
     .eq("day_key", dayKey);
@@ -233,7 +244,7 @@ export async function POST(req: NextRequest) {
 
     if (limits.imagesPerDay !== -1) {
       const { count, error: countError } = await supabase
-        .from(USAGE_TABLE)
+        .from("image_usage")
         .select("*", { count: "exact", head: true })
         .eq("email", email)
         .eq("day_key", todayKey);
@@ -350,7 +361,7 @@ export async function POST(req: NextRequest) {
         storage_path: storagePath,
         is_public: true,
         plan: limits.plan,
-      })
+      } as never)
       .select("id, image_url")
       .single();
 
