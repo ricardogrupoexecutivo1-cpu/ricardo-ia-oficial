@@ -1,202 +1,412 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 
-const imagensDemo = [
-  {
-    titulo: "Cidade futurista criada com IA",
-    descricao: "Exemplo de arte gerada com a Aurora IA.",
-  },
-  {
-    titulo: "Robô tecnológico neon",
-    descricao: "Imagem promocional em estilo futurista.",
-  },
-  {
-    titulo: "Campanha visual para redes sociais",
-    descricao: "Criativo pronto para Instagram e Facebook.",
-  },
-  {
-    titulo: "Arte conceitual de produto",
-    descricao: "Exemplo de criação visual rápida com IA.",
-  },
-  {
-    titulo: "Paisagem sci-fi cinematográfica",
-    descricao: "Composição visual com alto impacto.",
-  },
-  {
-    titulo: "Mascote digital da Aurora",
-    descricao: "Visual publicitário com identidade tecnológica.",
-  },
-];
+type ExploreImage = {
+  id: string;
+  prompt: string | null;
+  image_url: string | null;
+  created_at: string | null;
+};
+
+function buildShareText(shareUrl: string, prompt: string) {
+  return `${prompt || "Olha essa imagem criada com a Aurora IA"} ${shareUrl}`.trim();
+}
+
+function getWhatsappShareUrl(shareUrl: string, prompt: string) {
+  const text = encodeURIComponent(buildShareText(shareUrl, prompt));
+  return `https://wa.me/?text=${text}`;
+}
+
+function getFacebookShareUrl(shareUrl: string) {
+  return `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}`;
+}
+
+function getXShareUrl(shareUrl: string, prompt: string) {
+  const text = encodeURIComponent(
+    prompt || "Olha essa imagem criada com a Aurora IA"
+  );
+  const url = encodeURIComponent(shareUrl);
+  return `https://twitter.com/intent/tweet?text=${text}&url=${url}`;
+}
+
+function getTelegramShareUrl(shareUrl: string, prompt: string) {
+  const text = encodeURIComponent(
+    prompt || "Olha essa imagem criada com a Aurora IA"
+  );
+  const url = encodeURIComponent(shareUrl);
+  return `https://t.me/share/url?url=${url}&text=${text}`;
+}
+
+function getLinkedInShareUrl(shareUrl: string) {
+  return `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(shareUrl)}`;
+}
 
 export default function ExplorarPage() {
+  const [images, setImages] = useState<ExploreImage[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [feedback, setFeedback] = useState("");
+
+  useEffect(() => {
+    let active = true;
+
+    async function loadImages() {
+      try {
+        setLoading(true);
+        setError("");
+
+        const res = await fetch("/api/explore", {
+          cache: "no-store",
+        });
+
+        const data = await res.json();
+
+        if (!res.ok) {
+          throw new Error(data?.error || "Erro ao carregar imagens públicas.");
+        }
+
+        if (active) {
+          setImages(Array.isArray(data?.images) ? data.images : []);
+        }
+      } catch (err) {
+        const message =
+          err instanceof Error ? err.message : "Erro ao carregar imagens.";
+        if (active) {
+          setError(message);
+          setImages([]);
+        }
+      } finally {
+        if (active) {
+          setLoading(false);
+        }
+      }
+    }
+
+    loadImages();
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  function setTemporaryFeedback(message: string) {
+    setFeedback(message);
+    window.setTimeout(() => {
+      setFeedback("");
+    }, 2500);
+  }
+
+  function buildPublicShareUrl(id: string) {
+    return `${window.location.origin}/i/${id}`;
+  }
+
+  async function handleNativeShare(image: ExploreImage) {
+    const shareUrl = buildPublicShareUrl(image.id);
+    const text = image.prompt || "Imagem criada com a Aurora IA";
+
+    try {
+      if (navigator.share) {
+        await navigator.share({
+          title: "Aurora IA",
+          text,
+          url: shareUrl,
+        });
+        return;
+      }
+
+      await navigator.clipboard.writeText(shareUrl);
+      setTemporaryFeedback("Link da página pública copiado.");
+    } catch {
+      setTemporaryFeedback("Não foi possível compartilhar agora.");
+    }
+  }
+
+  async function handleCopyLink(imageId: string) {
+    const shareUrl = buildPublicShareUrl(imageId);
+
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      setTemporaryFeedback("Link copiado com sucesso.");
+    } catch {
+      setTemporaryFeedback("Não foi possível copiar o link.");
+    }
+  }
+
   return (
     <main
       style={{
-        maxWidth: 1100,
-        margin: "0 auto",
-        padding: "40px 20px",
-        fontFamily: "system-ui",
+        minHeight: "100vh",
+        background: "#0b1020",
+        color: "#fff",
+        padding: 20,
+        fontFamily: "Arial, sans-serif",
       }}
     >
-      <h1
-        style={{
-          fontSize: "36px",
-          fontWeight: 800,
-          color: "#111827",
-        }}
-      >
-        Explorar criações da Aurora IA
-      </h1>
+      <div style={{ maxWidth: 1200, margin: "0 auto" }}>
+        <div style={{ marginBottom: 20 }}>
+          <Link href="/" style={{ color: "#9ecbff", textDecoration: "none" }}>
+            Voltar
+          </Link>
+        </div>
 
-      <p
-        style={{
-          marginTop: 12,
-          color: "#374151",
-          lineHeight: 1.7,
-          maxWidth: 850,
-        }}
-      >
-        Descubra exemplos de imagens, ideias visuais e materiais criados com a
-        Aurora IA. Esta página será a vitrine pública das criações da
-        plataforma.
-      </p>
+        <h1 style={{ fontSize: 32, marginBottom: 8 }}>Imagens públicas</h1>
+        <p style={{ color: "#aab4d6", marginTop: 0 }}>
+          Explore e compartilhe as imagens geradas publicamente na Aurora IA.
+        </p>
 
-      <div
-        style={{
-          marginTop: 20,
-          padding: "14px 16px",
-          borderRadius: 14,
-          border: "1px solid #fde68a",
-          background: "#fef9c3",
-          color: "#92400e",
-          fontWeight: 600,
-          lineHeight: 1.6,
-        }}
-      >
-        🚀 Em breve, esta galeria exibirá imagens reais criadas pelos usuários
-        da Aurora IA e poderá atrair tráfego orgânico do Google.
-      </div>
-
-      <div
-        style={{
-          marginTop: 30,
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
-          gap: 20,
-        }}
-      >
-        {imagensDemo.map((item, index) => (
+        {feedback ? (
           <div
-            key={index}
             style={{
-              border: "1px solid #e5e7eb",
-              borderRadius: 18,
-              overflow: "hidden",
-              background: "#ffffff",
-              boxShadow: "0 10px 30px rgba(0,0,0,0.06)",
+              marginTop: 12,
+              marginBottom: 16,
+              background: "#16203d",
+              border: "1px solid rgba(255,255,255,0.08)",
+              borderRadius: 12,
+              padding: 12,
+              color: "#dbe7ff",
             }}
           >
-            <div
-              style={{
-                height: 220,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                background:
-                  "linear-gradient(135deg, #111827 0%, #1d4ed8 45%, #7c3aed 100%)",
-                color: "#ffffff",
-                fontWeight: 800,
-                fontSize: 22,
-                textAlign: "center",
-                padding: 20,
-              }}
-            >
-              Aurora IA
-            </div>
-
-            <div style={{ padding: 18 }}>
-              <div
-                style={{
-                  fontSize: 18,
-                  fontWeight: 800,
-                  color: "#111827",
-                }}
-              >
-                {item.titulo}
-              </div>
-
-              <div
-                style={{
-                  marginTop: 8,
-                  color: "#4b5563",
-                  lineHeight: 1.6,
-                }}
-              >
-                {item.descricao}
-              </div>
-            </div>
+            {feedback}
           </div>
-        ))}
-      </div>
+        ) : null}
 
-      <div
-        style={{
-          marginTop: 34,
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
-          gap: 14,
-        }}
-      >
-        <Link
-          href="/chat"
-          style={{
-            display: "block",
-            textAlign: "center",
-            padding: "16px",
-            borderRadius: 14,
-            textDecoration: "none",
-            background: "#111827",
-            color: "#ffffff",
-            fontWeight: 800,
-          }}
-        >
-          Testar Aurora agora
-        </Link>
+        {loading ? (
+          <div
+            style={{
+              background: "#121a33",
+              borderRadius: 16,
+              padding: 20,
+              border: "1px solid rgba(255,255,255,0.08)",
+            }}
+          >
+            Carregando imagens...
+          </div>
+        ) : error ? (
+          <div
+            style={{
+              background: "#121a33",
+              borderRadius: 16,
+              padding: 20,
+              border: "1px solid rgba(255,255,255,0.08)",
+              color: "#ffb3b3",
+            }}
+          >
+            Erro: {error}
+          </div>
+        ) : images.length === 0 ? (
+          <div
+            style={{
+              background: "#121a33",
+              borderRadius: 16,
+              padding: 20,
+              border: "1px solid rgba(255,255,255,0.08)",
+            }}
+          >
+            Nenhuma imagem pública encontrada.
+          </div>
+        ) : (
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",
+              gap: 20,
+              marginTop: 24,
+            }}
+          >
+            {images.map((image) => {
+              const imageUrl = image.image_url || "";
+              const prompt = image.prompt || "Imagem criada com a Aurora IA";
+              const shareUrl = buildPublicShareUrl(image.id);
 
-        <Link
-          href="/planos"
-          style={{
-            display: "block",
-            textAlign: "center",
-            padding: "16px",
-            borderRadius: 14,
-            textDecoration: "none",
-            background: "linear-gradient(135deg,#facc15,#f59e0b)",
-            color: "#111827",
-            fontWeight: 800,
-          }}
-        >
-          Ver planos
-        </Link>
+              return (
+                <article
+                  key={image.id}
+                  style={{
+                    background: "#121a33",
+                    borderRadius: 16,
+                    overflow: "hidden",
+                    border: "1px solid rgba(255,255,255,0.08)",
+                  }}
+                >
+                  {imageUrl ? (
+                    <img
+                      src={imageUrl}
+                      alt={prompt}
+                      style={{
+                        width: "100%",
+                        aspectRatio: "1 / 1",
+                        objectFit: "cover",
+                        display: "block",
+                      }}
+                    />
+                  ) : (
+                    <div
+                      style={{
+                        width: "100%",
+                        aspectRatio: "1 / 1",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        background: "#0f1730",
+                        color: "#aab4d6",
+                      }}
+                    >
+                      Imagem indisponível
+                    </div>
+                  )}
 
-        <Link
-          href="/ganhe"
-          style={{
-            display: "block",
-            textAlign: "center",
-            padding: "16px",
-            borderRadius: 14,
-            textDecoration: "none",
-            background: "#ecfeff",
-            color: "#0f172a",
-            fontWeight: 800,
-            border: "1px solid #a5f3fc",
-          }}
-        >
-          Ganhar indicando Aurora
-        </Link>
+                  <div style={{ padding: 14 }}>
+                    <p
+                      style={{
+                        margin: 0,
+                        fontSize: 14,
+                        lineHeight: 1.5,
+                        color: "#e6ebff",
+                        minHeight: 44,
+                      }}
+                    >
+                      {image.prompt || "Sem prompt informado."}
+                    </p>
+
+                    <p
+                      style={{
+                        marginTop: 10,
+                        marginBottom: 10,
+                        fontSize: 12,
+                        color: "#93a0c9",
+                      }}
+                    >
+                      {image.created_at
+                        ? new Date(image.created_at).toLocaleString("pt-BR")
+                        : "Data não disponível"}
+                    </p>
+
+                    <a
+                      href={shareUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      style={{
+                        display: "block",
+                        color: "#7ec8ff",
+                        fontSize: 12,
+                        wordBreak: "break-all",
+                        marginBottom: 14,
+                        textDecoration: "none",
+                      }}
+                    >
+                      {shareUrl}
+                    </a>
+
+                    <div
+                      style={{
+                        display: "flex",
+                        gap: 8,
+                        flexWrap: "wrap",
+                      }}
+                    >
+                      <button
+                        type="button"
+                        onClick={() => handleNativeShare(image)}
+                        style={shareButtonPrimary}
+                      >
+                        Compartilhar
+                      </button>
+
+                      <a
+                        href={getWhatsappShareUrl(shareUrl, prompt)}
+                        target="_blank"
+                        rel="noreferrer"
+                        style={shareLinkButton}
+                      >
+                        WhatsApp
+                      </a>
+
+                      <a
+                        href={getFacebookShareUrl(shareUrl)}
+                        target="_blank"
+                        rel="noreferrer"
+                        style={shareLinkButton}
+                      >
+                        Facebook
+                      </a>
+
+                      <a
+                        href={getXShareUrl(shareUrl, prompt)}
+                        target="_blank"
+                        rel="noreferrer"
+                        style={shareLinkButton}
+                      >
+                        X
+                      </a>
+
+                      <a
+                        href={getTelegramShareUrl(shareUrl, prompt)}
+                        target="_blank"
+                        rel="noreferrer"
+                        style={shareLinkButton}
+                      >
+                        Telegram
+                      </a>
+
+                      <a
+                        href={getLinkedInShareUrl(shareUrl)}
+                        target="_blank"
+                        rel="noreferrer"
+                        style={shareLinkButton}
+                      >
+                        LinkedIn
+                      </a>
+
+                      <button
+                        type="button"
+                        onClick={() => handleCopyLink(image.id)}
+                        style={shareButtonSecondary}
+                      >
+                        Copiar link
+                      </button>
+                    </div>
+                  </div>
+                </article>
+              );
+            })}
+          </div>
+        )}
       </div>
     </main>
   );
 }
+
+const shareButtonPrimary: React.CSSProperties = {
+  padding: "10px 12px",
+  borderRadius: 10,
+  border: "none",
+  background: "#2b7fff",
+  color: "#fff",
+  cursor: "pointer",
+  fontSize: 14,
+};
+
+const shareButtonSecondary: React.CSSProperties = {
+  padding: "10px 12px",
+  borderRadius: 10,
+  border: "1px solid #2b3558",
+  background: "#16203d",
+  color: "#fff",
+  cursor: "pointer",
+  fontSize: 14,
+};
+
+const shareLinkButton: React.CSSProperties = {
+  padding: "10px 12px",
+  borderRadius: 10,
+  border: "1px solid #2b3558",
+  background: "#16203d",
+  color: "#fff",
+  cursor: "pointer",
+  fontSize: 14,
+  textDecoration: "none",
+  display: "inline-flex",
+  alignItems: "center",
+};

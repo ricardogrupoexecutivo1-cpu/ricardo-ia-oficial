@@ -1,6 +1,6 @@
 'use client'
 
-import { FormEvent, useState } from 'react'
+import { FormEvent, useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 
@@ -11,13 +11,86 @@ export default function LoginPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
+  const [checkingSession, setCheckingSession] = useState(true)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
+
+  useEffect(() => {
+    let active = true
+
+    async function checkSession() {
+      try {
+        const {
+          data: { session },
+          error,
+        } = await supabase.auth.getSession()
+
+        if (error) {
+          console.error('GET SESSION ERROR:', error)
+        }
+
+        if (active && session) {
+          router.replace('/chat')
+          router.refresh()
+          return
+        }
+      } catch (err) {
+        console.error('CHECK SESSION ERROR:', err)
+      } finally {
+        if (active) {
+          setCheckingSession(false)
+        }
+      }
+    }
+
+    void checkSession()
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event, session) => {
+      console.log('AUTH EVENT:', event, !!session)
+
+      if (session) {
+        router.replace('/chat')
+        router.refresh()
+      }
+    })
+
+    return () => {
+      active = false
+      subscription.unsubscribe()
+    }
+  }, [router])
+
+  function getFriendlyError(message: string) {
+    const text = message.toLowerCase()
+
+    if (
+      text.includes('invalid login credentials') ||
+      text.includes('invalid credentials')
+    ) {
+      return 'E-mail ou senha incorretos.'
+    }
+
+    if (text.includes('email not confirmed')) {
+      return 'Seu e-mail ainda não foi confirmado. Verifique sua caixa de entrada.'
+    }
+
+    if (text.includes('user already registered')) {
+      return 'Este e-mail já está cadastrado. Tente entrar em vez de criar conta.'
+    }
+
+    if (text.includes('password should be at least')) {
+      return 'A senha deve ter pelo menos 6 caracteres.'
+    }
+
+    return message
+  }
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault()
 
-    const cleanEmail = email.trim()
+    const cleanEmail = email.trim().toLowerCase()
     const cleanPassword = password.trim()
 
     if (!cleanEmail || !cleanPassword) {
@@ -36,7 +109,7 @@ export default function LoginPage() {
 
     try {
       if (mode === 'login') {
-        const { error } = await supabase.auth.signInWithPassword({
+        const { data, error } = await supabase.auth.signInWithPassword({
           email: cleanEmail,
           password: cleanPassword,
         })
@@ -45,13 +118,25 @@ export default function LoginPage() {
           throw error
         }
 
+        const hasSession = !!data.session
+
+        if (!hasSession) {
+          setSuccess(
+            'Login processado, mas a sessão ainda não foi confirmada. Tente novamente em alguns segundos.'
+          )
+          return
+        }
+
         setSuccess('Login realizado com sucesso.')
-        router.push('/chat')
+
+        await supabase.auth.getSession()
+
+        router.replace('/chat')
         router.refresh()
         return
       }
 
-      const { error } = await supabase.auth.signUp({
+      const { data, error } = await supabase.auth.signUp({
         email: cleanEmail,
         password: cleanPassword,
       })
@@ -60,15 +145,57 @@ export default function LoginPage() {
         throw error
       }
 
+      const hasImmediateSession = !!data.session
+
+      if (hasImmediateSession) {
+        setSuccess('Conta criada e login realizado com sucesso.')
+        router.replace('/chat')
+        router.refresh()
+        return
+      }
+
       setSuccess(
-        'Conta criada com sucesso. Se o Supabase exigir confirmação por e-mail, confirme seu e-mail antes de entrar.'
+        'Conta criada com sucesso. Se a confirmação por e-mail estiver habilitada no Supabase, confirme seu e-mail antes de entrar.'
       )
       setMode('login')
+      setPassword('')
     } catch (err: any) {
-      setError(err?.message || 'Erro ao processar login.')
+      const rawMessage =
+        err?.message || 'Erro ao processar login.'
+      setError(getFriendlyError(rawMessage))
     } finally {
       setLoading(false)
     }
+  }
+
+  if (checkingSession) {
+    return (
+      <main
+        style={{
+          minHeight: '100vh',
+          background: '#f5f5f5',
+          padding: '24px 16px',
+          fontFamily: 'Arial, sans-serif',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+      >
+        <div
+          style={{
+            width: '100%',
+            maxWidth: 520,
+            background: '#ffffff',
+            border: '1px solid #e5e5e5',
+            borderRadius: 14,
+            padding: 20,
+            boxShadow: '0 2px 10px rgba(0,0,0,0.05)',
+          }}
+        >
+          Verificando sessão...
+        </div>
+      </main>
+    )
   }
 
   return (
@@ -156,6 +283,7 @@ export default function LoginPage() {
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="Seu e-mail"
                 autoComplete="email"
+                disabled={loading}
                 style={{
                   width: '100%',
                   padding: 12,
@@ -186,6 +314,7 @@ export default function LoginPage() {
                 autoComplete={
                   mode === 'login' ? 'current-password' : 'new-password'
                 }
+                disabled={loading}
                 style={{
                   width: '100%',
                   padding: 12,
@@ -268,14 +397,16 @@ export default function LoginPage() {
                   setMode('signup')
                   setError('')
                   setSuccess('')
+                  setPassword('')
                 }}
+                disabled={loading}
                 style={{
                   padding: '12px 20px',
                   background: '#fff',
                   color: '#000',
                   border: '1px solid #000',
                   borderRadius: 8,
-                  cursor: 'pointer',
+                  cursor: loading ? 'not-allowed' : 'pointer',
                   fontSize: 16,
                 }}
               >
@@ -288,14 +419,16 @@ export default function LoginPage() {
                   setMode('login')
                   setError('')
                   setSuccess('')
+                  setPassword('')
                 }}
+                disabled={loading}
                 style={{
                   padding: '12px 20px',
                   background: '#fff',
                   color: '#000',
                   border: '1px solid #000',
                   borderRadius: 8,
-                  cursor: 'pointer',
+                  cursor: loading ? 'not-allowed' : 'pointer',
                   fontSize: 16,
                 }}
               >

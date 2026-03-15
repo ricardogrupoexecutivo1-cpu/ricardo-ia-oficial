@@ -1,63 +1,164 @@
-"use client";
+import Link from "next/link";
+import { createClient } from "@supabase/supabase-js";
 
-export default function PromptsPage() {
-  const prompts = [
-    "Crie 10 ideias de negócio lucrativas usando inteligência artificial.",
-    "Crie uma campanha de marketing para Instagram para uma empresa de tecnologia.",
-    "Gere um roteiro de vídeo viral para TikTok sobre inteligência artificial.",
-    "Crie 5 slogans criativos para uma startup de tecnologia.",
-    "Explique uma ideia de negócio inovadora que use IA para resolver problemas do dia a dia.",
-    "Crie um post de Instagram para divulgar um produto tecnológico.",
-    "Sugira 10 ideias de conteúdo para um canal sobre inteligência artificial.",
-    "Crie um plano de marketing simples para uma pequena empresa.",
-    "Explique como usar inteligência artificial para aumentar vendas online.",
-    "Crie uma estratégia para crescer seguidores no Instagram usando IA."
-  ];
+type AuroraImage = {
+  id: string;
+  prompt: string;
+  image_url: string;
+  created_at: string;
+  is_public: boolean;
+};
+
+function slugifyPrompt(input: string) {
+  return input
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^\w\s-]/g, "")
+    .trim()
+    .replace(/\s+/g, "-")
+    .replace(/-+/g, "-")
+    .slice(0, 80);
+}
+
+function formatDate(dateString: string) {
+  try {
+    return new Intl.DateTimeFormat("pt-BR", {
+      dateStyle: "short",
+      timeStyle: "short",
+    }).format(new Date(dateString));
+  } catch {
+    return dateString;
+  }
+}
+
+async function getPublicPrompts(): Promise<AuroraImage[]> {
+  if (
+    !process.env.NEXT_PUBLIC_SUPABASE_URL ||
+    !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  ) {
+    console.error("Variáveis do Supabase não configuradas para /prompts.");
+    return [];
+  }
+
+  const supabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  );
+
+  const { data, error } = await supabase
+    .from("aurora_images")
+    .select("id, prompt, image_url, created_at, is_public")
+    .eq("is_public", true)
+    .order("created_at", { ascending: false })
+    .limit(100);
+
+  if (error) {
+    console.error("Erro ao carregar prompts públicos:", error);
+    return [];
+  }
+
+  return data ?? [];
+}
+
+export default async function PromptsPage() {
+  const images = await getPublicPrompts();
 
   return (
-    <main style={{ maxWidth: 900, margin: "0 auto", padding: "40px 20px" }}>
-      <h1 style={{ fontSize: 34, fontWeight: 800 }}>
-        Prompts de Inteligência Artificial
-      </h1>
-
-      <p style={{ marginTop: 10, lineHeight: 1.6 }}>
-        Veja exemplos de prompts que podem ser usados com a Aurora IA para gerar
-        ideias, campanhas de marketing, imagens e estratégias de crescimento.
-      </p>
-
-      <div style={{ marginTop: 30 }}>
-        {prompts.map((prompt, index) => (
-          <div
-            key={index}
-            style={{
-              padding: 16,
-              marginBottom: 12,
-              borderRadius: 12,
-              border: "1px solid #e5e7eb",
-              background: "#f9fafb",
-              fontWeight: 600
-            }}
+    <main className="min-h-screen bg-black text-white">
+      <section className="mx-auto max-w-7xl px-4 py-10">
+        <div className="mb-8 flex flex-wrap gap-3">
+          <Link
+            href="/"
+            className="inline-flex items-center rounded-lg border border-white/10 px-4 py-2 text-sm text-white/80 transition hover:border-white/20 hover:text-white"
           >
-            {index + 1}. {prompt}
-          </div>
-        ))}
-      </div>
+            ← Voltar para início
+          </Link>
 
-      <div style={{ marginTop: 30 }}>
-        <a
-          href="/chat"
-          style={{
-            padding: "14px 20px",
-            background: "#111827",
-            color: "#fff",
-            borderRadius: 10,
-            textDecoration: "none",
-            fontWeight: 700
-          }}
-        >
-          Testar estes prompts na Aurora IA
-        </a>
-      </div>
+          <Link
+            href="/explorar"
+            className="inline-flex items-center rounded-lg border border-white/10 px-4 py-2 text-sm text-white/80 transition hover:border-white/20 hover:text-white"
+          >
+            Explorar galeria
+          </Link>
+        </div>
+
+        <div className="mb-8">
+          <p className="text-sm uppercase tracking-[0.25em] text-cyan-400">
+            PROMPTS • AURORA IA
+          </p>
+
+          <h1 className="mt-3 text-3xl font-bold sm:text-4xl">
+            Ideias e prompts públicos da Aurora IA
+          </h1>
+
+          <p className="mt-3 max-w-3xl text-white/70">
+            Descubra prompts usados para criar imagens públicas na Aurora IA.
+            Essa página ajuda novos usuários a se inspirarem e também aumenta
+            a capacidade do Google encontrar temas buscados como advogado do
+            futuro, Dubai iluminada, formas de ganhar dinheiro na internet e
+            muitos outros.
+          </p>
+        </div>
+
+        {images.length === 0 ? (
+          <div className="rounded-2xl border border-white/10 bg-white/5 p-8 text-white/70">
+            Nenhum prompt público encontrado no momento.
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
+            {images.map((image) => {
+              const slug = slugifyPrompt(image.prompt) || image.id;
+
+              return (
+                <article
+                  key={image.id}
+                  className="overflow-hidden rounded-2xl border border-white/10 bg-white/5"
+                >
+                  <Link
+                    href={`/explorar/${slug}?id=${image.id}`}
+                    className="block"
+                  >
+                    <div className="aspect-video overflow-hidden bg-black">
+                      <img
+                        src={image.image_url}
+                        alt={image.prompt}
+                        className="h-full w-full object-cover transition duration-300 hover:scale-[1.02]"
+                      />
+                    </div>
+                  </Link>
+
+                  <div className="p-5">
+                    <h2 className="text-lg font-semibold text-white">
+                      {image.prompt}
+                    </h2>
+
+                    <p className="mt-3 text-sm text-white/60">
+                      Criado em {formatDate(image.created_at)}
+                    </p>
+
+                    <div className="mt-4 flex flex-wrap gap-3">
+                      <Link
+                        href={`/explorar/${slug}?id=${image.id}`}
+                        className="rounded-lg bg-cyan-500 px-4 py-2 text-sm font-medium text-black transition hover:opacity-90"
+                      >
+                        Ver imagem
+                      </Link>
+
+                      <Link
+                        href="/chat"
+                        className="rounded-lg border border-white/10 px-4 py-2 text-sm text-white/80 transition hover:border-white/20 hover:text-white"
+                      >
+                        Criar parecido
+                      </Link>
+                    </div>
+                  </div>
+                </article>
+              );
+            })}
+          </div>
+        )}
+      </section>
     </main>
   );
 }
