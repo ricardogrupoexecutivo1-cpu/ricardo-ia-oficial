@@ -17,7 +17,7 @@ const influencerCheckoutUrl =
   "https://www.asaas.com/paymentCampaign/show/3605974";
 
 const proCheckoutUrl =
-  "https://www.asaas.com/paymentCampaign/show/3605974";
+  "https://www.asaas.com/c/7jhiilct1ztpsvws";
 
 const plans: Plan[] = [
   {
