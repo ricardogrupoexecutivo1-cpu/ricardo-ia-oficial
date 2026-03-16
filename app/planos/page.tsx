@@ -1,294 +1,407 @@
 import Link from "next/link";
 
+const WHATSAPP_NUMBER = "5531997490074";
+
 type Plan = {
   name: string;
-  slug: string;
   price: string;
-  badge?: string;
+  subtitle: string;
   description: string;
   features: string[];
-  buttonText: string;
+  ctaLabel: string;
+  badge?: string;
   highlight?: boolean;
-  href: string;
-  external?: boolean;
 };
-
-const influencerCheckoutUrl =
-  "https://www.asaas.com/paymentCampaign/show/3605974";
-
-const proCheckoutUrl =
-  "https://www.asaas.com/c/7jhiilct1ztpsvws";
 
 const plans: Plan[] = [
   {
     name: "FREE",
-    slug: "free",
-    price: "R$ 0",
-    badge: "Entrada",
-    description: "Para conhecer a Aurora IA e começar a testar.",
-    features: [
-      "Chat básico",
-      "Até 3 imagens por dia",
-      "Acesso inicial à plataforma",
-      "Ideal para primeiros testes",
-    ],
-    buttonText: "Começar grátis",
-    href: "/chat?plan=free",
-  },
-  {
-    name: "INFLUENCER",
-    slug: "influencer",
-    price: "R$ 9,90/mês",
-    badge: "Novo",
+    price: "Grátis",
+    subtitle: "Para começar a conhecer a Aurora IA.",
     description:
-      "Perfeito para criadores, divulgação rápida e presença digital frequente.",
+      "Ideal para primeiros testes, exploração da plataforma e uso inicial do chat e da geração de imagens.",
     features: [
-      "Até 20 imagens por dia",
-      "Chat liberado para uso frequente",
-      "Ótimo para posts e redes sociais",
-      "Mais velocidade para criar campanhas",
+      "3 imagens por dia",
+      "Acesso inicial à Aurora IA",
+      "Uso básico para testes",
+      "Entrada rápida na plataforma",
     ],
-    buttonText: "Assinar Influencer",
-    href: influencerCheckoutUrl,
-    external: true,
+    ctaLabel: "Começar grátis",
   },
   {
     name: "PRO",
-    slug: "pro",
-    price: "R$ 29,90/mês",
-    badge: "Mais usado",
+    price: "R$29/mês",
+    subtitle: "Para quem quer usar mais no dia a dia.",
     description:
-      "Plano completo para quem quer usar a Aurora IA com força total.",
+      "Plano para usuários que já querem mais produtividade, mais imagens e uma experiência mais forte na criação com IA.",
+    features: [
+      "100 imagens por dia",
+      "Mais liberdade de uso",
+      "Melhor para criadores e usuários frequentes",
+      "Ótimo passo após o FREE",
+    ],
+    ctaLabel: "Quero PRO",
+  },
+  {
+    name: "CREATOR",
+    price: "R$79/mês",
+    subtitle: "Para empreendedores e criadores digitais.",
+    description:
+      "Pensado para quem quer criar campanhas, validar ideias, produzir mais conteúdo e preparar projetos com foco comercial.",
+    features: [
+      "300 imagens por dia",
+      "Melhor para criativos e negócios",
+      "Mais força para marketing e conteúdo",
+      "Base ideal para expansão comercial",
+    ],
+    ctaLabel: "Quero CREATOR",
+  },
+  {
+    name: "Developer Starter",
+    price: "R$49/mês",
+    subtitle: "Para quem está começando e quer criar os primeiros produtos.",
+    description:
+      "Ideal para aprender, testar ideias, gerar imagens e começar a construir soluções reais com a Aurora IA.",
+    features: [
+      "200 imagens por dia",
+      "Projetos e testes com foco em aprendizado",
+      "Base para landing pages e apps simples",
+      "Uso comercial permitido",
+      "Perfeito para freelancers e iniciantes",
+    ],
+    ctaLabel: "Quero começar",
+    badge: "Developer",
+  },
+  {
+    name: "Developer Pro",
+    price: "R$149/mês",
+    subtitle: "Para quem já quer vender, escalar e entregar mais rápido.",
+    description:
+      "Feito para profissionais, agências técnicas e criadores de software que querem transformar a Aurora em braço operacional do negócio.",
+    features: [
+      "1000 imagens por dia",
+      "Criação acelerada de apps, painéis e sistemas",
+      "Base para produtos SaaS e projetos de cliente",
+      "Melhor fit para operação comercial",
+      "Plano ideal para quem já está tarimbado",
+    ],
+    ctaLabel: "Quero escalar",
+    badge: "Developer",
+    highlight: true,
+  },
+  {
+    name: "AGENCY",
+    price: "R$299/mês",
+    subtitle: "Para operações fortes, equipes e escala comercial.",
+    description:
+      "Pensado para agências, empresas e operações que precisam de grande volume, produção constante e futuro uso mais avançado da Aurora.",
     features: [
       "Imagens ilimitadas",
-      "Chat liberado",
-      "Uso intensivo da plataforma",
-      "Ideal para negócios, marketing e produção diária",
+      "Melhor para times e agências",
+      "Escala maior de produção",
+      "Base premium para uso profissional intenso",
     ],
-    buttonText: "Assinar PRO",
-    href: proCheckoutUrl,
-    external: true,
-    highlight: true,
+    ctaLabel: "Quero AGENCY",
+    badge: "Escala",
   },
 ];
 
-export default function PlanosPage() {
+function buildWhatsAppLink(planName: string, price: string) {
+  const text =
+    `Olá! Tenho interesse no plano ${planName} da Aurora IA.` +
+    `\nPlano: ${planName}` +
+    `\nPreço: ${price}` +
+    `\nQuero receber mais informações para ativação.`;
+
+  return `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(text)}`;
+}
+
+function PlanCard({
+  name,
+  price,
+  subtitle,
+  description,
+  features,
+  ctaLabel,
+  badge,
+  highlight = false,
+}: Plan) {
+  const whatsappLink = buildWhatsAppLink(name, price);
+
   return (
-    <main
-      style={{
-        minHeight: "100vh",
-        background:
-          "radial-gradient(circle at top, #12213e 0%, #070c1b 45%, #02040a 100%)",
-        color: "#fff",
-        fontFamily: "Arial, sans-serif",
-        padding: 24,
-      }}
+    <article
+      className={`flex h-full flex-col rounded-3xl border p-6 shadow-sm ${
+        highlight ? "border-black bg-black text-white" : "bg-white"
+      }`}
     >
-      <div style={{ maxWidth: 1200, margin: "0 auto" }}>
-        <div style={{ marginBottom: 24 }}>
-          <Link href="/" style={{ color: "#9ecbff", textDecoration: "none" }}>
-            Voltar
-          </Link>
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          {badge ? (
+            <p
+              className={`text-xs font-semibold uppercase tracking-wide ${
+                highlight ? "text-neutral-300" : "text-blue-600"
+              }`}
+            >
+              {badge}
+            </p>
+          ) : (
+            <p
+              className={`text-xs font-semibold uppercase tracking-wide ${
+                highlight ? "text-neutral-300" : "text-neutral-500"
+              }`}
+            >
+              Plano Aurora
+            </p>
+          )}
+
+          <h2 className="mt-2 text-2xl font-bold">{name}</h2>
+          <p
+            className={`mt-2 text-sm ${
+              highlight ? "text-neutral-300" : "text-neutral-600"
+            }`}
+          >
+            {subtitle}
+          </p>
         </div>
 
-        <header style={{ textAlign: "center", marginBottom: 40 }}>
-          <p
-            style={{
-              margin: 0,
-              color: "#78d7ff",
-              fontWeight: 700,
-              letterSpacing: 0.5,
-            }}
-          >
-            AURORA IA
-          </p>
-
-          <h1
-            style={{
-              fontSize: 40,
-              marginTop: 10,
-              marginBottom: 12,
-            }}
-          >
-            Escolha o plano ideal
-          </h1>
-
-          <p
-            style={{
-              maxWidth: 760,
-              margin: "0 auto",
-              color: "#b7c4ee",
-              lineHeight: 1.6,
-              fontSize: 17,
-            }}
-          >
-            Mais imagens, mais alcance e mais velocidade para criar campanhas,
-            divulgar sua marca e crescer com a Aurora IA.
-          </p>
-        </header>
-
-        <section
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
-            gap: 20,
-          }}
-        >
-          {plans.map((plan) => (
-            <article
-              key={plan.name}
-              style={{
-                background: plan.highlight
-                  ? "linear-gradient(180deg, #1a2850 0%, #101a34 100%)"
-                  : "#11182d",
-                borderRadius: 20,
-                padding: 24,
-                border: plan.highlight
-                  ? "1px solid rgba(120, 215, 255, 0.45)"
-                  : "1px solid rgba(255,255,255,0.08)",
-                boxShadow: plan.highlight
-                  ? "0 0 30px rgba(52, 143, 255, 0.18)"
-                  : "none",
-              }}
-            >
-              <div style={{ minHeight: 34 }}>
-                {plan.badge ? (
-                  <span
-                    style={{
-                      display: "inline-block",
-                      padding: "6px 10px",
-                      borderRadius: 999,
-                      background: plan.highlight ? "#2b7fff" : "#16203d",
-                      color: "#fff",
-                      fontSize: 12,
-                      fontWeight: 700,
-                    }}
-                  >
-                    {plan.badge}
-                  </span>
-                ) : null}
-              </div>
-
-              <h2
-                style={{
-                  fontSize: 28,
-                  marginTop: 14,
-                  marginBottom: 8,
-                }}
-              >
-                {plan.name}
-              </h2>
-
-              <p
-                style={{
-                  fontSize: 30,
-                  fontWeight: 800,
-                  marginTop: 0,
-                  marginBottom: 16,
-                  color: plan.highlight ? "#8fdcff" : "#ffffff",
-                }}
-              >
-                {plan.price}
-              </p>
-
-              <p
-                style={{
-                  color: "#c7d3f5",
-                  lineHeight: 1.6,
-                  minHeight: 72,
-                }}
-              >
-                {plan.description}
-              </p>
-
-              <div style={{ marginTop: 20, marginBottom: 24 }}>
-                {plan.features.map((feature) => (
-                  <div
-                    key={feature}
-                    style={{
-                      display: "flex",
-                      alignItems: "flex-start",
-                      gap: 10,
-                      marginBottom: 12,
-                      color: "#e8eeff",
-                      lineHeight: 1.5,
-                    }}
-                  >
-                    <span style={{ color: "#78d7ff", fontWeight: 700 }}>✓</span>
-                    <span>{feature}</span>
-                  </div>
-                ))}
-              </div>
-
-              {plan.external ? (
-                <a
-                  href={plan.href}
-                  target="_blank"
-                  rel="noreferrer"
-                  style={{
-                    display: "inline-block",
-                    width: "100%",
-                    textAlign: "center",
-                    padding: "14px 18px",
-                    borderRadius: 12,
-                    textDecoration: "none",
-                    background: plan.highlight ? "#2b7fff" : "#16203d",
-                    color: "#fff",
-                    fontWeight: 700,
-                    border: plan.highlight
-                      ? "none"
-                      : "1px solid rgba(255,255,255,0.08)",
-                    boxSizing: "border-box",
-                  }}
-                >
-                  {plan.buttonText}
-                </a>
-              ) : (
-                <Link
-                  href={plan.href}
-                  style={{
-                    display: "inline-block",
-                    width: "100%",
-                    textAlign: "center",
-                    padding: "14px 18px",
-                    borderRadius: 12,
-                    textDecoration: "none",
-                    background: plan.highlight ? "#2b7fff" : "#16203d",
-                    color: "#fff",
-                    fontWeight: 700,
-                    border: plan.highlight
-                      ? "none"
-                      : "1px solid rgba(255,255,255,0.08)",
-                    boxSizing: "border-box",
-                  }}
-                >
-                  {plan.buttonText}
-                </Link>
-              )}
-            </article>
-          ))}
-        </section>
-
-        <section
-          style={{
-            marginTop: 34,
-            background: "#10182f",
-            border: "1px solid rgba(255,255,255,0.08)",
-            borderRadius: 18,
-            padding: 22,
-          }}
-        >
-          <h3 style={{ marginTop: 0, marginBottom: 10 }}>
-            Comparativo rápido
-          </h3>
-
-          <div style={{ color: "#c7d3f5", lineHeight: 1.8 }}>
-            <div>FREE → até 3 imagens por dia</div>
-            <div>INFLUENCER → até 20 imagens por dia</div>
-            <div>PRO → imagens ilimitadas</div>
-          </div>
-        </section>
+        {highlight ? (
+          <span className="rounded-full border border-white/20 px-3 py-1 text-xs font-semibold">
+            Mais forte
+          </span>
+        ) : null}
       </div>
+
+      <div className="mt-6">
+        <p className="text-4xl font-extrabold">{price}</p>
+        <p
+          className={`mt-3 text-sm leading-6 ${
+            highlight ? "text-neutral-300" : "text-neutral-600"
+          }`}
+        >
+          {description}
+        </p>
+      </div>
+
+      <ul className="mt-6 space-y-3">
+        {features.map((feature) => (
+          <li
+            key={feature}
+            className={`flex items-start gap-3 text-sm ${
+              highlight ? "text-neutral-100" : "text-neutral-700"
+            }`}
+          >
+            <span className="mt-0.5">✓</span>
+            <span>{feature}</span>
+          </li>
+        ))}
+      </ul>
+
+      <div className="mt-8 flex-1" />
+
+      <div className="mt-4">
+        <a
+          href={whatsappLink}
+          target="_blank"
+          rel="noreferrer"
+          className={`inline-flex rounded-2xl px-5 py-3 text-sm font-semibold transition ${
+            highlight
+              ? "bg-white text-black hover:opacity-90"
+              : "bg-black text-white hover:opacity-90"
+          }`}
+        >
+          {ctaLabel}
+        </a>
+      </div>
+    </article>
+  );
+}
+
+export const dynamic = "force-dynamic";
+
+export default function PlanosPage() {
+  const generalWhatsAppLink = buildWhatsAppLink("Atendimento comercial", "Sob consulta");
+
+  return (
+    <main className="mx-auto max-w-7xl px-4 py-8">
+      <section className="rounded-[2rem] border bg-white p-6 shadow-sm md:p-10">
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <p className="text-sm font-semibold uppercase tracking-wide text-blue-600">
+              Aurora IA Planos
+            </p>
+            <h1 className="mt-3 text-4xl font-extrabold tracking-tight md:text-5xl">
+              Escolha o plano ideal para crescer com a Aurora IA
+            </h1>
+            <p className="mt-4 max-w-3xl text-base leading-7 text-neutral-600 md:text-lg">
+              A Aurora IA está evoluindo para virar uma plataforma completa de
+              criação de imagens, negócios, marketing e aplicativos. Aqui você
+              escolhe o plano certo para sua fase.
+            </p>
+          </div>
+
+          <div className="flex flex-wrap gap-3">
+            <Link
+              href="/chat"
+              className="rounded-2xl border px-5 py-3 text-sm font-semibold hover:bg-neutral-50"
+            >
+              Abrir Aurora
+            </Link>
+
+            <Link
+              href="/developers"
+              className="rounded-2xl bg-black px-5 py-3 text-sm font-semibold text-white hover:opacity-90"
+            >
+              Ver Developers
+            </Link>
+          </div>
+        </div>
+
+        <div className="mt-10 grid gap-4 md:grid-cols-4">
+          <div className="rounded-3xl border bg-neutral-50 p-5">
+            <p className="text-xs font-semibold uppercase tracking-wide text-neutral-500">
+              Uso
+            </p>
+            <p className="mt-2 text-lg font-semibold">Pessoal e profissional</p>
+          </div>
+
+          <div className="rounded-3xl border bg-neutral-50 p-5">
+            <p className="text-xs font-semibold uppercase tracking-wide text-neutral-500">
+              Caminho
+            </p>
+            <p className="mt-2 text-lg font-semibold">Do iniciante ao avançado</p>
+          </div>
+
+          <div className="rounded-3xl border bg-neutral-50 p-5">
+            <p className="text-xs font-semibold uppercase tracking-wide text-neutral-500">
+              Foco
+            </p>
+            <p className="mt-2 text-lg font-semibold">Criação e monetização</p>
+          </div>
+
+          <div className="rounded-3xl border bg-neutral-50 p-5">
+            <p className="text-xs font-semibold uppercase tracking-wide text-neutral-500">
+              Evolução
+            </p>
+            <p className="mt-2 text-lg font-semibold">Escada de crescimento</p>
+          </div>
+        </div>
+      </section>
+
+      <section className="mt-8">
+        <div className="mb-6">
+          <p className="text-sm font-semibold uppercase tracking-wide text-neutral-500">
+            Planos da plataforma
+          </p>
+          <h2 className="mt-2 text-3xl font-bold tracking-tight">
+            Da entrada gratuita até a operação em escala
+          </h2>
+          <p className="mt-3 max-w-3xl text-neutral-600">
+            A estrutura abaixo foi pensada para permitir entrada fácil, evolução
+            natural e crescimento comercial dentro da própria Aurora IA.
+          </p>
+        </div>
+
+        <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+          {plans.map((plan) => (
+            <PlanCard key={plan.name} {...plan} />
+          ))}
+        </div>
+      </section>
+
+      <section className="mt-10 rounded-[2rem] border bg-black p-6 text-white shadow-sm md:p-10">
+        <p className="text-sm font-semibold uppercase tracking-wide text-neutral-300">
+          Visão comercial
+        </p>
+        <h2 className="mt-3 text-3xl font-bold tracking-tight md:text-4xl">
+          Cada plano prepara o próximo passo do usuário
+        </h2>
+        <p className="mt-4 max-w-4xl text-base leading-7 text-neutral-300">
+          O FREE atrai. O PRO converte. O CREATOR impulsiona negócios. Os planos
+          Developer trazem programadores e criadores de software. O AGENCY abre
+          espaço para operação profissional e escala.
+        </p>
+
+        <div className="mt-8 grid gap-4 md:grid-cols-5">
+          <div className="rounded-3xl border border-white/10 bg-white/5 p-5">
+            <p className="text-sm font-semibold">FREE</p>
+            <p className="mt-2 text-sm text-neutral-300">Entrada e descoberta.</p>
+          </div>
+
+          <div className="rounded-3xl border border-white/10 bg-white/5 p-5">
+            <p className="text-sm font-semibold">PRO</p>
+            <p className="mt-2 text-sm text-neutral-300">Uso recorrente.</p>
+          </div>
+
+          <div className="rounded-3xl border border-white/10 bg-white/5 p-5">
+            <p className="text-sm font-semibold">CREATOR</p>
+            <p className="mt-2 text-sm text-neutral-300">Conteúdo e negócio.</p>
+          </div>
+
+          <div className="rounded-3xl border border-white/10 bg-white/5 p-5">
+            <p className="text-sm font-semibold">DEVELOPER</p>
+            <p className="mt-2 text-sm text-neutral-300">Apps e software.</p>
+          </div>
+
+          <div className="rounded-3xl border border-white/10 bg-white/5 p-5">
+            <p className="text-sm font-semibold">AGENCY</p>
+            <p className="mt-2 text-sm text-neutral-300">Escala e operação.</p>
+          </div>
+        </div>
+      </section>
+
+      <section className="mt-10 rounded-[2rem] border bg-white p-6 shadow-sm md:p-10">
+        <div className="grid gap-8 lg:grid-cols-[1.2fr_0.8fr]">
+          <div>
+            <p className="text-sm font-semibold uppercase tracking-wide text-neutral-500">
+              Próximo passo
+            </p>
+            <h2 className="mt-3 text-3xl font-bold tracking-tight">
+              Deixe a página pronta para vender
+            </h2>
+            <p className="mt-4 max-w-3xl text-neutral-600">
+              Agora que a Aurora já tem página de developers e escada de planos,
+              o próximo movimento forte é ligar isso com upgrade real, checkout
+              ou atendimento comercial.
+            </p>
+          </div>
+
+          <div className="rounded-3xl border bg-neutral-50 p-6">
+            <p className="text-sm font-semibold">Ações rápidas</p>
+
+            <div className="mt-4 flex flex-col gap-3">
+              <Link
+                href="/developers"
+                className="rounded-2xl bg-black px-5 py-3 text-center text-sm font-semibold text-white hover:opacity-90"
+              >
+                Ver Developers
+              </Link>
+
+              <Link
+                href="/chat"
+                className="rounded-2xl border px-5 py-3 text-center text-sm font-semibold hover:bg-neutral-100"
+              >
+                Testar a Aurora
+              </Link>
+
+              <Link
+                href="/explorar"
+                className="rounded-2xl border px-5 py-3 text-center text-sm font-semibold hover:bg-neutral-100"
+              >
+                Ver vitrine pública
+              </Link>
+
+              <a
+                href={generalWhatsAppLink}
+                target="_blank"
+                rel="noreferrer"
+                className="rounded-2xl border px-5 py-3 text-center text-sm font-semibold hover:bg-neutral-100"
+              >
+                Falar no WhatsApp
+              </a>
+            </div>
+          </div>
+        </div>
+      </section>
     </main>
   );
 }

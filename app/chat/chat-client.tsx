@@ -1,817 +1,676 @@
 "use client";
 
-import { FormEvent, useEffect, useMemo, useState } from "react";
-import Link from "next/link";
-import { useSearchParams } from "next/navigation";
+import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 
 type Message = {
   role: "user" | "assistant";
   content: string;
+  imageUrl?: string | null;
+  imagePageUrl?: string | null;
 };
 
-function normalizePlan(value: string | null | undefined) {
-  const normalized = (value || "").trim().toLowerCase();
+type ChatApiResponse = {
+  reply?: string;
+  message?: string;
+  content?: string;
+  messages?: { role?: string; content?: string }[];
+  messagesRemaining?: number | null;
+  imagesRemaining?: number | null;
+  plan?: string | null;
+  error?: string;
+};
 
-  if (
-    normalized === "pro" ||
-    normalized === "total" ||
-    normalized === "premium" ||
-    normalized === "admin"
-  ) {
-    return "pro";
-  }
+type ImageApiResponse = {
+  imageId?: string;
+  imageUrl?: string;
+  image_url?: string;
+  url?: string;
+  imagePageUrl?: string;
+  messagesRemaining?: number | null;
+  imagesRemaining?: number | null;
+  plan?: string | null;
+  error?: string;
+};
 
-  if (normalized === "influencer") {
-    return "influencer";
-  }
-
-  return "free";
-}
+type ReferralApiResponse = {
+  referralCode?: string | null;
+  referralLink?: string | null;
+  referredBy?: string | null;
+  bonusImages?: number | null;
+  referralBonusAwarded?: boolean;
+  rewardPerReferral?: number;
+  error?: string;
+};
 
 function isImageRequest(text: string) {
   const value = text.toLowerCase().trim();
 
-  const strongTriggers = [
-    "crie uma imagem",
-    "gere uma imagem",
-    "criar imagem",
-    "gerar imagem",
-    "faça uma imagem",
-    "desenhe",
-    "create an image",
-    "generate an image",
-  ];
-
-  const descriptiveTriggers = [
-    "imagem de",
-    "imagem do",
-    "imagem da",
-    "imagem para",
-    "quero uma imagem",
-    "preciso de uma imagem",
-    "crie para mim uma imagem",
-    "gere para mim uma imagem",
-  ];
-
-  if (strongTriggers.some((trigger) => value.includes(trigger))) {
-    return true;
-  }
-
-  if (descriptiveTriggers.some((trigger) => value.includes(trigger))) {
-    return true;
-  }
-
-  return false;
-}
-
-function isLikelyUrl(text: string) {
-  const value = text.trim().toLowerCase();
   return (
-    value.startsWith("http://") ||
-    value.startsWith("https://") ||
-    value.startsWith("www.")
+    value.includes("crie uma imagem") ||
+    value.includes("gere uma imagem") ||
+    value.includes("gerar uma imagem") ||
+    value.includes("criar imagem") ||
+    value.includes("gerar imagem") ||
+    value.includes("faça uma imagem") ||
+    value.includes("faz uma imagem") ||
+    value.includes("desenhe") ||
+    value.includes("imagem de") ||
+    value.includes("create an image") ||
+    value.includes("generate an image") ||
+    value.includes("image of")
   );
 }
 
-function buildShareText(shareUrl: string, prompt: string) {
-  return `${prompt || "Olha essa imagem criada com a Aurora IA"} ${shareUrl}`.trim();
+function getAssistantText(data: ChatApiResponse) {
+  if (typeof data.reply === "string" && data.reply.trim()) return data.reply.trim();
+  if (typeof data.message === "string" && data.message.trim()) return data.message.trim();
+  if (typeof data.content === "string" && data.content.trim()) return data.content.trim();
+
+  if (Array.isArray(data.messages) && data.messages.length > 0) {
+    const lastAssistant = [...data.messages]
+      .reverse()
+      .find((item) => item.role === "assistant" && typeof item.content === "string");
+
+    if (lastAssistant?.content?.trim()) {
+      return lastAssistant.content.trim();
+    }
+  }
+
+  return "Recebi sua mensagem, mas não consegui montar a resposta corretamente.";
 }
 
-function getWhatsappShareUrl(shareUrl: string, prompt: string) {
-  const text = encodeURIComponent(buildShareText(shareUrl, prompt));
-  return `https://wa.me/?text=${text}`;
+function getPlanLabel(plan: string | null | undefined) {
+  const value = (plan || "free").toLowerCase();
+
+  if (value === "pro") return "PRO";
+  if (value === "influencer") return "INFLUENCER";
+  if (value === "total") return "TOTAL";
+  if (value === "developer") return "DEVELOPER";
+
+  return "FREE";
 }
 
-function getFacebookShareUrl(shareUrl: string) {
-  return `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(
-    shareUrl
-  )}`;
+function formatRemaining(value: number | null) {
+  if (value === null) return "-";
+  if (value === -1) return "Ilimitado";
+  return String(value);
 }
 
-function getXShareUrl(shareUrl: string, prompt: string) {
-  const text = encodeURIComponent(
-    prompt || "Olha essa imagem criada com a Aurora IA"
-  );
-  const url = encodeURIComponent(shareUrl);
-  return `https://twitter.com/intent/tweet?text=${text}&url=${url}`;
+function getQuickPrompt(type: "marketing" | "image" | "business") {
+  if (type === "marketing") {
+    return "Crie uma campanha de marketing para minha empresa com foco em vendas, redes sociais e posicionamento.";
+  }
+
+  if (type === "image") {
+    return "Crie uma imagem impactante de tecnologia futurista com iluminação neon e visual profissional.";
+  }
+
+  return "Me dê uma ideia de negócio lucrativa, escalável e moderna para começar com baixo investimento.";
 }
 
-function getTelegramShareUrl(shareUrl: string, prompt: string) {
-  const text = encodeURIComponent(
-    prompt || "Olha essa imagem criada com a Aurora IA"
-  );
-  const url = encodeURIComponent(shareUrl);
-  return `https://t.me/share/url?url=${url}&text=${text}`;
+async function fetchWithTimeout(
+  input: RequestInfo | URL,
+  init?: RequestInit,
+  timeoutMs = 30000
+) {
+  const controller = new AbortController();
+  const timeoutId = window.setTimeout(() => controller.abort(), timeoutMs);
+
+  try {
+    return await fetch(input, {
+      ...init,
+      signal: controller.signal,
+    });
+  } finally {
+    window.clearTimeout(timeoutId);
+  }
 }
 
-function getLinkedInShareUrl(shareUrl: string) {
-  return `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(
-    shareUrl
-  )}`;
+function isLikelyImageUrl(value: string | null | undefined) {
+  if (!value) return false;
+
+  const lower = value.toLowerCase();
+
+  return lower.startsWith("http://") || lower.startsWith("https://") || lower.startsWith("data:image/");
 }
 
 export default function ChatClient() {
-  const searchParams = useSearchParams();
-
   const [input, setInput] = useState("");
-  const [email, setEmail] = useState("ricardogrupoexecutivo1@gmail.com");
+  const [email, setEmail] = useState("");
   const [plan, setPlan] = useState("free");
   const [messagesRemaining, setMessagesRemaining] = useState<number | null>(null);
+  const [imagesRemaining, setImagesRemaining] = useState<number | null>(null);
+  const [referralCode, setReferralCode] = useState<string | null>(null);
+  const [referralLink, setReferralLink] = useState<string | null>(null);
+  const [referredBy, setReferredBy] = useState<string | null>(null);
+  const [bonusImages, setBonusImages] = useState<number>(0);
+  const [rewardPerReferral, setRewardPerReferral] = useState<number>(5);
+  const [copied, setCopied] = useState(false);
   const [messages, setMessages] = useState<Message[]>([
     {
       role: "assistant",
       content:
-        "Olá! Eu sou a Aurora IA. Posso conversar com você ou gerar uma imagem.",
+        "Olá! Eu sou a Aurora IA. Posso conversar com você, criar campanhas, sugerir ideias de negócio e gerar imagens.",
     },
   ]);
-  const [generatedImage, setGeneratedImage] = useState("");
-  const [generatedImageId, setGeneratedImageId] = useState("");
-  const [generatedPrompt, setGeneratedPrompt] = useState("");
-  const [debugUrl, setDebugUrl] = useState("");
-  const [loadingChat, setLoadingChat] = useState(false);
-  const [loadingImage, setLoadingImage] = useState(false);
-  const [feedback, setFeedback] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+
+  const messagesEndRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
-    const selectedPlan = normalizePlan(searchParams.get("plan"));
+    const savedEmail =
+      typeof window !== "undefined" ? window.localStorage.getItem("aurora_email") : null;
 
-    if (selectedPlan === "pro") {
-      setPlan("pro");
-      return;
+    if (savedEmail) {
+      setEmail(savedEmail);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem("aurora_email", email);
+    }
+  }, [email]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const params = new URLSearchParams(window.location.search);
+    const ref = (params.get("ref") || "").trim().toLowerCase();
+    const prompt = (params.get("prompt") || "").trim();
+
+    if (ref) {
+      window.localStorage.setItem("aurora_ref", ref);
     }
 
-    if (selectedPlan === "influencer") {
-      setPlan("influencer");
-      return;
+    if (prompt) {
+      setInput(prompt);
     }
+  }, []);
 
-    setPlan("free");
-  }, [searchParams]);
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages, isLoading]);
 
-  const shareUrl = useMemo(() => {
-    if (typeof window === "undefined") return "";
-    if (generatedImageId) {
-      return `${window.location.origin}/i/${generatedImageId}`;
-    }
-    return generatedImage;
-  }, [generatedImage, generatedImageId]);
+  useEffect(() => {
+    async function loadReferral() {
+      const userEmail = email.trim().toLowerCase();
 
-  function setTemporaryFeedback(message: string) {
-    setFeedback(message);
-    window.setTimeout(() => {
-      setFeedback("");
-    }, 2500);
-  }
-
-  function getBrowserLanguage() {
-    if (typeof navigator === "undefined") return "pt";
-    const lang = (navigator.language || "pt").toLowerCase();
-
-    if (lang.startsWith("en")) return "en";
-    if (lang.startsWith("es")) return "es";
-    return "pt";
-  }
-
-  async function generateImageFromPrompt(
-    promptText: string,
-    options?: { skipUserMessage?: boolean }
-  ) {
-    const cleanText = promptText.trim();
-    if (!cleanText || loadingChat || loadingImage) return;
-
-    const skipUserMessage = options?.skipUserMessage ?? false;
-
-    if (!skipUserMessage) {
-      setMessages((prev) => [...prev, { role: "user", content: cleanText }]);
-    }
-
-    setLoadingImage(true);
-
-    try {
-      const res = await fetch("/api/image", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          prompt: cleanText,
-          email,
-          plan,
-        }),
-      });
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        setMessages((prev) => [
-          ...prev,
-          {
-            role: "assistant",
-            content: data?.error || "Erro ao gerar imagem.",
-          },
-        ]);
-        setGeneratedImage("");
-        setGeneratedImageId("");
-        setGeneratedPrompt("");
-        setDebugUrl("");
+      if (!userEmail) {
+        setReferralCode(null);
+        setReferralLink(null);
+        setReferredBy(null);
+        setBonusImages(0);
         return;
       }
 
-      const finalImageUrl = data?.imageUrl || data?.image_url || "";
-      const finalImageId = data?.imageId || "";
+      try {
+        const ref =
+          typeof window !== "undefined"
+            ? window.localStorage.getItem("aurora_ref") || ""
+            : "";
 
-      setMessages((prev) => [
-        ...prev,
-        {
-          role: "assistant",
-          content: finalImageUrl
-            ? "Imagem gerada com sucesso."
-            : "A imagem foi gerada, mas nenhuma URL foi retornada.",
-        },
-      ]);
+        const response = await fetchWithTimeout(
+          "/api/referral",
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              email: userEmail,
+              ref,
+            }),
+          },
+          15000
+        );
 
-      setGeneratedImage(finalImageUrl);
-      setGeneratedImageId(finalImageId);
-      setGeneratedPrompt(cleanText);
-      setDebugUrl(finalImageUrl);
-      setInput("");
+        const data = (await response.json()) as ReferralApiResponse;
+
+        if (!response.ok) {
+          console.error(data?.error || "Erro ao carregar referral.");
+          return;
+        }
+
+        setReferralCode(data?.referralCode || null);
+        setReferralLink(data?.referralLink || null);
+        setReferredBy(data?.referredBy || null);
+        setBonusImages(Number(data?.bonusImages || 0));
+        setRewardPerReferral(Number(data?.rewardPerReferral || 5));
+      } catch (error) {
+        console.error("Erro ao carregar referral:", error);
+      }
+    }
+
+    loadReferral();
+  }, [email]);
+
+  const canSend = useMemo(() => {
+    return input.trim().length > 0 && !isLoading;
+  }, [input, isLoading]);
+
+  async function handleQuickAction(type: "marketing" | "image" | "business") {
+    const text = getQuickPrompt(type);
+    setInput(text);
+    await handleSubmit(undefined, text);
+  }
+
+  async function handleCopyReferralLink() {
+    if (!referralLink) return;
+
+    try {
+      await navigator.clipboard.writeText(referralLink);
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 2000);
     } catch (error) {
-      const message =
-        error instanceof Error ? error.message : "Erro inesperado.";
-      setMessages((prev) => [
-        ...prev,
-        {
-          role: "assistant",
-          content: `Erro: ${message}`,
-        },
-      ]);
-      setGeneratedImage("");
-      setGeneratedImageId("");
-      setGeneratedPrompt("");
-      setDebugUrl("");
-    } finally {
-      setLoadingImage(false);
+      console.error("Erro ao copiar link:", error);
     }
   }
 
-  async function sendChatMessage(messageText: string) {
-    const cleanText = messageText.trim();
-    if (!cleanText || loadingChat || loadingImage) return;
+  async function handleSubmit(
+    event?: FormEvent<HTMLFormElement>,
+    forcedText?: string
+  ) {
+    event?.preventDefault();
 
-    if (isLikelyUrl(cleanText)) {
-      setMessages((prev) => [
-        ...prev,
-        { role: "user", content: cleanText },
-        {
-          role: "assistant",
-          content:
-            "Recebi um link. Para gerar uma nova imagem, descreva a imagem desejada no campo de texto e clique em Gerar imagem.",
-        },
-      ]);
-      setInput("");
-      return;
-    }
+    const text = (forcedText ?? input).trim();
+    const userEmail = email.trim().toLowerCase();
 
-    if (isImageRequest(cleanText)) {
-      setMessages((prev) => [...prev, { role: "user", content: cleanText }]);
-      await generateImageFromPrompt(cleanText, { skipUserMessage: true });
-      return;
-    }
+    if (!text || isLoading) return;
 
-    const historyForApi = messages.slice(-10).map((msg) => ({
-      role: msg.role,
-      content: msg.content,
-    }));
+    const nextMessages: Message[] = [
+      ...messages,
+      {
+        role: "user",
+        content: text,
+      },
+    ];
 
-    setMessages((prev) => [...prev, { role: "user", content: cleanText }]);
-    setLoadingChat(true);
+    setMessages(nextMessages);
+    setInput("");
+    setIsLoading(true);
 
     try {
-      const res = await fetch("/api/chat", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "x-language": getBrowserLanguage(),
-        },
-        body: JSON.stringify({
-          message: cleanText,
-          messages: historyForApi,
-          email,
-        }),
-      });
+      if (isImageRequest(text)) {
+        const response = await fetchWithTimeout(
+          "/api/image",
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              prompt: text,
+              email: userEmail,
+            }),
+          },
+          120000
+        );
 
-      const data = await res.json();
+        const data = (await response.json()) as ImageApiResponse;
 
-      if (!res.ok) {
-        setMessages((prev) => [
-          ...prev,
+        if (!response.ok) {
+          setMessages([
+            ...nextMessages,
+            {
+              role: "assistant",
+              content: data?.error || "Erro ao gerar a imagem.",
+            },
+          ]);
+          return;
+        }
+
+        if (typeof data?.imagesRemaining === "number") {
+          setImagesRemaining(data.imagesRemaining);
+        }
+
+        if (typeof data?.messagesRemaining === "number") {
+          setMessagesRemaining(data.messagesRemaining);
+        }
+
+        if (typeof data?.plan === "string" && data.plan) {
+          setPlan(data.plan);
+        }
+
+        const imageUrl = data.imageUrl || data.image_url || data.url;
+        const imagePageUrl = data.imagePageUrl || null;
+
+        setMessages([
+          ...nextMessages,
           {
             role: "assistant",
-            content:
-              data?.error ||
-              data?.details?.error?.message ||
-              "Erro ao conversar com a Aurora IA.",
+            content: imagePageUrl
+              ? "Imagem gerada com sucesso. Sua página pública já está pronta."
+              : "Imagem gerada com sucesso.",
+            imageUrl: imageUrl || null,
+            imagePageUrl,
           },
         ]);
+
         return;
       }
 
-      const reply =
-        typeof data?.reply === "string" && data.reply.trim()
-          ? data.reply.trim()
-          : "Recebi sua mensagem, mas não consegui responder agora.";
-
-      setMessages((prev) => [
-        ...prev,
+      const response = await fetchWithTimeout(
+        "/api/chat",
         {
-          role: "assistant",
-          content: reply,
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            message: text,
+            email: userEmail,
+          }),
         },
-      ]);
+        45000
+      );
 
-      if (typeof data?.plan === "string") {
-        setPlan(normalizePlan(data.plan));
+      const data = (await response.json()) as ChatApiResponse;
+
+      if (!response.ok) {
+        setMessages([
+          ...nextMessages,
+          {
+            role: "assistant",
+            content: data?.error || "Erro ao responder no chat.",
+          },
+        ]);
+        return;
       }
 
       if (typeof data?.messagesRemaining === "number") {
         setMessagesRemaining(data.messagesRemaining);
       }
 
-      setInput("");
-    } catch (error) {
-      const message =
-        error instanceof Error ? error.message : "Erro inesperado.";
-      setMessages((prev) => [
-        ...prev,
+      if (typeof data?.imagesRemaining === "number") {
+        setImagesRemaining(data.imagesRemaining);
+      }
+
+      if (typeof data?.plan === "string" && data.plan) {
+        setPlan(data.plan);
+      }
+
+      setMessages([
+        ...nextMessages,
         {
           role: "assistant",
-          content: `Erro: ${message}`,
+          content: getAssistantText(data),
+        },
+      ]);
+    } catch (error) {
+      console.error(error);
+
+      const fallbackMessage =
+        error instanceof Error && error.name === "AbortError"
+          ? "A requisição demorou demais e foi cancelada. A geração de imagem excedeu 120 segundos."
+          : "Ocorreu um erro inesperado. Tente novamente em instantes.";
+
+      setMessages([
+        ...nextMessages,
+        {
+          role: "assistant",
+          content: fallbackMessage,
         },
       ]);
     } finally {
-      setLoadingChat(false);
+      setIsLoading(false);
     }
   }
-
-  async function handleSubmit(e: FormEvent) {
-    e.preventDefault();
-    await sendChatMessage(input);
-  }
-
-  async function handleGenerateImageClick() {
-    const cleanText = input.trim();
-
-    if (!cleanText) {
-      setMessages((prev) => [
-        ...prev,
-        {
-          role: "assistant",
-          content:
-            "Descreva a imagem no campo de texto e depois clique em Gerar imagem.",
-        },
-      ]);
-      return;
-    }
-
-    if (isLikelyUrl(cleanText)) {
-      setMessages((prev) => [
-        ...prev,
-        {
-          role: "assistant",
-          content:
-            "Esse conteúdo parece ser um link. Cole uma descrição da imagem para gerar uma nova criação.",
-        },
-      ]);
-      return;
-    }
-
-    await generateImageFromPrompt(cleanText);
-  }
-
-  async function handleShareCurrentImage() {
-    if (!shareUrl) {
-      setTemporaryFeedback("Gere uma imagem antes de compartilhar.");
-      return;
-    }
-
-    try {
-      if (navigator.share) {
-        await navigator.share({
-          title: "Aurora IA",
-          text: generatedPrompt || "Olha essa imagem criada com a Aurora IA",
-          url: shareUrl,
-        });
-        return;
-      }
-
-      await navigator.clipboard.writeText(shareUrl);
-      setTemporaryFeedback("Link da página pública copiado.");
-    } catch {
-      setTemporaryFeedback("Não foi possível compartilhar agora.");
-    }
-  }
-
-  async function handleCopyCurrentImageLink() {
-    if (!shareUrl) {
-      setTemporaryFeedback("Gere uma imagem antes de copiar o link.");
-      return;
-    }
-
-    try {
-      await navigator.clipboard.writeText(shareUrl);
-      setTemporaryFeedback("Link copiado com sucesso.");
-    } catch {
-      setTemporaryFeedback("Não foi possível copiar o link.");
-    }
-  }
-
-  const isBusy = loadingChat || loadingImage;
 
   return (
-    <main
-      style={{
-        minHeight: "100vh",
-        background: "#0b1020",
-        color: "#ffffff",
-        padding: 20,
-        fontFamily: "Arial, sans-serif",
-      }}
-    >
-      <div style={{ maxWidth: 900, margin: "0 auto" }}>
-        <div style={{ marginBottom: 20 }}>
-          <Link href="/" style={{ color: "#9ecbff", textDecoration: "none" }}>
-            Voltar
-          </Link>
-        </div>
-
-        <h1 style={{ fontSize: 32, marginBottom: 8 }}>Aurora IA</h1>
-        <p style={{ color: "#aab4d6", marginTop: 0 }}>
-          Conversa inteligente e geração de imagens.
-        </p>
-
-        {feedback ? (
-          <div
-            style={{
-              marginBottom: 16,
-              background: "#16203d",
-              border: "1px solid rgba(255,255,255,0.08)",
-              borderRadius: 12,
-              padding: 12,
-              color: "#dbe7ff",
-            }}
-          >
-            {feedback}
-          </div>
-        ) : null}
-
-        <div
-          style={{
-            background: "#121a33",
-            border: "1px solid rgba(255,255,255,0.08)",
-            borderRadius: 16,
-            padding: 16,
-            marginBottom: 20,
-          }}
-        >
-          <div style={{ marginBottom: 12 }}>
-            <label style={{ display: "block", marginBottom: 6 }}>E-mail</label>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              style={inputStyle}
-            />
-          </div>
-
-          <div style={{ marginBottom: 12 }}>
-            <label style={{ display: "block", marginBottom: 6 }}>Plano</label>
-            <input
-              type="text"
-              value={plan}
-              onChange={(e) => setPlan(normalizePlan(e.target.value))}
-              style={inputStyle}
-            />
-          </div>
-
-          <div>
-            <label style={{ display: "block", marginBottom: 6 }}>
-              Mensagens restantes hoje
-            </label>
-            <input
-              type="text"
-              value={
-                messagesRemaining === null
-                  ? "-"
-                  : messagesRemaining === -1
-                    ? "ilimitado"
-                    : String(messagesRemaining)
-              }
-              readOnly
-              style={inputStyle}
-            />
-          </div>
-        </div>
-
-        <div
-          style={{
-            background: "#121a33",
-            border: "1px solid rgba(255,255,255,0.08)",
-            borderRadius: 16,
-            padding: 16,
-            marginBottom: 20,
-          }}
-        >
-          {messages.map((message, index) => (
-            <div
-              key={index}
-              style={{
-                marginBottom: 12,
-                padding: 12,
-                borderRadius: 12,
-                background:
-                  message.role === "user" ? "#1d2a52" : "#18213f",
-              }}
-            >
-              <strong>{message.role === "user" ? "Você" : "Aurora"}:</strong>{" "}
-              {message.content}
-            </div>
-          ))}
-
-          {generatedImage ? (
-            <div style={{ marginTop: 16 }}>
-              <p style={{ marginBottom: 10 }}>Imagem gerada por IA</p>
-
-              <div
-                style={{
-                  position: "relative",
-                  width: "100%",
-                  maxWidth: 640,
-                }}
-              >
-                <img
-                  src={generatedImage}
-                  alt="Imagem gerada por IA"
-                  style={{
-                    width: "100%",
-                    height: "auto",
-                    borderRadius: 14,
-                    display: "block",
-                    border: "1px solid rgba(255,255,255,0.12)",
-                  }}
-                />
-
-                <div
-                  style={{
-                    position: "absolute",
-                    top: "8%",
-                    left: "50%",
-                    transform: "translateX(-50%)",
-                    width: "88%",
-                    textAlign: "center",
-                    fontWeight: 800,
-                    fontSize: "clamp(18px, 3vw, 28px)",
-                    color: "#ffffff",
-                    textShadow:
-                      "0 2px 6px rgba(0,0,0,0.85), 0 0 16px rgba(0,0,0,0.65)",
-                    letterSpacing: 1,
-                    lineHeight: 1.2,
-                    wordBreak: "break-word",
-                  }}
-                >
-                  RICARDOIAOFICIAL.COM
-                </div>
-
-                <div
-                  style={{
-                    position: "absolute",
-                    bottom: "8%",
-                    left: "50%",
-                    transform: "translateX(-50%)",
-                    width: "78%",
-                    textAlign: "center",
-                    fontWeight: 800,
-                    fontSize: "clamp(18px, 3vw, 26px)",
-                    color: "#00eaff",
-                    textShadow:
-                      "0 2px 6px rgba(0,0,0,0.9), 0 0 16px rgba(0,0,0,0.75)",
-                    letterSpacing: 2,
-                    lineHeight: 1.2,
-                    wordBreak: "break-word",
-                  }}
-                >
-                  AURORA IA
-                </div>
-              </div>
-
-              {shareUrl ? (
-                <div style={{ marginTop: 12, marginBottom: 8 }}>
-                  <p style={{ marginBottom: 6, color: "#aab4d6" }}>
-                    Página pública para compartilhar:
-                  </p>
-                  <a
-                    href={shareUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    style={{ color: "#7ec8ff", wordBreak: "break-all" }}
-                  >
-                    {shareUrl}
-                  </a>
-                </div>
-              ) : null}
-
-              <div
-                style={{
-                  display: "flex",
-                  gap: 8,
-                  flexWrap: "wrap",
-                  marginTop: 14,
-                }}
-              >
-                <button
-                  type="button"
-                  onClick={handleShareCurrentImage}
-                  style={shareButtonPrimary}
-                >
-                  Compartilhar
-                </button>
-
-                <a
-                  href={
-                    shareUrl
-                      ? getWhatsappShareUrl(shareUrl, generatedPrompt)
-                      : "#"
-                  }
-                  target="_blank"
-                  rel="noreferrer"
-                  style={shareLinkButton}
-                >
-                  WhatsApp
-                </a>
-
-                <a
-                  href={shareUrl ? getFacebookShareUrl(shareUrl) : "#"}
-                  target="_blank"
-                  rel="noreferrer"
-                  style={shareLinkButton}
-                >
-                  Facebook
-                </a>
-
-                <a
-                  href={shareUrl ? getXShareUrl(shareUrl, generatedPrompt) : "#"}
-                  target="_blank"
-                  rel="noreferrer"
-                  style={shareLinkButton}
-                >
-                  X
-                </a>
-
-                <a
-                  href={
-                    shareUrl
-                      ? getTelegramShareUrl(shareUrl, generatedPrompt)
-                      : "#"
-                  }
-                  target="_blank"
-                  rel="noreferrer"
-                  style={shareLinkButton}
-                >
-                  Telegram
-                </a>
-
-                <a
-                  href={shareUrl ? getLinkedInShareUrl(shareUrl) : "#"}
-                  target="_blank"
-                  rel="noreferrer"
-                  style={shareLinkButton}
-                >
-                  LinkedIn
-                </a>
-
-                <button
-                  type="button"
-                  onClick={handleCopyCurrentImageLink}
-                  style={shareButtonSecondary}
-                >
-                  Copiar link
-                </button>
-              </div>
-            </div>
-          ) : null}
-
-          {debugUrl ? (
-            <div style={{ marginTop: 16, wordBreak: "break-all" }}>
-              <p style={{ marginBottom: 6, color: "#aab4d6" }}>
-                URL original da imagem:
+    <div className="min-h-screen bg-white text-zinc-900">
+      <div className="mx-auto flex w-full max-w-5xl flex-col gap-6 px-4 py-6 sm:px-6 lg:px-8">
+        <header className="rounded-2xl border border-zinc-200 bg-gradient-to-r from-zinc-50 to-white p-5 shadow-sm">
+          <div className="flex flex-col gap-4">
+            <div>
+              <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
+                Aurora IA
+              </h1>
+              <p className="mt-2 text-sm leading-6 text-zinc-600 sm:text-base">
+                Conversa inteligente, geração de imagens, campanhas e ideias para negócios.
               </p>
-              <a
-                href={debugUrl}
-                target="_blank"
-                rel="noreferrer"
-                style={{ color: "#7ec8ff" }}
-              >
-                {debugUrl}
-              </a>
             </div>
-          ) : null}
-        </div>
 
-        <form onSubmit={handleSubmit}>
-          <textarea
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            placeholder="Digite sua mensagem ou descreva a imagem que deseja..."
-            rows={4}
-            style={{
-              width: "100%",
-              padding: 14,
-              borderRadius: 14,
-              border: "1px solid #2b3558",
-              background: "#0f1730",
-              color: "#fff",
-              resize: "vertical",
-              marginBottom: 12,
-            }}
+            <div className="grid gap-3 sm:grid-cols-4">
+              <div className="rounded-xl border border-zinc-200 bg-white p-4">
+                <div className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
+                  Plano atual
+                </div>
+                <div className="mt-2 text-lg font-bold">{getPlanLabel(plan)}</div>
+              </div>
+
+              <div className="rounded-xl border border-zinc-200 bg-white p-4">
+                <div className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
+                  Mensagens restantes hoje
+                </div>
+                <div className="mt-2 text-lg font-bold">
+                  {formatRemaining(messagesRemaining)}
+                </div>
+              </div>
+
+              <div className="rounded-xl border border-zinc-200 bg-white p-4">
+                <div className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
+                  Imagens restantes hoje
+                </div>
+                <div className="mt-2 text-lg font-bold">
+                  {formatRemaining(imagesRemaining)}
+                </div>
+              </div>
+
+              <div className="rounded-xl border border-zinc-200 bg-white p-4">
+                <div className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
+                  Imagens bônus
+                </div>
+                <div className="mt-2 text-lg font-bold">{bonusImages}</div>
+              </div>
+            </div>
+          </div>
+        </header>
+
+        <section className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm">
+          <label
+            htmlFor="aurora-email"
+            className="mb-2 block text-sm font-semibold text-zinc-700"
+          >
+            Digite seu e-mail para controle do seu plano
+          </label>
+
+          <input
+            id="aurora-email"
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="seuemail@dominio.com"
+            className="w-full rounded-xl border border-zinc-300 px-4 py-3 text-sm outline-none transition focus:border-zinc-500 focus:ring-2 focus:ring-zinc-200"
           />
 
-          <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+          <div className="mt-4 grid gap-3 sm:grid-cols-3">
             <button
-              type="submit"
-              disabled={isBusy}
-              style={{
-                padding: "12px 18px",
-                borderRadius: 10,
-                border: "none",
-                background: "#2b7fff",
-                color: "#fff",
-                cursor: isBusy ? "not-allowed" : "pointer",
-                opacity: isBusy ? 0.7 : 1,
-              }}
+              type="button"
+              onClick={() => handleQuickAction("marketing")}
+              disabled={isLoading}
+              className="rounded-xl border border-zinc-300 bg-white px-4 py-3 text-sm font-medium transition hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-60"
             >
-              {loadingChat ? "Enviando..." : "Enviar mensagem"}
+              Criar campanha
             </button>
 
             <button
               type="button"
-              onClick={handleGenerateImageClick}
-              disabled={isBusy}
-              style={{
-                padding: "12px 18px",
-                borderRadius: 10,
-                border: "1px solid #2b3558",
-                background: "#16203d",
-                color: "#fff",
-                cursor: isBusy ? "not-allowed" : "pointer",
-                opacity: isBusy ? 0.7 : 1,
-              }}
+              onClick={() => handleQuickAction("image")}
+              disabled={isLoading}
+              className="rounded-xl border border-zinc-300 bg-white px-4 py-3 text-sm font-medium transition hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-60"
             >
-              {loadingImage ? "Gerando..." : "Gerar imagem"}
+              Gerar imagem
+            </button>
+
+            <button
+              type="button"
+              onClick={() => handleQuickAction("business")}
+              disabled={isLoading}
+              className="rounded-xl border border-zinc-300 bg-white px-4 py-3 text-sm font-medium transition hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              Ideia de negócio
             </button>
           </div>
-        </form>
+        </section>
+
+        <section className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm">
+          <div className="flex flex-col gap-4">
+            <div>
+              <h2 className="text-base font-semibold sm:text-lg">
+                Convide amigos e ganhe imagens bônus
+              </h2>
+              <p className="mt-1 text-sm text-zinc-600">
+                Cada novo indicado válido pode render +{rewardPerReferral} imagens para você.
+              </p>
+            </div>
+
+            <div className="grid gap-3 sm:grid-cols-3">
+              <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-4">
+                <div className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
+                  Seu código
+                </div>
+                <div className="mt-2 break-all text-sm font-semibold text-zinc-900">
+                  {referralCode || "-"}
+                </div>
+              </div>
+
+              <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-4 sm:col-span-2">
+                <div className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
+                  Seu link de convite
+                </div>
+                <div className="mt-2 break-all text-sm text-zinc-900">
+                  {referralLink || "Digite seu e-mail para gerar seu link."}
+                </div>
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="text-sm text-zinc-600">
+                {referredBy ? (
+                  <>Você entrou por indicação de: <strong>{referredBy}</strong></>
+                ) : (
+                  <>Nenhuma indicação registrada até agora.</>
+                )}
+              </div>
+
+              <button
+                type="button"
+                onClick={handleCopyReferralLink}
+                disabled={!referralLink}
+                className="inline-flex items-center justify-center rounded-2xl bg-zinc-900 px-5 py-3 text-sm font-semibold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {copied ? "Link copiado!" : "Copiar link de convite"}
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <section className="rounded-2xl border border-zinc-200 bg-white shadow-sm">
+          <div className="border-b border-zinc-200 px-5 py-4">
+            <h2 className="text-base font-semibold sm:text-lg">Chat da Aurora</h2>
+            <p className="mt-1 text-sm text-zinc-500">
+              Escreva normalmente ou peça uma imagem.
+            </p>
+          </div>
+
+          <div className="max-h-[560px] space-y-4 overflow-y-auto px-4 py-4 sm:px-5">
+            {messages.map((message, index) => {
+              const isUser = message.role === "user";
+
+              return (
+                <div
+                  key={`${message.role}-${index}`}
+                  className={`flex ${isUser ? "justify-end" : "justify-start"}`}
+                >
+                  <div
+                    className={[
+                      "max-w-[92%] rounded-2xl px-4 py-3 text-sm leading-6 shadow-sm sm:max-w-[80%]",
+                      isUser
+                        ? "bg-zinc-900 text-white"
+                        : "border border-zinc-200 bg-zinc-50 text-zinc-900",
+                    ].join(" ")}
+                  >
+                    {message.imageUrl && isLikelyImageUrl(message.imageUrl) && (
+                      <div className="mb-3 overflow-hidden rounded-2xl border border-zinc-200 bg-white">
+                        <img
+                          src={message.imageUrl}
+                          alt="Imagem gerada pela Aurora IA"
+                          className="h-auto w-full object-cover"
+                        />
+                      </div>
+                    )}
+
+                    <div className="whitespace-pre-wrap">{message.content}</div>
+
+                    {(message.imageUrl || message.imagePageUrl) && (
+                      <div className="mt-3 flex flex-col gap-2">
+                        {message.imagePageUrl && (
+                          <a
+                            href={message.imagePageUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="text-xs font-semibold underline underline-offset-4"
+                          >
+                            Ver página pública da imagem
+                          </a>
+                        )}
+
+                        {message.imageUrl && isLikelyImageUrl(message.imageUrl) && (
+                          <a
+                            href={message.imageUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="text-xs font-semibold underline underline-offset-4"
+                          >
+                            Abrir imagem em nova guia
+                          </a>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+
+            {isLoading && (
+              <div className="flex justify-start">
+                <div className="max-w-[92%] rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm text-zinc-500 shadow-sm sm:max-w-[80%]">
+                  Aurora IA está gerando sua resposta...
+                </div>
+              </div>
+            )}
+
+            <div ref={messagesEndRef} />
+          </div>
+
+          <form onSubmit={handleSubmit} className="border-t border-zinc-200 p-4 sm:p-5">
+            <div className="flex flex-col gap-3">
+              <textarea
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                placeholder="Digite sua mensagem ou descreva a imagem que deseja..."
+                rows={4}
+                className="w-full resize-none rounded-2xl border border-zinc-300 px-4 py-3 text-sm leading-6 outline-none transition focus:border-zinc-500 focus:ring-2 focus:ring-zinc-200"
+              />
+
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <p className="text-xs leading-5 text-zinc-500">
+                  Exemplos: “Crie uma imagem de Dubai futurista” ou “Me dê uma estratégia de marketing”.
+                </p>
+
+                <button
+                  type="submit"
+                  disabled={!canSend}
+                  className="inline-flex items-center justify-center rounded-2xl bg-zinc-900 px-5 py-3 text-sm font-semibold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {isLoading ? "Enviando..." : "Enviar mensagem"}
+                </button>
+              </div>
+            </div>
+          </form>
+        </section>
       </div>
-    </main>
+    </div>
   );
 }
-
-const inputStyle: React.CSSProperties = {
-  width: "100%",
-  padding: 12,
-  borderRadius: 10,
-  border: "1px solid #2b3558",
-  background: "#0f1730",
-  color: "#fff",
-};
-
-const shareButtonPrimary: React.CSSProperties = {
-  padding: "10px 12px",
-  borderRadius: 10,
-  border: "none",
-  background: "#2b7fff",
-  color: "#fff",
-  cursor: "pointer",
-  fontSize: 14,
-};
-
-const shareButtonSecondary: React.CSSProperties = {
-  padding: "10px 12px",
-  borderRadius: 10,
-  border: "1px solid #2b3558",
-  background: "#16203d",
-  color: "#fff",
-  cursor: "pointer",
-  fontSize: 14,
-};
-
-const shareLinkButton: React.CSSProperties = {
-  padding: "10px 12px",
-  borderRadius: 10,
-  border: "1px solid #2b3558",
-  background: "#16203d",
-  color: "#fff",
-  cursor: "pointer",
-  fontSize: 14,
-  textDecoration: "none",
-  display: "inline-flex",
-  alignItems: "center",
-};

@@ -1,42 +1,84 @@
-import { createClient } from "@supabase/supabase-js";
+import type { MetadataRoute } from "next";
+import { buildPromptSeo } from "@/lib/prompt-seo";
+import { CATEGORY_RULES } from "@/lib/seo";
+import { SITE_URL } from "@/lib/site";
+import { getSupabaseAdmin } from "@/lib/supabase-admin";
 
-export default async function sitemap() {
+export const revalidate = 3600;
 
-  const baseUrl = "https://ricardoiaoficial.com";
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+  const now = new Date();
 
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  );
+  const staticRoutes: MetadataRoute.Sitemap = [
+    {
+      url: SITE_URL,
+      lastModified: now,
+      changeFrequency: "daily",
+      priority: 1,
+    },
+    {
+      url: `${SITE_URL}/explorar`,
+      lastModified: now,
+      changeFrequency: "hourly",
+      priority: 0.9,
+    },
+    {
+      url: `${SITE_URL}/planos`,
+      lastModified: now,
+      changeFrequency: "weekly",
+      priority: 0.7,
+    },
+  ];
 
-  const { data: images } = await supabase
-    .from("images")
-    .select("id,created_at")
-    .eq("is_public", true)
-    .limit(5000);
-
-  const imagePages = (images || []).map((img) => ({
-    url: `${baseUrl}/i/${img.id}`,
-    lastModified: img.created_at,
+  const categoryRoutes: MetadataRoute.Sitemap = CATEGORY_RULES.map((category) => ({
+    url: `${SITE_URL}/categorias/${category.slug}`,
+    lastModified: now,
+    changeFrequency: "daily",
+    priority: 0.8,
   }));
 
-  return [
-    {
-      url: `${baseUrl}`,
-      lastModified: new Date(),
-    },
-    {
-      url: `${baseUrl}/chat`,
-      lastModified: new Date(),
-    },
-    {
-      url: `${baseUrl}/explorar`,
-      lastModified: new Date(),
-    },
-    {
-      url: `${baseUrl}/planilha`,
-      lastModified: new Date(),
-    },
-    ...imagePages,
-  ];
+  let imageRoutes: MetadataRoute.Sitemap = [];
+  let promptRoutes: MetadataRoute.Sitemap = [];
+
+  try {
+    const supabase = getSupabaseAdmin();
+
+    const { data } = await supabase
+      .from("images")
+      .select("id, prompt, created_at, is_public")
+      .eq("is_public", true)
+      .order("created_at", { ascending: false })
+      .limit(5000);
+
+    imageRoutes =
+      data?.map((item) => ({
+        url: `${SITE_URL}/i/${item.id}`,
+        lastModified: item.created_at ? new Date(item.created_at) : now,
+        changeFrequency: "weekly",
+        priority: 0.8,
+      })) || [];
+
+    const promptMap = new Map<string, Date>();
+
+    for (const item of data || []) {
+      const promptSeo = buildPromptSeo(item.prompt);
+      const dateValue = item.created_at ? new Date(item.created_at) : now;
+
+      if (!promptMap.has(promptSeo.slug)) {
+        promptMap.set(promptSeo.slug, dateValue);
+      }
+    }
+
+    promptRoutes = Array.from(promptMap.entries()).map(([slug, lastModified]) => ({
+      url: `${SITE_URL}/prompts/${slug}`,
+      lastModified,
+      changeFrequency: "weekly",
+      priority: 0.75,
+    }));
+  } catch {
+    imageRoutes = [];
+    promptRoutes = [];
+  }
+
+  return [...staticRoutes, ...categoryRoutes, ...promptRoutes, ...imageRoutes];
 }

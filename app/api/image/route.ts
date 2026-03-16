@@ -1,177 +1,235 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient, SupabaseClient } from "@supabase/supabase-js";
+import OpenAI from "openai";
+import { createClient } from "@supabase/supabase-js";
 
 type ImageRequestBody = {
   prompt?: string;
   email?: string;
-  plan?: string | null;
 };
 
-type UsageInsertRow = {
-  email: string;
-  prompt: string;
-  image_url: string;
-  day_key: string;
+type PlanLimits = {
   plan: string;
+  imagesPerDay: number;
 };
 
-const STORAGE_BUCKET = "aurora-images";
 const IMAGES_TABLE = "images";
+const DEFAULT_BUCKET = "aurora-images";
 
-function normalizeEmail(value: string | null | undefined) {
-  return (value || "").trim().toLowerCase();
-}
-
-function slugifyEmail(email: string) {
-  return email.replace(/[^a-z0-9]/gi, "-").toLowerCase();
-}
-
-function getTodayKey() {
-  const now = new Date();
-  const year = now.getUTCFullYear();
-  const month = String(now.getUTCMonth() + 1).padStart(2, "0");
-  const day = String(now.getUTCDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
-}
-
-function normalizePlan(plan: string | null | undefined) {
-  const normalized = (plan || "free").trim().toLowerCase();
-
-  if (
-    normalized === "pro" ||
-    normalized === "total" ||
-    normalized === "premium" ||
-    normalized === "admin"
-  ) {
-    return "pro";
-  }
-
-  if (normalized === "influencer") {
-    return "influencer";
-  }
-
-  return "free";
-}
-
-function getLimitsByPlan(plan: string | null | undefined) {
-  const normalized = normalizePlan(plan);
+function getLimitsByPlan(plan: string | null): PlanLimits {
+  const normalized = (plan || "free").toLowerCase();
 
   if (normalized === "pro") {
-    return {
-      plan: "pro",
-      imagesPerDay: -1,
-    };
+    return { plan: "pro", imagesPerDay: -1 };
+  }
+
+  if (normalized === "total") {
+    return { plan: "total", imagesPerDay: -1 };
+  }
+
+  if (normalized === "developer") {
+    return { plan: "developer", imagesPerDay: -1 };
   }
 
   if (normalized === "influencer") {
-    return {
-      plan: "influencer",
-      imagesPerDay: 20,
-    };
+    return { plan: "influencer", imagesPerDay: 20 };
   }
+
+  return { plan: "free", imagesPerDay: 3 };
+}
+
+function normalizeEmail(value: string) {
+  return value.trim().toLowerCase();
+}
+
+function getTodayRange() {
+  const now = new Date();
+
+  const start = new Date(now);
+  start.setHours(0, 0, 0, 0);
+
+  const end = new Date(now);
+  end.setHours(23, 59, 59, 999);
 
   return {
-    plan: "free",
-    imagesPerDay: 3,
+    startIso: start.toISOString(),
+    endIso: end.toISOString(),
   };
 }
 
-function normalizePrompt(prompt: string) {
-  return prompt.replace(/\s+/g, " ").trim();
+function slugify(value: string) {
+  return value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-zA-Z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .toLowerCase();
 }
 
-async function generateImageBase64(prompt: string, apiKey: string) {
-  const optimizedPrompt = normalizePrompt(prompt);
+function getFilePath(params: { email: string; prompt: string }) {
+  const safeEmail = params.email
+    ? params.email.replace(/[^a-zA-Z0-9]/g, "-").toLowerCase()
+    : "guest";
 
-  const response = await fetch("https://api.openai.com/v1/images/generations", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${apiKey}`,
-    },
-    body: JSON.stringify({
-      model: "gpt-image-1",
-      prompt: optimizedPrompt,
-      size: "1024x1024",
-      quality: "low",
-      output_format: "jpeg",
-    }),
-    cache: "no-store",
-  });
+  const safePrompt = slugify(params.prompt).slice(0, 60) || "imagem";
+  const now = new Date();
+  const yyyy = now.getFullYear();
+  const mm = String(now.getMonth() + 1).padStart(2, "0");
+  const dd = String(now.getDate()).padStart(2, "0");
+  const ts = Date.now();
 
-  const data = await response.json();
-
-  if (!response.ok) {
-    const message =
-      data?.error?.message || "Falha ao gerar imagem na OpenAI.";
-    throw new Error(message);
-  }
-
-  const b64 = data?.data?.[0]?.b64_json;
-
-  if (!b64) {
-    throw new Error("A OpenAI não retornou o base64 da imagem.");
-  }
-
-  return b64 as string;
+  return `${yyyy}-${mm}-${dd}/${safeEmail}/${ts}-${safePrompt}.png`;
 }
 
-async function registerUsage(params: {
-  supabase: SupabaseClient;
+function getSupabaseAdmin() {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+  if (!supabaseUrl || !serviceRoleKey) {
+    throw new Error("Variáveis do Supabase não configuradas.");
+  }
+
+  return createClient(supabaseUrl, serviceRoleKey);
+}
+
+function getBucketName() {
+  return (
+    process.env.SUPABASE_STORAGE_BUCKET ||
+    process.env.NEXT_PUBLIC_SUPABASE_STORAGE_BUCKET ||
+    DEFAULT_BUCKET
+  );
+}
+
+function getBaseUrl(req: NextRequest) {
+  return (
+    process.env.NEXT_PUBLIC_APP_URL ||
+    process.env.NEXT_PUBLIC_SITE_URL ||
+    req.headers.get("origin") ||
+    "http://127.0.0.1:3000"
+  );
+}
+
+async function uploadBase64ToStorage(params: {
+  supabase: ReturnType<typeof createClient>;
+  base64: string;
   email: string;
   prompt: string;
-  imageUrl: string;
-  dayKey: string;
-  plan: string;
 }) {
-  const { supabase, email, prompt, imageUrl, dayKey, plan } = params;
+  const { supabase, base64, email, prompt } = params;
+  const bucket = getBucketName();
+  const filePath = getFilePath({ email, prompt });
+  const buffer = Buffer.from(base64, "base64");
 
-  const usageRow: UsageInsertRow = {
-    email,
-    prompt,
-    image_url: imageUrl,
-    day_key: dayKey,
-    plan,
-  };
+  const { error: uploadError } = await supabase.storage
+    .from(bucket)
+    .upload(filePath, buffer, {
+      contentType: "image/png",
+      upsert: false,
+    });
 
-  const { error: usageError } = await supabase
-    .from("image_usage")
-    .insert(usageRow as never);
-
-  if (usageError) {
-    throw new Error(
-      `Imagem salva, mas falhou ao registrar uso diário: ${usageError.message}`
-    );
+  if (uploadError) {
+    throw new Error(`Erro no upload para storage: ${uploadError.message}`);
   }
+
+  const { data } = supabase.storage.from(bucket).getPublicUrl(filePath);
+
+  if (!data?.publicUrl) {
+    throw new Error("Não foi possível gerar URL pública da imagem.");
+  }
+
+  return data.publicUrl;
 }
 
-async function getImagesRemaining(params: {
-  supabase: SupabaseClient;
+async function downloadAndUploadUrlImage(params: {
+  supabase: ReturnType<typeof createClient>;
+  imageUrl: string;
   email: string;
-  dayKey: string;
-  imagesPerDay: number;
+  prompt: string;
 }) {
-  const { supabase, email, dayKey, imagesPerDay } = params;
+  const { supabase, imageUrl, email, prompt } = params;
+  const bucket = getBucketName();
+  const filePath = getFilePath({ email, prompt });
 
-  if (imagesPerDay === -1) {
-    return null;
+  const response = await fetch(imageUrl);
+
+  if (!response.ok) {
+    throw new Error("Falha ao baixar imagem temporária para persistência.");
   }
 
-  const { count } = await supabase
-    .from("image_usage")
-    .select("*", { count: "exact", head: true })
-    .eq("email", email)
-    .eq("day_key", dayKey);
+  const arrayBuffer = await response.arrayBuffer();
+  const buffer = Buffer.from(arrayBuffer);
 
-  return Math.max(0, imagesPerDay - (count || 0));
+  const { error: uploadError } = await supabase.storage
+    .from(bucket)
+    .upload(filePath, buffer, {
+      contentType: response.headers.get("content-type") || "image/png",
+      upsert: false,
+    });
+
+  if (uploadError) {
+    throw new Error(`Erro no upload da URL para storage: ${uploadError.message}`);
+  }
+
+  const { data } = supabase.storage.from(bucket).getPublicUrl(filePath);
+
+  if (!data?.publicUrl) {
+    throw new Error("Não foi possível gerar URL pública após upload.");
+  }
+
+  return data.publicUrl;
+}
+
+async function generateAndPersistImage(params: {
+  openai: OpenAI;
+  supabase: ReturnType<typeof createClient>;
+  prompt: string;
+  email: string;
+}) {
+  const { openai, supabase, prompt, email } = params;
+
+  const result = await openai.images.generate({
+    model: "gpt-image-1",
+    prompt,
+    size: "1024x1024",
+  });
+
+  const first = result?.data?.[0];
+
+  if (!first) {
+    throw new Error("A OpenAI não retornou dados da imagem.");
+  }
+
+  const directUrl =
+    (first as { url?: string | null } | undefined)?.url || null;
+
+  if (directUrl) {
+    return await downloadAndUploadUrlImage({
+      supabase,
+      imageUrl: directUrl,
+      email,
+      prompt,
+    });
+  }
+
+  const base64 =
+    (first as { b64_json?: string | null } | undefined)?.b64_json || null;
+
+  if (base64) {
+    return await uploadBase64ToStorage({
+      supabase,
+      base64,
+      email,
+      prompt,
+    });
+  }
+
+  throw new Error("A OpenAI não retornou URL nem base64 da imagem.");
 }
 
 export async function POST(req: NextRequest) {
   try {
     const body = (await req.json()) as ImageRequestBody;
-
-    const prompt = normalizePrompt(body.prompt || "");
-    const email = normalizeEmail(body.email);
+    const prompt = (body.prompt || "").trim();
+    const userEmail = normalizeEmail(body.email || "");
 
     if (!prompt) {
       return NextResponse.json(
@@ -180,92 +238,69 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    if (!email) {
+    if (!userEmail) {
       return NextResponse.json(
-        { error: "E-mail do usuário não enviado." },
+        { error: "E-mail não informado para controle do plano." },
         { status: 400 }
       );
     }
 
-    const openAiApiKey = process.env.OPENAI_API_KEY;
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    const openaiApiKey = process.env.OPENAI_API_KEY;
 
-    if (!openAiApiKey) {
+    if (!openaiApiKey) {
       return NextResponse.json(
         { error: "OPENAI_API_KEY não configurada." },
         { status: 500 }
       );
     }
 
-    if (!supabaseUrl) {
-      return NextResponse.json(
-        { error: "NEXT_PUBLIC_SUPABASE_URL não configurada." },
-        { status: 500 }
-      );
+    const supabase = getSupabaseAdmin();
+    const openai = new OpenAI({ apiKey: openaiApiKey });
+
+    let plan = "free";
+    let bonusImages = 0;
+
+    const { data: profile, error: profileError } = await supabase
+      .from("profiles")
+      .select("plan, bonus_images")
+      .eq("email", userEmail)
+      .maybeSingle();
+
+    if (profileError) {
+      console.error("Erro ao buscar profile:", profileError.message);
     }
 
-    if (!supabaseServiceRoleKey) {
-      return NextResponse.json(
-        { error: "SUPABASE_SERVICE_ROLE_KEY não configurada." },
-        { status: 500 }
-      );
+    if (profile?.plan) {
+      plan = String(profile.plan);
     }
 
-    const supabase = createClient(supabaseUrl, supabaseServiceRoleKey, {
-      auth: {
-        autoRefreshToken: false,
-        persistSession: false,
-      },
-    });
-
-    let finalPlan = normalizePlan(body.plan);
-
-    if (email === "ricardogrupoexecutivo1@gmail.com") {
-      finalPlan = "pro";
-    } else {
-      try {
-        const { data: profile } = await supabase
-          .from("profiles")
-          .select("plan")
-          .eq("email", email)
-          .maybeSingle();
-
-        if (profile?.plan) {
-          finalPlan = normalizePlan(String(profile.plan));
-        }
-      } catch {
-        finalPlan = normalizePlan(body.plan);
-      }
+    if (typeof profile?.bonus_images === "number") {
+      bonusImages = Number(profile.bonus_images || 0);
     }
 
-    const limits = getLimitsByPlan(finalPlan);
-    const todayKey = getTodayKey();
+    const limits = getLimitsByPlan(plan);
+    const { startIso, endIso } = getTodayRange();
+
+    const { count, error: countError } = await supabase
+      .from(IMAGES_TABLE)
+      .select("*", { count: "exact", head: true })
+      .eq("email", userEmail)
+      .gte("created_at", startIso)
+      .lte("created_at", endIso);
+
+    if (countError) {
+      console.error("Erro ao contar imagens do dia:", countError.message);
+    }
+
+    const imagesUsedToday = Number(count || 0);
 
     if (limits.imagesPerDay !== -1) {
-      const { count, error: countError } = await supabase
-        .from("image_usage")
-        .select("*", { count: "exact", head: true })
-        .eq("email", email)
-        .eq("day_key", todayKey);
+      const totalAvailable = limits.imagesPerDay + bonusImages;
 
-      if (countError) {
+      if (imagesUsedToday >= totalAvailable) {
         return NextResponse.json(
           {
-            error:
-              "Erro ao verificar limite diário. Verifique a tabela image_usage.",
-            details: countError.message,
-          },
-          { status: 500 }
-        );
-      }
-
-      const usedToday = count || 0;
-
-      if (usedToday >= limits.imagesPerDay) {
-        return NextResponse.json(
-          {
-            error: `Limite diário de imagens atingido para o plano ${limits.plan}.`,
+            error: "Limite diário de imagens atingido para o seu plano.",
             plan: limits.plan,
             imagesRemaining: 0,
           },
@@ -274,140 +309,65 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    const { data: cachedImages, error: cacheError } = await supabase
+    const finalImageUrl = await generateAndPersistImage({
+      openai,
+      supabase,
+      prompt,
+      email: userEmail,
+    });
+
+    const insertPayload = {
+      prompt,
+      image_url: finalImageUrl,
+      created_at: new Date().toISOString(),
+      email: userEmail,
+    };
+
+    const { data: insertedImage, error: insertError } = await supabase
       .from(IMAGES_TABLE)
-      .select("id, image_url, prompt")
-      .eq("prompt", prompt)
-      .eq("is_public", true)
-      .limit(1);
-
-    if (cacheError) {
-      console.error("CACHE IMAGE WARNING:", cacheError.message);
-    }
-
-    const cachedImage =
-      Array.isArray(cachedImages) && cachedImages.length > 0
-        ? cachedImages[0]
-        : null;
-
-    if (cachedImage?.image_url) {
-      await registerUsage({
-        supabase,
-        email,
-        prompt,
-        imageUrl: cachedImage.image_url,
-        dayKey: todayKey,
-        plan: limits.plan,
-      });
-
-      const imagesRemaining = await getImagesRemaining({
-        supabase,
-        email,
-        dayKey: todayKey,
-        imagesPerDay: limits.imagesPerDay,
-      });
-
-      return NextResponse.json({
-        success: true,
-        imageId: cachedImage.id || null,
-        imageUrl: cachedImage.image_url,
-        saved: true,
-        cached: true,
-        plan: limits.plan,
-        unlimited: limits.imagesPerDay === -1,
-        imagesRemaining,
-        quality: "low",
-        format: "jpeg",
-        size: "1024x1024",
-      });
-    }
-
-    const imageBase64 = await generateImageBase64(prompt, openAiApiKey);
-    const imageBuffer = Buffer.from(imageBase64, "base64");
-
-    const safeEmail = slugifyEmail(email);
-    const fileName = `${Date.now()}-${Math.random()
-      .toString(36)
-      .slice(2)}.jpg`;
-    const storagePath = `${todayKey}/${safeEmail}/${fileName}`;
-
-    const { error: uploadError } = await supabase.storage
-      .from(STORAGE_BUCKET)
-      .upload(storagePath, imageBuffer, {
-        contentType: "image/jpeg",
-        upsert: false,
-      });
-
-    if (uploadError) {
-      return NextResponse.json(
-        {
-          error: "Imagem gerada, mas falhou ao salvar no Storage.",
-          details: uploadError.message,
-        },
-        { status: 500 }
-      );
-    }
-
-    const {
-      data: { publicUrl },
-    } = supabase.storage.from(STORAGE_BUCKET).getPublicUrl(storagePath);
-
-    const { data: insertedImage, error: saveImageError } = await supabase
-      .from(IMAGES_TABLE)
-      .insert({
-        email,
-        prompt,
-        image_url: publicUrl,
-        storage_path: storagePath,
-        is_public: true,
-        plan: limits.plan,
-      } as never)
-      .select("id, image_url")
+      .insert(insertPayload)
+      .select("id, prompt, image_url, created_at, email")
       .single();
 
-    if (saveImageError) {
+    if (insertError) {
+      console.error("Erro ao salvar imagem no banco:", insertError.message);
+
       return NextResponse.json(
-        {
-          error: "Imagem salva no Storage, mas falhou ao gravar no banco.",
-          details: saveImageError.message,
-          imageUrl: publicUrl,
-        },
+        { error: `Imagem gerada, mas não foi salva no banco: ${insertError.message}` },
         { status: 500 }
       );
     }
 
-    await registerUsage({
-      supabase,
-      email,
-      prompt,
-      imageUrl: publicUrl,
-      dayKey: todayKey,
-      plan: limits.plan,
-    });
+    let imagesRemaining: number | null = null;
 
-    const imagesRemaining = await getImagesRemaining({
-      supabase,
-      email,
-      dayKey: todayKey,
-      imagesPerDay: limits.imagesPerDay,
-    });
+    if (limits.imagesPerDay === -1) {
+      imagesRemaining = -1;
+    } else {
+      const totalAvailable = limits.imagesPerDay + bonusImages;
+      imagesRemaining = Math.max(0, totalAvailable - (imagesUsedToday + 1));
+    }
+
+    const baseUrl = getBaseUrl(req);
+    const publicPageUrl = `${baseUrl}/i/${insertedImage.id}`;
 
     return NextResponse.json({
       success: true,
-      imageId: insertedImage?.id || null,
-      imageUrl: insertedImage?.image_url || publicUrl,
-      saved: true,
-      cached: false,
+      imageId: insertedImage.id,
+      imageUrl: insertedImage.image_url,
+      imagePageUrl: publicPageUrl,
+      prompt: insertedImage.prompt,
+      createdAt: insertedImage.created_at,
       plan: limits.plan,
-      unlimited: limits.imagesPerDay === -1,
       imagesRemaining,
-      quality: "low",
-      format: "jpeg",
-      size: "1024x1024",
     });
   } catch (error) {
+    console.error("Erro interno em /api/image:", error);
+
     const message =
-      error instanceof Error ? error.message : "Erro interno desconhecido.";
+      error instanceof Error
+        ? error.message
+        : "Erro interno ao gerar e salvar imagem.";
+
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }
