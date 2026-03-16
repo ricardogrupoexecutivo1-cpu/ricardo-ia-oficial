@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import OpenAI from "openai";
-import { createClient } from "@supabase/supabase-js";
+import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+
+type AppSupabaseClient = SupabaseClient;
 
 type ImageRequestBody = {
   prompt?: string;
@@ -109,7 +111,7 @@ function getBaseUrl(req: NextRequest) {
 }
 
 async function uploadBase64ToStorage(params: {
-  supabase: ReturnType<typeof createClient>;
+  supabase: AppSupabaseClient;
   base64: string;
   email: string;
   prompt: string;
@@ -140,7 +142,7 @@ async function uploadBase64ToStorage(params: {
 }
 
 async function downloadAndUploadUrlImage(params: {
-  supabase: ReturnType<typeof createClient>;
+  supabase: AppSupabaseClient;
   imageUrl: string;
   email: string;
   prompt: string;
@@ -180,7 +182,7 @@ async function downloadAndUploadUrlImage(params: {
 
 async function generateAndPersistImage(params: {
   openai: OpenAI;
-  supabase: ReturnType<typeof createClient>;
+  supabase: AppSupabaseClient;
   prompt: string;
   email: string;
 }) {

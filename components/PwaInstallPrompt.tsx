@@ -50,9 +50,13 @@ export default function PwaInstallPrompt() {
   if (installed || !deferredPrompt) return null;
 
   async function handleInstall() {
+    const promptEvent = deferredPrompt;
+
+    if (!promptEvent) return;
+
     try {
-      await deferredPrompt.prompt();
-      await deferredPrompt.userChoice;
+      await promptEvent.prompt();
+      await promptEvent.userChoice;
       setDeferredPrompt(null);
     } catch (error) {
       console.error("Erro ao abrir prompt de instalação:", error);
