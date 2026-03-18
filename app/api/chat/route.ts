@@ -12,45 +12,59 @@ type ChatRequestBody = {
   email?: string;
 };
 
+const SYSTEM_PROMPT = `
+Você é a Aurora IA, uma assistente premium, extremamente capaz, clara, útil, estratégica e tecnicamente competente.
+
+Regras de comportamento:
+- Responda sempre em português do Brasil, salvo se o usuário pedir outro idioma.
+- Seja precisa, prática, inteligente e direta.
+- Quando a pergunta for simples, responda de forma objetiva.
+- Quando a pergunta for técnica, explique com profundidade, passo a passo, sem enrolação.
+- Nunca responda de forma vaga quando o usuário pedir algo específico.
+- Se o usuário pedir estratégia, entregue estratégia real, com estrutura, visão de execução e foco em resultado.
+- Se o usuário pedir negócio, marketing, vendas, automação, tecnologia, app, site, IA ou software, responda com nível profissional.
+- Se houver mais de uma boa solução, mostre a melhor primeiro e depois apresente alternativas.
+- Sempre priorize clareza, precisão e utilidade.
+- Evite respostas genéricas.
+- Não responda curto demais quando o contexto exigir profundidade.
+- Não invente fatos.
+- Ao criar textos de marketing, seja persuasiva, moderna e comercialmente forte.
+- Ao explicar código ou erros, seja direta e didática.
+- Sempre que fizer sentido, organize em:
+  1. diagnóstico
+  2. solução
+  3. próximo passo
+
+Estilo:
+- Forte
+- Elegante
+- Inteligente
+- Estratégica
+
+Objetivo:
+Responder como uma IA premium, útil e acima da média.
+`;
+
 function getLimitsByPlan(plan: string | null) {
   const normalized = (plan || "free").toLowerCase();
 
   if (normalized === "pro") {
-    return {
-      plan: "pro",
-      messagesPerDay: -1,
-    };
+    return { plan: "pro", messagesPerDay: -1 };
   }
 
   if (normalized === "influencer") {
-    return {
-      plan: "influencer",
-      messagesPerDay: 200,
-    };
+    return { plan: "influencer", messagesPerDay: 200 };
   }
 
-  return {
-    plan: "free",
-    messagesPerDay: 20,
-  };
+  return { plan: "free", messagesPerDay: 20 };
 }
 
 export async function POST(req: NextRequest) {
   try {
     const body = (await req.json()) as ChatRequestBody;
 
-    const language = req.headers.get("x-language") || "pt";
-
-    const languageLabel =
-      language === "en"
-        ? "English"
-        : language === "es"
-          ? "Español"
-          : "Português";
-
     const userMessage = (body.message || "").trim();
     const userEmail = (body.email || "").trim().toLowerCase();
-    const incomingMessages = Array.isArray(body.messages) ? body.messages : [];
 
     if (!userMessage) {
       return NextResponse.json(
@@ -60,8 +74,6 @@ export async function POST(req: NextRequest) {
     }
 
     const apiKey = process.env.OPENAI_API_KEY;
-    const SUPABASE_URL = process.env.SUPABASE_URL;
-    const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
     if (!apiKey) {
       return NextResponse.json(
@@ -70,137 +82,9 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    let currentPlan = "free";
-    let messagesRemaining = 20;
-
-    const canUseSupabase =
-      !!SUPABASE_URL && !!SUPABASE_SERVICE_ROLE_KEY && !!userEmail;
-
-    if (canUseSupabase) {
-      try {
-        const supabase = createClient(
-          SUPABASE_URL,
-          SUPABASE_SERVICE_ROLE_KEY,
-          {
-            auth: {
-              autoRefreshToken: false,
-              persistSession: false,
-            },
-          }
-        );
-
-        const { data: subscription } = await supabase
-          .from("aurora_subscriptions")
-          .select("plan, status")
-          .eq("email", userEmail)
-          .maybeSingle();
-
-        const isActivePaid =
-          !!subscription &&
-          subscription.status === "active" &&
-          (subscription.plan === "pro" || subscription.plan === "influencer");
-
-        const limits = getLimitsByPlan(isActivePaid ? subscription.plan : "free");
-        currentPlan = limits.plan;
-
-        const today = new Date().toISOString().slice(0, 10);
-
-        const { data: usage } = await supabase
-          .from("aurora_daily_usage")
-          .select("id, messages_count")
-          .eq("email", userEmail)
-          .eq("usage_date", today)
-          .maybeSingle();
-
-        const messagesUsed = Number(usage?.messages_count || 0);
-
-        if (
-          limits.messagesPerDay !== -1 &&
-          messagesUsed >= limits.messagesPerDay
-        ) {
-          return NextResponse.json(
-            {
-              error:
-                "Você atingiu o limite diário do seu plano. Faça upgrade para continuar usando a Aurora IA.",
-              plan: currentPlan,
-              messagesRemaining: 0,
-            },
-            { status: 403 }
-          );
-        }
-
-        if (usage?.id) {
-          await supabase
-            .from("aurora_daily_usage")
-            .update({
-              messages_count: messagesUsed + 1,
-              updated_at: new Date().toISOString(),
-            })
-            .eq("id", usage.id);
-        } else {
-          await supabase.from("aurora_daily_usage").insert({
-            email: userEmail,
-            usage_date: today,
-            messages_count: 1,
-            images_count: 0,
-          });
-        }
-
-        messagesRemaining =
-          limits.messagesPerDay === -1
-            ? -1
-            : Math.max(limits.messagesPerDay - (messagesUsed + 1), 0);
-      } catch (supabaseError) {
-        console.error("SUPABASE CHAT WARNING:", supabaseError);
-      }
-    }
-
-    const systemPrompt = `
-Você é Aurora IA, uma assistente útil, moderna, objetiva e profissional.
-
-Regras principais:
-- Seu nome é sempre Aurora IA.
-- Nunca diga que seu nome é RicardoIA.
-- Responda sempre no idioma solicitado.
-- Idioma obrigatório da resposta: ${languageLabel}.
-- Se o idioma for English, responda em English.
-- Se o idioma for Español, responda em Español.
-- Se o idioma for Português, responda em Português.
-- Nunca misture idiomas sem necessidade.
-- Seja natural, útil e direta.
-- Evite repetir frases prontas sem necessidade.
-- Quando o usuário pedir criatividade, responda de forma criativa.
-- Quando o usuário pedir algo curto, seja curta.
-- Quando o usuário pedir algo comercial, seja persuasiva e clara.
-- Se o usuário perguntar "onde está a Aurora", explique que você é a própria Aurora IA.
-`.trim();
-
-    const historyMessages = incomingMessages
-      .filter(
-        (msg) =>
-          msg &&
-          (msg.role === "user" ||
-            msg.role === "assistant" ||
-            msg.role === "system") &&
-          typeof msg.content === "string" &&
-          msg.content.trim() !== ""
-      )
-      .slice(-10)
-      .map((msg) => ({
-        role: msg.role,
-        content: msg.content.trim(),
-      }));
-
-    const messagesForModel = [
-      {
-        role: "system",
-        content: systemPrompt,
-      },
-      ...historyMessages,
-      {
-        role: "user",
-        content: userMessage,
-      },
+    const messages: ChatMessage[] = [
+      { role: "system", content: SYSTEM_PROMPT },
+      { role: "user", content: userMessage },
     ];
 
     const response = await fetch("https://api.openai.com/v1/chat/completions", {
@@ -210,52 +94,24 @@ Regras principais:
         Authorization: `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        model: "gpt-4o-mini",
-        messages: messagesForModel,
-        temperature: 0.8,
+        model: "gpt-4.1-mini",
+        messages,
+        temperature: 0.7,
       }),
-      cache: "no-store",
     });
 
-    const rawText = await response.text();
-
-    let data: any = null;
-
-    try {
-      data = rawText ? JSON.parse(rawText) : null;
-    } catch {
-      data = { rawText };
-    }
-
-    if (!response.ok) {
-      return NextResponse.json(
-        {
-          error: "Erro OpenAI",
-          statusCode: response.status,
-          details: data,
-          rawText,
-        },
-        { status: response.status || 500 }
-      );
-    }
+    const data = await response.json();
 
     const reply =
-      data?.choices?.[0]?.message?.content?.trim() ||
-      "Recebi sua mensagem, mas não consegui gerar resposta agora.";
+      data?.choices?.[0]?.message?.content ||
+      "Erro ao gerar resposta da Aurora.";
 
     return NextResponse.json({
       reply,
-      plan: currentPlan,
-      messagesRemaining,
     });
   } catch (error) {
     return NextResponse.json(
-      {
-        error:
-          error instanceof Error
-            ? error.message
-            : "Erro interno ao processar a mensagem.",
-      },
+      { error: "Erro interno no chat." },
       { status: 500 }
     );
   }

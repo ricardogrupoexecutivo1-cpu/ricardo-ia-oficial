@@ -1,8 +1,7 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import "./globals.css";
 import { SITE_DESCRIPTION, SITE_NAME, SITE_TITLE, SITE_URL, absoluteUrl } from "@/lib/site";
-import PwaInstallPrompt from "@/components/PwaInstallPrompt";
-import ServiceWorkerRegister from "@/components/ServiceWorkerRegister";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
@@ -22,6 +21,8 @@ export const metadata: Metadata = {
     "campanhas de marketing",
     "ideias de negócio",
     "IA no Brasil",
+    "editor de imagens",
+    "editor visual",
   ],
   openGraph: {
     type: "website",
@@ -55,6 +56,27 @@ export const metadata: Metadata = {
   },
 };
 
+function navLinkStyle(isHighlight = false) {
+  return {
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: "10px 12px",
+    borderRadius: 999,
+    textDecoration: "none",
+    color: isHighlight ? "#052e16" : "inherit",
+    border: isHighlight
+      ? "1px solid rgba(34,197,94,0.35)"
+      : "1px solid rgba(255,255,255,0.10)",
+    background: isHighlight ? "rgba(34,197,94,0.92)" : "rgba(255,255,255,0.04)",
+    fontWeight: 700,
+    fontSize: 13,
+    whiteSpace: "nowrap" as const,
+    minHeight: 40,
+    boxShadow: isHighlight ? "0 0 18px rgba(34,197,94,0.22)" : "none",
+  } as const;
+}
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -62,10 +84,95 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="pt-BR">
-      <body>
-        <ServiceWorkerRegister />
-        {children}
-        <PwaInstallPrompt />
+      <body
+        style={{
+          margin: 0,
+          background:
+            "radial-gradient(circle at top, rgba(16,185,129,0.10), rgba(3,7,18,1) 42%, rgba(2,6,23,1) 100%)",
+          color: "#f8fafc",
+          minHeight: "100vh",
+        }}
+      >
+        <header
+          style={{
+            position: "sticky",
+            top: 0,
+            zIndex: 50,
+            backdropFilter: "blur(14px)",
+            background: "rgba(3,7,18,0.82)",
+            borderBottom: "1px solid rgba(255,255,255,0.08)",
+          }}
+        >
+          <div
+            style={{
+              maxWidth: 1240,
+              margin: "0 auto",
+              padding: "12px 14px",
+            }}
+          >
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                gap: 12,
+                flexWrap: "wrap",
+              }}
+            >
+              <Link
+                href="/"
+                style={{
+                  textDecoration: "none",
+                  color: "inherit",
+                  fontWeight: 900,
+                  fontSize: 20,
+                  letterSpacing: 0.3,
+                }}
+              >
+                Aurora IA
+              </Link>
+
+              <nav
+                style={{
+                  display: "flex",
+                  flexWrap: "wrap",
+                  gap: 8,
+                  justifyContent: "flex-end",
+                }}
+              >
+                <Link href="/" style={navLinkStyle()}>
+                  Home
+                </Link>
+                <Link href="/chat" style={navLinkStyle()}>
+                  Chat
+                </Link>
+                <Link href="/editor" style={navLinkStyle(true)}>
+                  Editor
+                </Link>
+                <Link href="/planos" style={navLinkStyle()}>
+                  Planos
+                </Link>
+                <Link href="/explorar" style={navLinkStyle()}>
+                  Explorar
+                </Link>
+                <Link href="/explorar/prompts" style={navLinkStyle()}>
+                  Prompts
+                </Link>
+              </nav>
+            </div>
+          </div>
+        </header>
+
+        <div
+          style={{
+            width: "100%",
+            maxWidth: 1240,
+            margin: "0 auto",
+            padding: "16px 12px 24px",
+          }}
+        >
+          {children}
+        </div>
       </body>
     </html>
   );

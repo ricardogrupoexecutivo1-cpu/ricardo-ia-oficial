@@ -1,10 +1,15 @@
 import ChatClient from "./chat-client";
 
-export const metadata = {
-  title: "Aurora IA | Chat",
-  description: "Chat inteligente da Aurora IA com geração de imagens e ideias de negócio.",
-};
-
 export default function ChatPage() {
-  return <ChatClient />;
+  return (
+    <main
+      style={{
+        width: "100%",
+        maxWidth: 1100,
+        margin: "0 auto",
+      }}
+    >
+      <ChatClient />
+    </main>
+  );
 }
