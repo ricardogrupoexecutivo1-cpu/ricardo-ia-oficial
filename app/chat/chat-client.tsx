@@ -2,51 +2,28 @@
 
 import Link from "next/link";
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
-import { useSearchParams } from "next/navigation";
-
-type MessageRole = "user" | "assistant";
 
 type Message = {
-  role: MessageRole;
+  role: "user" | "assistant";
   content: string;
   imageUrl?: string | null;
   imagePageUrl?: string | null;
 };
 
 function isImageRequest(text: string) {
-  const value = text.trim().toLowerCase();
+  const value = text.toLowerCase();
 
-  if (!value) return false;
-
-  const triggers = [
-    "crie uma imagem",
-    "gere uma imagem",
-    "gerar uma imagem",
-    "criar uma imagem",
-    "faça uma imagem",
-    "faz uma imagem",
-    "desenhe",
-    "imagem de",
-    "quero uma imagem",
-    "me mostre uma imagem",
-    "crie para mim uma imagem",
-    "gere para mim uma imagem",
-    "create an image",
-    "generate an image",
-    "image of",
-    "draw",
-  ];
-
-  return triggers.some((trigger) => value.includes(trigger));
-}
-
-function getText(value: unknown, fallback = "") {
-  return typeof value === "string" ? value : fallback;
+  return (
+    value.includes("crie uma imagem") ||
+    value.includes("gere uma imagem") ||
+    value.includes("criar imagem") ||
+    value.includes("gerar imagem") ||
+    value.includes("faça uma imagem") ||
+    value.includes("imagem de")
+  );
 }
 
 export default function ChatClient() {
-  const searchParams = useSearchParams();
-
   const [messages, setMessages] = useState<Message[]>([
     {
       role: "assistant",
@@ -56,280 +33,170 @@ export default function ChatClient() {
   ]);
 
   const [input, setInput] = useState("");
-  const [userEmail, setUserEmail] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, isLoading]);
+  }, [messages]);
 
-  useEffect(() => {
-    const promptFromUrl = searchParams.get("prompt");
+  async function handleSubmit(e: FormEvent) {
+    e.preventDefault();
 
-    if (promptFromUrl && !input.trim()) {
-      setInput(promptFromUrl);
-    }
-  }, [searchParams, input]);
-
-  const canSubmit = useMemo(() => {
-    return input.trim().length > 0 && !isLoading;
-  }, [input, isLoading]);
-
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-
-    const text = input.trim();
-    const email = userEmail.trim().toLowerCase();
-
-    if (!text || isLoading) return;
+    if (!input.trim() || loading) return;
 
     const userMessage: Message = {
       role: "user",
-      content: text,
+      content: input,
     };
 
     setMessages((prev) => [...prev, userMessage]);
     setInput("");
-    setIsLoading(true);
+    setLoading(true);
 
     try {
-      if (isImageRequest(text)) {
-        const response = await fetch("/api/image", {
+      if (isImageRequest(input)) {
+        const res = await fetch("/api/image", {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            prompt: text,
-            email,
-          }),
+          body: JSON.stringify({ prompt: input }),
         });
 
-        const data = await response.json().catch(() => ({}));
+        const data = await res.json();
 
-        if (!response.ok) {
-          const errorMessage: Message = {
+        setMessages((prev) => [
+          ...prev,
+          {
             role: "assistant",
-            content: getText(data?.error, "Erro ao gerar a imagem."),
-          };
+            content: "Imagem gerada:",
+            imageUrl: data.imageUrl,
+          },
+        ]);
+      } else {
+        const res = await fetch("/api/chat", {
+          method: "POST",
+          body: JSON.stringify({ message: input }),
+        });
 
-          setMessages((prev) => [...prev, errorMessage]);
-          return;
-        }
+        const data = await res.json();
 
-        const imageUrl =
-          getText(data?.imageUrl) ||
-          getText(data?.image_url) ||
-          getText(data?.url) ||
-          null;
-
-        const assistantMessage: Message = {
-          role: "assistant",
-          content: getText(data?.message, "Imagem gerada."),
-          imageUrl,
-          imagePageUrl: getText(data?.imagePageUrl) || null,
-        };
-
-        setMessages((prev) => [...prev, assistantMessage]);
-        return;
+        setMessages((prev) => [
+          ...prev,
+          {
+            role: "assistant",
+            content: data.reply || "Resposta recebida.",
+          },
+        ]);
       }
-
-      const response = await fetch("/api/chat", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
+    } catch {
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: "assistant",
+          content: "Erro ao conectar com o servidor.",
         },
-        body: JSON.stringify({
-          message: text,
-          email,
-        }),
-      });
-
-      const data = await response.json().catch(() => ({}));
-
-      if (!response.ok) {
-        const errorMessage: Message = {
-          role: "assistant",
-          content: getText(data?.error, "Erro ao responder no chat."),
-        };
-
-        setMessages((prev) => [...prev, errorMessage]);
-        return;
-      }
-
-      const assistantMessage: Message = {
-        role: "assistant",
-        content:
-          getText(data?.reply) ||
-          getText(data?.message) ||
-          getText(data?.content) ||
-          "Resposta recebida.",
-      };
-
-      setMessages((prev) => [...prev, assistantMessage]);
-    } catch (error) {
-      const errorMessage: Message = {
-        role: "assistant",
-        content:
-          error instanceof Error
-            ? error.message
-            : "Erro inesperado ao processar sua solicitação.",
-      };
-
-      setMessages((prev) => [...prev, errorMessage]);
+      ]);
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
   }
 
   return (
-    <main className="min-h-screen bg-black px-4 py-6 text-white">
-      <div className="mx-auto max-w-5xl">
-        <header className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-white/10 bg-white/5 px-4 py-4">
-          <div>
-            <h1 className="text-2xl font-bold">Aurora IA</h1>
-            <p className="text-sm text-white/70">
-              Converse, crie campanhas, ideias de negócio e imagens.
-            </p>
-          </div>
+    <main className="aurora-page">
+      <section className="chat-hero-section">
+        <div className="site-shell">
+          <div className="chat-layout">
+            {/* SIDEBAR */}
+            <aside className="chat-sidebar">
+              <div className="sidebar-card sidebar-card-highlight">
+                <div className="hero-badge">Aurora IA</div>
+                <h1 className="chat-title">Chat da Aurora</h1>
+                <p className="chat-subtitle">
+                  Converse, crie campanhas e gere imagens com uma experiência premium.
+                </p>
 
-          <nav className="flex flex-wrap gap-2">
-            <Link
-              href="/"
-              className="rounded-full border border-white/10 px-4 py-2 text-sm hover:bg-white/10"
-            >
-              Home
-            </Link>
-            <Link
-              href="/chat"
-              className="rounded-full border border-white/10 px-4 py-2 text-sm hover:bg-white/10"
-            >
-              Chat
-            </Link>
-            <Link
-              href="/editor"
-              className="rounded-full bg-emerald-500 px-4 py-2 text-sm font-semibold text-black transition hover:bg-emerald-400"
-            >
-              Editor
-            </Link>
-            <Link
-              href="/planos"
-              className="rounded-full border border-white/10 px-4 py-2 text-sm hover:bg-white/10"
-            >
-              Planos
-            </Link>
-            <Link
-              href="/explorar"
-              className="rounded-full border border-white/10 px-4 py-2 text-sm hover:bg-white/10"
-            >
-              Explorar
-            </Link>
-            <Link
-              href="/prompts"
-              className="rounded-full border border-white/10 px-4 py-2 text-sm hover:bg-white/10"
-            >
-              Prompts
-            </Link>
-          </nav>
-        </header>
+                <div className="sidebar-actions">
+                  <Link href="/" className="btn btn-secondary btn-block">
+                    Home
+                  </Link>
+                  <Link href="/planos" className="btn btn-primary btn-block">
+                    Planos
+                  </Link>
+                </div>
+              </div>
+            </aside>
 
-        <section className="mb-6 rounded-2xl border border-white/10 bg-white/5 p-4">
-          <label className="mb-2 block text-sm text-white/80">Seu email</label>
-          <input
-            type="email"
-            value={userEmail}
-            onChange={(event) => setUserEmail(event.target.value)}
-            placeholder="seuemail@exemplo.com"
-            className="w-full rounded-xl border border-white/10 bg-black/30 px-4 py-3 text-white outline-none placeholder:text-white/40 focus:border-emerald-400/40"
-          />
-        </section>
+            {/* CHAT */}
+            <section className="chat-main">
+              <div className="chat-window">
+                <div className="chat-window-header">
+                  <h2 className="chat-window-title">
+                    Experiência restaurada
+                  </h2>
+                </div>
 
-        <section className="rounded-2xl border border-white/10 bg-white/5">
-          <div className="border-b border-white/10 px-4 py-4">
-            <h2 className="text-lg font-semibold">Chat da Aurora</h2>
-          </div>
-
-          <div className="h-[60vh] overflow-y-auto px-4 py-4">
-            <div className="space-y-4">
-              {messages.map((message, index) => {
-                const isUser = message.role === "user";
-
-                return (
-                  <div
-                    key={`${message.role}-${index}-${message.content.slice(0, 20)}`}
-                    className={`flex ${isUser ? "justify-end" : "justify-start"}`}
-                  >
+                <div className="messages-panel">
+                  {messages.map((msg, i) => (
                     <div
-                      className={`max-w-[90%] rounded-2xl px-4 py-3 md:max-w-[75%] ${
-                        isUser
-                          ? "border border-emerald-400/20 bg-emerald-500/10"
-                          : "border border-white/10 bg-black/30"
+                      key={i}
+                      className={`message-row ${
+                        msg.role === "user"
+                          ? "message-row-user"
+                          : "message-row-assistant"
                       }`}
                     >
-                      <p className="whitespace-pre-wrap break-words text-sm leading-6">
-                        {message.content}
-                      </p>
+                      <div
+                        className={`message-bubble ${
+                          msg.role === "user"
+                            ? "message-bubble-user"
+                            : "message-bubble-assistant"
+                        }`}
+                      >
+                        <strong>
+                          {msg.role === "user" ? "Você" : "Aurora"}
+                        </strong>
+                        <p>{msg.content}</p>
 
-                      {message.imageUrl ? (
-                        <img
-                          src={message.imageUrl}
-                          alt="Imagem gerada pela Aurora IA"
-                          className="mt-3 w-full max-w-2xl rounded-xl border border-emerald-400/20"
-                        />
-                      ) : null}
-
-                      {message.imagePageUrl ? (
-                        <a
-                          href={message.imagePageUrl}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="mt-3 inline-block text-sm text-emerald-300 hover:text-emerald-200"
-                        >
-                          Abrir página da imagem
-                        </a>
-                      ) : null}
+                        {msg.imageUrl && (
+                          <img
+                            src={msg.imageUrl}
+                            className="message-image"
+                          />
+                        )}
+                      </div>
                     </div>
-                  </div>
-                );
-              })}
+                  ))}
 
-              {isLoading ? (
-                <div className="flex justify-start">
-                  <div className="rounded-2xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white/70">
-                    Aurora IA está processando...
-                  </div>
+                  {loading && (
+                    <div className="message-row message-row-assistant">
+                      <div className="message-bubble message-bubble-assistant">
+                        Pensando...
+                      </div>
+                    </div>
+                  )}
+
+                  <div ref={messagesEndRef} />
                 </div>
-              ) : null}
 
-              <div ref={messagesEndRef} />
-            </div>
-          </div>
+                <form className="composer" onSubmit={handleSubmit}>
+                  <div className="composer-grid">
+                    <textarea
+                      className="aurora-textarea"
+                      value={input}
+                      onChange={(e) => setInput(e.target.value)}
+                      placeholder="Digite sua mensagem..."
+                    />
 
-          <form onSubmit={handleSubmit} className="border-t border-white/10 p-4">
-            <div className="flex flex-col gap-3">
-              <textarea
-                value={input}
-                onChange={(event) => setInput(event.target.value)}
-                placeholder='Exemplo: "Crie uma imagem de Dubai futurista" ou "Me dê uma estratégia de marketing".'
-                rows={4}
-                className="w-full resize-none rounded-xl border border-white/10 bg-black/30 px-4 py-3 text-white outline-none placeholder:text-white/40 focus:border-emerald-400/40"
-              />
-
-              <div className="flex justify-end">
-                <button
-                  type="submit"
-                  disabled={!canSubmit}
-                  className="rounded-xl bg-emerald-600 px-6 py-3 font-semibold text-white transition hover:bg-emerald-500 disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  {isLoading ? "Enviando..." : "Enviar"}
-                </button>
+                    <button className="btn btn-primary">
+                      Enviar
+                    </button>
+                  </div>
+                </form>
               </div>
-            </div>
-          </form>
-        </section>
-      </div>
+            </section>
+          </div>
+        </div>
+      </section>
     </main>
   );
 }
