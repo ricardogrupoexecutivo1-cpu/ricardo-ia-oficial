@@ -58,6 +58,10 @@ export default function HomePage() {
                   <Link href="/planos" className="btn btn-secondary">
                     Ver Planos
                   </Link>
+
+                  <Link href="/livro" className="btn btn-secondary">
+                    📚 Ler Livro Aurora
+                  </Link>
                 </div>
 
                 <div className="hero-points">
@@ -87,6 +91,7 @@ export default function HomePage() {
                     <Link href="/chat" className="btn btn-primary btn-block">
                       Gerar imagem agora
                     </Link>
+
                     <Link href="/explorar" className="btn btn-secondary btn-block">
                       Explorar galeria
                     </Link>
@@ -140,6 +145,7 @@ export default function HomePage() {
                 <Link href="/chat" className="btn btn-primary">
                   Abrir Aurora
                 </Link>
+
                 <Link href="/prompts" className="btn btn-secondary">
                   Ver prompts
                 </Link>
