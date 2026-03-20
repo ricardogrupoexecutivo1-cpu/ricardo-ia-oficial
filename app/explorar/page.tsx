@@ -58,83 +58,137 @@ export default function ExplorePage() {
   }, []);
 
   return (
-    <main className="min-h-screen bg-white text-zinc-900">
-      <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 py-6 sm:px-6 lg:px-8">
-        <header className="rounded-3xl border border-zinc-200 bg-white p-6 shadow-sm">
-          <div className="flex flex-col gap-3">
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-zinc-500">
-              Aurora IA
-            </p>
-            <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">
-              Explorar imagens públicas
-            </h1>
-            <p className="max-w-3xl text-sm leading-6 text-zinc-600 sm:text-base">
-              Descubra imagens criadas na Aurora IA.
-            </p>
+    <main className="aurora-page">
+      <section className="chat-hero-section">
+        <div className="site-shell">
+          <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
+            <header className="sidebar-card sidebar-card-highlight">
+              <div className="hero-badge">Aurora IA</div>
 
-            <div className="pt-2">
-              <Link
-                href="/chat"
-                className="inline-flex items-center justify-center rounded-2xl bg-zinc-900 px-5 py-3 text-sm font-semibold text-white transition hover:opacity-90"
+              <h1
+                style={{
+                  margin: "14px 0 10px",
+                  fontSize: "clamp(2rem, 4vw, 3rem)",
+                  lineHeight: 1.08,
+                }}
               >
-                Criar nova imagem
-              </Link>
-            </div>
-          </div>
-        </header>
+                Explorar imagens públicas
+              </h1>
 
-        {loading && (
-          <section className="rounded-3xl border border-zinc-200 bg-white p-6 shadow-sm">
-            <p className="text-sm text-zinc-500">Carregando galeria...</p>
-          </section>
-        )}
+              <p className="mini-text" style={{ maxWidth: 760 }}>
+                Descubra imagens criadas na Aurora IA com visual premium,
+                leitura confortável e padrão visual consistente com o restante da plataforma.
+              </p>
 
-        {!loading && error && (
-          <section className="rounded-3xl border border-red-200 bg-red-50 p-6 shadow-sm">
-            <p className="text-sm font-medium text-red-700">{error}</p>
-          </section>
-        )}
-
-        {!loading && !error && images.length === 0 && (
-          <section className="rounded-3xl border border-zinc-200 bg-white p-6 shadow-sm">
-            <p className="text-sm text-zinc-500">
-              Ainda não há imagens públicas para exibir.
-            </p>
-          </section>
-        )}
-
-        {!loading && !error && images.length > 0 && (
-          <section className="rounded-3xl border border-zinc-200 bg-white p-6 shadow-sm">
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-              {images.map((image) => (
-                <Link
-                  key={image.id}
-                  href={`/i/${image.id}`}
-                  className="group overflow-hidden rounded-2xl border border-zinc-200 bg-white transition hover:-translate-y-0.5 hover:shadow-md"
-                >
-                  <div className="aspect-square overflow-hidden bg-zinc-100">
-                    <img
-                      src={image.image_url || ""}
-                      alt={formatPrompt(image.prompt)}
-                      className="h-full w-full object-cover transition group-hover:scale-[1.02]"
-                    />
-                  </div>
-
-                  <div className="p-4">
-                    <p className="line-clamp-3 text-sm leading-6 text-zinc-800">
-                      {formatPrompt(image.prompt)}
-                    </p>
-
-                    <p className="mt-2 text-xs text-zinc-500">
-                      ID: {image.id}
-                    </p>
-                  </div>
+              <div className="sidebar-actions" style={{ marginTop: 18 }}>
+                <Link href="/chat" className="btn btn-primary">
+                  Criar nova imagem
                 </Link>
-              ))}
-            </div>
-          </section>
-        )}
-      </div>
+                <Link href="/" className="btn btn-secondary">
+                  Home
+                </Link>
+              </div>
+            </header>
+
+            {loading && (
+              <section className="sidebar-card">
+                <p className="mini-text">Carregando galeria...</p>
+              </section>
+            )}
+
+            {!loading && error && (
+              <section className="sidebar-card">
+                <p style={{ color: "#ff8b8b", fontWeight: 700 }}>{error}</p>
+              </section>
+            )}
+
+            {!loading && !error && images.length === 0 && (
+              <section className="sidebar-card">
+                <p className="mini-text">
+                  Ainda não há imagens públicas para exibir.
+                </p>
+              </section>
+            )}
+
+            {!loading && !error && images.length > 0 && (
+              <section className="sidebar-card">
+                <div
+                  style={{
+                    display: "grid",
+                    gap: 16,
+                    gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))",
+                  }}
+                >
+                  {images.map((image) => (
+                    <Link
+                      key={image.id}
+                      href={`/i/${image.id}`}
+                      className="feature-card"
+                      style={{
+                        display: "block",
+                        overflow: "hidden",
+                        padding: 14,
+                      }}
+                    >
+                      <div
+                        style={{
+                          aspectRatio: "1 / 1",
+                          overflow: "hidden",
+                          borderRadius: 18,
+                          background: "rgba(255,255,255,0.03)",
+                          border: "1px solid rgba(92, 255, 170, 0.14)",
+                        }}
+                      >
+                        <img
+                          src={image.image_url || ""}
+                          alt={formatPrompt(image.prompt)}
+                          style={{
+                            width: "100%",
+                            height: "100%",
+                            objectFit: "cover",
+                            display: "block",
+                          }}
+                        />
+                      </div>
+
+                      <div
+                        style={{
+                          marginTop: 12,
+                          padding: 12,
+                          borderRadius: 16,
+                          background: "rgba(4, 10, 9, 0.82)",
+                          border: "1px solid rgba(92, 255, 170, 0.12)",
+                        }}
+                      >
+                        <p
+                          style={{
+                            margin: 0,
+                            fontSize: 14,
+                            lineHeight: 1.6,
+                            color: "#e8fff2",
+                          }}
+                        >
+                          {formatPrompt(image.prompt)}
+                        </p>
+
+                        <p
+                          style={{
+                            margin: "8px 0 0",
+                            fontSize: 11,
+                            color: "#8fb3a7",
+                          }}
+                        >
+                          ID: {image.id}
+                        </p>
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              </section>
+            )}
+          </div>
+        </div>
+      </section>
     </main>
   );
 }
