@@ -6,68 +6,54 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
-function addDays(days: number) {
-  const date = new Date();
-  date.setDate(date.getDate() + days);
-  return date.toISOString();
-}
-
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
 
-    console.log("Webhook recebido:", JSON.stringify(body));
+    console.log("Webhook recebido:", body);
 
-    if (body.event === "PAYMENT_RECEIVED") {
-      const payment = body.payment;
+    const event = body.event;
+    const payment = body.payment;
 
-      const email =
-        payment?.customer?.email ||
-        payment?.billingCustomerEmail ||
-        null;
-
-      const value = Number(payment?.value || 0);
-
-      if (!email) {
-        console.log("Email não encontrado no pagamento");
-        return NextResponse.json({ ok: false });
-      }
-
-      // 🔥 definição de plano por valor
-      let plan = "free";
-
-      if (value >= 79) {
-        plan = "total";
-      } else if (value >= 9.9) {
-        plan = "pro";
-      }
-
-      const now = new Date().toISOString();
-      const expires = addDays(30); // 🔥 recorrência mensal
-
-      console.log("Atualizando plano:", email, plan);
-
-      const { error } = await supabase
-        .from("profiles")
-        .update({
-          plan,
-          plan_status: "active",
-          last_payment_at: now,
-          plan_expires_at: expires,
-          updated_at: now,
-        })
-        .eq("email", email);
-
-      if (error) {
-        console.log("Erro ao atualizar plano:", error);
-      } else {
-        console.log("Plano atualizado com sucesso:", email);
-      }
+    // 👉 só processa quando pagamento for confirmado
+    if (event !== "PAYMENT_CONFIRMED") {
+      return NextResponse.json({ ok: true });
     }
 
-    return NextResponse.json({ received: true });
-  } catch (err) {
-    console.log("Erro webhook:", err);
-    return NextResponse.json({ error: "erro" }, { status: 500 });
+    const email = payment.customerEmail;
+    const value = Number(payment.value);
+
+    if (!email) {
+      console.error("Email não encontrado no webhook");
+      return NextResponse.json({ ok: false });
+    }
+
+    // 👉 definir plano baseado no valor
+    let plan = "free";
+
+    if (value >= 29.9) {
+      plan = "total";
+    } else if (value >= 9.9) {
+      plan = "pro";
+    }
+
+    console.log("Atualizando plano:", email, plan);
+
+    // 👉 atualizar usuário
+    await supabase
+      .from("profiles")
+      .update({
+        plan,
+      })
+      .eq("email", email);
+
+    return NextResponse.json({ ok: true });
+  } catch (error) {
+    console.error("Erro webhook:", error);
+
+    return NextResponse.json(
+      { error: "Erro no webhook" },
+      { status: 500 }
+    );
   }
 }

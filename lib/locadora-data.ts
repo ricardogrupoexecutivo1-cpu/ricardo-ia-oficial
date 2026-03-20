@@ -17,6 +17,7 @@ export type VehicleItem = {
   sellerName: string;
   sellerLogo: string;
   sellerTagline?: string;
+  sellerPhone: string;
   badge?: string;
 };
 
@@ -42,6 +43,7 @@ export const locadoraVehicles: VehicleItem[] = [
     sellerName: "Raja Seminovos",
     sellerLogo: "RS",
     sellerTagline: "Locadora e seminovos premium",
+    sellerPhone: "5531999991111",
     badge: "Premium",
   },
   {
@@ -65,6 +67,7 @@ export const locadoraVehicles: VehicleItem[] = [
     sellerName: "BH Fleet",
     sellerLogo: "BH",
     sellerTagline: "Frotas, aluguel e utilitários",
+    sellerPhone: "5531999992222",
     badge: "Destaque",
   },
   {
@@ -87,6 +90,7 @@ export const locadoraVehicles: VehicleItem[] = [
     sellerName: "Aurora Motors",
     sellerLogo: "AM",
     sellerTagline: "Mobilidade com presença",
+    sellerPhone: "5531999993333",
     badge: "Oferta",
   },
   {
@@ -109,6 +113,7 @@ export const locadoraVehicles: VehicleItem[] = [
     sellerName: "Loccar Prime",
     sellerLogo: "LP",
     sellerTagline: "Seminovos selecionados",
+    sellerPhone: "5531999994444",
     badge: "Executivo",
   },
   {
@@ -131,6 +136,7 @@ export const locadoraVehicles: VehicleItem[] = [
     sellerName: "Carga Fácil",
     sellerLogo: "CF",
     sellerTagline: "Utilitários para operação",
+    sellerPhone: "5531999995555",
     badge: "Empresarial",
   },
   {
@@ -153,6 +159,7 @@ export const locadoraVehicles: VehicleItem[] = [
     sellerName: "Minas Veículos",
     sellerLogo: "MV",
     sellerTagline: "Locação e venda regional",
+    sellerPhone: "5531999996666",
     badge: "Giro Rápido",
   },
 ];
@@ -167,4 +174,22 @@ export function formatCurrencyBRL(value?: number | null) {
     currency: "BRL",
     maximumFractionDigits: 0,
   }).format(value);
+}
+
+export function buildVehicleWhatsappLink(vehicle: {
+  title?: string;
+  sellerPhone?: string;
+}) {
+  const phoneRaw = vehicle?.sellerPhone || "";
+  const phone = phoneRaw.replace(/\D/g, "");
+
+  if (!phone) {
+    return "#";
+  }
+
+  const message = encodeURIComponent(
+    `Olá! Tenho interesse no veículo: ${vehicle.title || "veículo"}`
+  );
+
+  return `https://wa.me/${phone}?text=${message}`;
 }
