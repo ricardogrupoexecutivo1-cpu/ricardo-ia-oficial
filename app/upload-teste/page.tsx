@@ -5,10 +5,10 @@ import UploadImage from "@/components/upload-image";
 
 type UploadedAsset = {
   publicUrl: string;
-  path: string;
-  fileName: string;
-  contentType: string;
-  size: number;
+  path?: string;
+  fileName?: string;
+  contentType?: string;
+  size?: number;
 };
 
 export default function UploadTestePage() {
@@ -162,7 +162,7 @@ export default function UploadTestePage() {
                 >
                   <img
                     src={uploaded.publicUrl}
-                    alt={uploaded.fileName}
+                    alt={uploaded.fileName || "Imagem enviada"}
                     style={{
                       width: "100%",
                       maxHeight: 320,
@@ -184,16 +184,19 @@ export default function UploadTestePage() {
                   }}
                 >
                   <div>
-                    <strong>Arquivo:</strong> {uploaded.fileName}
+                    <strong>Arquivo:</strong> {uploaded.fileName || "-"}
                   </div>
                   <div>
-                    <strong>Tipo:</strong> {uploaded.contentType}
+                    <strong>Tipo:</strong> {uploaded.contentType || "-"}
                   </div>
                   <div>
-                    <strong>Tamanho:</strong> {uploaded.size} bytes
+                    <strong>Tamanho:</strong>{" "}
+                    {typeof uploaded.size === "number"
+                      ? `${uploaded.size} bytes`
+                      : "-"}
                   </div>
                   <div style={{ wordBreak: "break-all" }}>
-                    <strong>Path:</strong> {uploaded.path}
+                    <strong>Path:</strong> {uploaded.path || "-"}
                   </div>
                   <div style={{ wordBreak: "break-all" }}>
                     <strong>URL pública:</strong> {uploaded.publicUrl}
