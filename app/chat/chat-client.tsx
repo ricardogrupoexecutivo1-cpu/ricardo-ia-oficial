@@ -4,6 +4,7 @@ import Link from "next/link";
 import {
   ChangeEvent,
   FormEvent,
+  KeyboardEvent,
   useEffect,
   useMemo,
   useRef,
@@ -144,16 +145,16 @@ export default function ChatClient() {
 
   useEffect(() => {
     const savedEmail = window.localStorage.getItem("aurora-user-email");
-    if (savedEmail) {
-      setUserEmail(savedEmail);
-    }
-
     const savedReferenceImageUrl = window.localStorage.getItem(
       "aurora-reference-image-url"
     );
     const savedReferenceImageName = window.localStorage.getItem(
       "aurora-reference-image-name"
     );
+
+    if (savedEmail) {
+      setUserEmail(savedEmail);
+    }
 
     if (savedReferenceImageUrl) {
       setReferenceImageUrl(savedReferenceImageUrl);
@@ -194,12 +195,23 @@ export default function ChatClient() {
   }, [referenceImageUrl, referenceImageName]);
 
   useEffect(() => {
+    return () => {
+      if (selectedPreviewUrl) {
+        URL.revokeObjectURL(selectedPreviewUrl);
+      }
+    };
+  }, [selectedPreviewUrl]);
+
+  useEffect(() => {
     if (!userEmail.trim()) return;
 
     async function loadPlan() {
       try {
         const response = await fetch(
-          `/api/me?email=${encodeURIComponent(userEmail.trim().toLowerCase())}`
+          `/api/me?email=${encodeURIComponent(userEmail.trim().toLowerCase())}`,
+          {
+            cache: "no-store",
+          }
         );
 
         let data: MeApiResponse = {};
@@ -239,7 +251,6 @@ export default function ChatClient() {
           setBonusImages(data.bonusImages);
         }
       } catch {
-        // silencioso
       }
     }
 
@@ -302,6 +313,7 @@ export default function ChatClient() {
         headers: {
           "Content-Type": "application/json",
         },
+        cache: "no-store",
         body: JSON.stringify({
           message: text,
           email: userEmail.trim(),
@@ -389,9 +401,7 @@ export default function ChatClient() {
     });
   }
 
-  function handleTextareaKeyDown(
-    event: React.KeyboardEvent<HTMLTextAreaElement>
-  ) {
+  function handleTextareaKeyDown(event: KeyboardEvent<HTMLTextAreaElement>) {
     if (event.key === "Enter" && !event.shiftKey) {
       event.preventDefault();
       if (canSend) {
@@ -400,28 +410,57 @@ export default function ChatClient() {
     }
   }
 
+  function resetNativeInputs() {
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+
+    if (cameraInputRef.current) {
+      cameraInputRef.current.value = "";
+    }
+  }
+
   function handleOpenFilePicker() {
+    setUploadError(null);
     fileInputRef.current?.click();
   }
 
   function handleOpenCamera() {
+    setUploadError(null);
     cameraInputRef.current?.click();
   }
 
   function handleIncomingFile(file: File | null) {
     setUploadError(null);
-    setSelectedFile(file);
+
+    if (selectedPreviewUrl) {
+      URL.revokeObjectURL(selectedPreviewUrl);
+    }
 
     if (!file) {
+      setSelectedFile(null);
       setSelectedPreviewUrl(null);
+      resetNativeInputs();
       return;
     }
 
-    const allowedTypes = ["image/png", "image/jpeg", "image/jpg", "image/webp"];
-    if (!allowedTypes.includes(file.type)) {
+    const allowedTypes = [
+      "image/png",
+      "image/jpeg",
+      "image/jpg",
+      "image/webp",
+      "image/heic",
+      "image/heif",
+    ];
+
+    const isGenericImage = file.type.startsWith("image/");
+    const isAllowedType = allowedTypes.includes(file.type) || isGenericImage;
+
+    if (!isAllowedType) {
       setSelectedFile(null);
       setSelectedPreviewUrl(null);
-      setUploadError("Formato inválido. Use PNG, JPG ou WEBP.");
+      setUploadError("Formato inválido. Use PNG, JPG, WEBP ou outra imagem compatível.");
+      resetNativeInputs();
       return;
     }
 
@@ -430,11 +469,14 @@ export default function ChatClient() {
       setSelectedFile(null);
       setSelectedPreviewUrl(null);
       setUploadError("Arquivo muito grande. Limite de 10MB.");
+      resetNativeInputs();
       return;
     }
 
     const preview = URL.createObjectURL(file);
+    setSelectedFile(file);
     setSelectedPreviewUrl(preview);
+    resetNativeInputs();
   }
 
   function handleFileChange(event: ChangeEvent<HTMLInputElement>) {
@@ -462,6 +504,7 @@ export default function ChatClient() {
 
       const response = await fetch("/api/upload", {
         method: "POST",
+        cache: "no-store",
         body: formData,
       });
 
@@ -488,6 +531,15 @@ export default function ChatClient() {
 
       setReferenceImageUrl(data.publicUrl);
       setReferenceImageName(data.fileName || selectedFile.name || "imagem-enviada");
+
+      setMessages((current) => [
+        ...current,
+        {
+          role: "assistant",
+          content:
+            "Imagem recebida com sucesso. Agora posso usar essa referência no chat para campanhas, criativos e direção visual.",
+        },
+      ]);
     } catch (error) {
       setUploadError(
         error instanceof Error ? error.message : "Erro inesperado no upload."
@@ -498,19 +550,16 @@ export default function ChatClient() {
   }
 
   function handleClearReferenceImage() {
+    if (selectedPreviewUrl) {
+      URL.revokeObjectURL(selectedPreviewUrl);
+    }
+
     setSelectedFile(null);
     setSelectedPreviewUrl(null);
     setReferenceImageUrl(null);
     setReferenceImageName(null);
     setUploadError(null);
-
-    if (fileInputRef.current) {
-      fileInputRef.current.value = "";
-    }
-
-    if (cameraInputRef.current) {
-      cameraInputRef.current.value = "";
-    }
+    resetNativeInputs();
   }
 
   const planHint = isLikelyImageRequest(input)
@@ -664,7 +713,7 @@ export default function ChatClient() {
           <input
             ref={fileInputRef}
             type="file"
-            accept="image/png,image/jpeg,image/jpg,image/webp,image/*"
+            accept="image/*"
             onChange={handleFileChange}
             style={{ display: "none" }}
           />
@@ -975,9 +1024,7 @@ export default function ChatClient() {
                           type="button"
                           className="aurora-chat-app__imageButton aurora-chat-app__imageButton--ghost"
                           onClick={() =>
-                            setInput(
-                              "gere outra variação dessa imagem mais impactante"
-                            )
+                            setInput("gere outra variação dessa imagem mais impactante")
                           }
                         >
                           🔄 Gerar variação
