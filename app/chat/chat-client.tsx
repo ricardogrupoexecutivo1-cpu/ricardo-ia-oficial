@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
+import { ChangeEvent, FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import InstallPwaButton from "@/components/install-pwa-button";
 
 type Message = {
@@ -35,6 +35,15 @@ type MeApiResponse = {
   bonusImages?: number | null;
   messagesRemaining?: number | null;
   imagesRemaining?: number | null;
+  error?: string;
+};
+
+type UploadResponse = {
+  publicUrl?: string;
+  path?: string;
+  fileName?: string;
+  contentType?: string;
+  size?: number;
   error?: string;
 };
 
@@ -101,6 +110,14 @@ export default function ChatClient() {
   const [bonusImages, setBonusImages] = useState<number>(0);
   const [loading, setLoading] = useState(false);
 
+  const [referenceImageUrl, setReferenceImageUrl] = useState<string | null>(null);
+  const [referenceImageName, setReferenceImageName] = useState<string | null>(null);
+
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [selectedPreviewUrl, setSelectedPreviewUrl] = useState<string | null>(null);
+  const [uploadLoading, setUploadLoading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+
   const [messages, setMessages] = useState<Message[]>([
     {
       role: "assistant",
@@ -111,6 +128,7 @@ export default function ChatClient() {
 
   const endRef = useRef<HTMLDivElement | null>(null);
   const inputRef = useRef<HTMLTextAreaElement | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
@@ -121,18 +139,51 @@ export default function ChatClient() {
     if (savedEmail) {
       setUserEmail(savedEmail);
     }
+
+    const savedReferenceImageUrl = window.localStorage.getItem(
+      "aurora-reference-image-url"
+    );
+    const savedReferenceImageName = window.localStorage.getItem(
+      "aurora-reference-image-name"
+    );
+
+    if (savedReferenceImageUrl) {
+      setReferenceImageUrl(savedReferenceImageUrl);
+    }
+
+    if (savedReferenceImageName) {
+      setReferenceImageName(savedReferenceImageName);
+    }
   }, []);
 
   useEffect(() => {
-    if (!userEmail.trim()) {
-      return;
-    }
+    if (!userEmail.trim()) return;
 
     window.localStorage.setItem(
       "aurora-user-email",
       userEmail.trim().toLowerCase()
     );
   }, [userEmail]);
+
+  useEffect(() => {
+    if (referenceImageUrl) {
+      window.localStorage.setItem(
+        "aurora-reference-image-url",
+        referenceImageUrl
+      );
+    } else {
+      window.localStorage.removeItem("aurora-reference-image-url");
+    }
+
+    if (referenceImageName) {
+      window.localStorage.setItem(
+        "aurora-reference-image-name",
+        referenceImageName
+      );
+    } else {
+      window.localStorage.removeItem("aurora-reference-image-name");
+    }
+  }, [referenceImageUrl, referenceImageName]);
 
   useEffect(() => {
     if (!userEmail.trim()) return;
@@ -187,13 +238,8 @@ export default function ChatClient() {
     void loadPlan();
   }, [userEmail]);
 
-  const headerPlanLabel = useMemo(() => {
-    return formatPlanLabel(plan);
-  }, [plan]);
-
-  const headerPlanStatusLabel = useMemo(() => {
-    return formatPlanStatus(planStatus);
-  }, [planStatus]);
+  const headerPlanLabel = useMemo(() => formatPlanLabel(plan), [plan]);
+  const headerPlanStatusLabel = useMemo(() => formatPlanStatus(planStatus), [planStatus]);
 
   const daysRemaining = useMemo(() => {
     if (!planExpiresAt) return null;
@@ -204,7 +250,6 @@ export default function ChatClient() {
     if (Number.isNaN(expires)) return null;
 
     const diff = expires - now;
-
     if (diff <= 0) return 0;
 
     return Math.ceil(diff / (1000 * 60 * 60 * 24));
@@ -214,7 +259,6 @@ export default function ChatClient() {
     if (!planExpiresAt) return "-";
 
     const date = new Date(planExpiresAt);
-
     if (Number.isNaN(date.getTime())) return "-";
 
     return date.toLocaleDateString("pt-BR");
@@ -231,11 +275,6 @@ export default function ChatClient() {
     if (!text || loading) {
       return;
     }
-
-    const historyForApi = messages.map((item) => ({
-      role: item.role,
-      content: item.content,
-    }));
 
     const nextUserMessage: Message = {
       role: "user",
@@ -255,7 +294,8 @@ export default function ChatClient() {
         body: JSON.stringify({
           message: text,
           email: userEmail.trim(),
-          messages: historyForApi,
+          referenceImageUrl,
+          referenceImageName,
         }),
       });
 
@@ -266,7 +306,7 @@ export default function ChatClient() {
         data = {};
       }
 
-      if (!response.ok) {
+      if (!response.ok || data.error) {
         setMessages((current) => [
           ...current,
           {
@@ -346,6 +386,103 @@ export default function ChatClient() {
       if (canSend) {
         void sendMessage();
       }
+    }
+  }
+
+  function handleOpenFilePicker() {
+    fileInputRef.current?.click();
+  }
+
+  function handleFileChange(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0] || null;
+
+    setUploadError(null);
+    setSelectedFile(file);
+
+    if (!file) {
+      setSelectedPreviewUrl(null);
+      return;
+    }
+
+    const allowedTypes = ["image/png", "image/jpeg", "image/jpg", "image/webp"];
+    if (!allowedTypes.includes(file.type)) {
+      setSelectedFile(null);
+      setSelectedPreviewUrl(null);
+      setUploadError("Formato inválido. Use PNG, JPG ou WEBP.");
+      return;
+    }
+
+    const maxSizeInBytes = 10 * 1024 * 1024;
+    if (file.size > maxSizeInBytes) {
+      setSelectedFile(null);
+      setSelectedPreviewUrl(null);
+      setUploadError("Arquivo muito grande. Limite de 10MB.");
+      return;
+    }
+
+    const preview = URL.createObjectURL(file);
+    setSelectedPreviewUrl(preview);
+  }
+
+  async function handleUploadReferenceImage() {
+    if (!selectedFile) {
+      setUploadError("Selecione uma imagem antes de enviar.");
+      return;
+    }
+
+    try {
+      setUploadLoading(true);
+      setUploadError(null);
+
+      const formData = new FormData();
+      formData.append("file", selectedFile);
+
+      const response = await fetch("/api/upload", {
+        method: "POST",
+        body: formData,
+      });
+
+      const rawText = await response.text();
+
+      let data: UploadResponse | null = null;
+      try {
+        data = rawText ? (JSON.parse(rawText) as UploadResponse) : null;
+      } catch {
+        data = null;
+      }
+
+      if (!response.ok || data?.error) {
+        setUploadError(
+          data?.error || rawText || `Erro no upload. Status ${response.status}.`
+        );
+        return;
+      }
+
+      if (!data?.publicUrl) {
+        setUploadError("Upload concluído sem URL pública.");
+        return;
+      }
+
+      setReferenceImageUrl(data.publicUrl);
+      setReferenceImageName(data.fileName || selectedFile.name || "imagem-enviada");
+    } catch (error) {
+      setUploadError(
+        error instanceof Error ? error.message : "Erro inesperado no upload."
+      );
+    } finally {
+      setUploadLoading(false);
+    }
+  }
+
+  function handleClearReferenceImage() {
+    setSelectedFile(null);
+    setSelectedPreviewUrl(null);
+    setReferenceImageUrl(null);
+    setReferenceImageName(null);
+    setUploadError(null);
+
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
     }
   }
 
@@ -469,6 +606,230 @@ export default function ChatClient() {
           </p>
         </section>
 
+        <section
+          style={{
+            marginTop: 16,
+            display: "grid",
+            gap: 14,
+            border: "2px solid rgba(0,255,170,0.24)",
+            borderRadius: 20,
+            padding: 16,
+            background: "rgba(6,18,16,0.88)",
+          }}
+        >
+          <div style={{ display: "grid", gap: 6 }}>
+            <div style={{ fontSize: 18, fontWeight: 800 }}>
+              📸 Enviar imagem para usar no chat
+            </div>
+
+            <div
+              style={{
+                fontSize: 14,
+                opacity: 0.85,
+                lineHeight: 1.5,
+              }}
+            >
+              Envie logo, produto, fachada, veículo ou arte para a Aurora criar
+              campanhas com base visual.
+            </div>
+          </div>
+
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/png,image/jpeg,image/jpg,image/webp"
+            onChange={handleFileChange}
+            style={{ display: "none" }}
+          />
+
+          <div
+            style={{
+              display: "flex",
+              gap: 10,
+              flexWrap: "wrap",
+              alignItems: "center",
+            }}
+          >
+            <button
+              type="button"
+              onClick={handleOpenFilePicker}
+              style={{
+                border: "1px solid rgba(0,255,170,0.22)",
+                borderRadius: 12,
+                padding: "12px 16px",
+                fontWeight: 800,
+                cursor: "pointer",
+                background: "rgba(0,255,170,0.10)",
+                color: "inherit",
+              }}
+            >
+              Selecionar imagem
+            </button>
+
+            <button
+              type="button"
+              onClick={handleUploadReferenceImage}
+              disabled={uploadLoading}
+              style={{
+                border: "none",
+                borderRadius: 12,
+                padding: "12px 16px",
+                fontWeight: 800,
+                cursor: uploadLoading ? "not-allowed" : "pointer",
+                opacity: uploadLoading ? 0.7 : 1,
+              }}
+            >
+              {uploadLoading ? "Enviando..." : "Usar imagem no chat"}
+            </button>
+
+            <button
+              type="button"
+              onClick={handleClearReferenceImage}
+              disabled={uploadLoading}
+              style={{
+                borderRadius: 12,
+                padding: "12px 16px",
+                fontWeight: 700,
+                cursor: uploadLoading ? "not-allowed" : "pointer",
+                border: "1px solid rgba(255,255,255,0.14)",
+                background: "transparent",
+                color: "inherit",
+                opacity: uploadLoading ? 0.7 : 1,
+              }}
+            >
+              Limpar
+            </button>
+          </div>
+
+          <div
+            style={{
+              fontSize: 14,
+              opacity: selectedFile ? 0.95 : 0.7,
+              wordBreak: "break-word",
+            }}
+          >
+            {selectedFile ? selectedFile.name : "Nenhuma imagem selecionada"}
+          </div>
+
+          {selectedPreviewUrl ? (
+            <div
+              style={{
+                borderRadius: 16,
+                overflow: "hidden",
+                border: "1px solid rgba(255,255,255,0.10)",
+                background: "rgba(0,0,0,0.2)",
+              }}
+            >
+              <img
+                src={selectedPreviewUrl}
+                alt="Pré-visualização da imagem"
+                style={{
+                  display: "block",
+                  width: "100%",
+                  maxHeight: 320,
+                  objectFit: "contain",
+                }}
+              />
+            </div>
+          ) : null}
+
+          {uploadError ? (
+            <div
+              style={{
+                borderRadius: 12,
+                padding: 12,
+                background: "rgba(255,0,0,0.10)",
+                border: "1px solid rgba(255,0,0,0.18)",
+                fontSize: 14,
+                whiteSpace: "pre-wrap",
+                wordBreak: "break-word",
+              }}
+            >
+              {uploadError}
+            </div>
+          ) : null}
+
+          {referenceImageUrl ? (
+            <div
+              style={{
+                width: "100%",
+                border: "1px solid rgba(0,255,170,0.16)",
+                borderRadius: 18,
+                padding: 14,
+                background: "rgba(0,255,170,0.06)",
+                display: "grid",
+                gap: 12,
+              }}
+            >
+              <div
+                style={{
+                  fontSize: 15,
+                  fontWeight: 800,
+                }}
+              >
+                Imagem de referência ativa
+              </div>
+
+              <div
+                style={{
+                  fontSize: 13,
+                  opacity: 0.82,
+                  lineHeight: 1.5,
+                }}
+              >
+                A Aurora vai usar essa imagem como base para campanhas, identidade
+                visual, anúncios, criativos e ideias de marketing.
+              </div>
+
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "140px 1fr",
+                  gap: 14,
+                  alignItems: "center",
+                }}
+              >
+                <div
+                  style={{
+                    borderRadius: 14,
+                    overflow: "hidden",
+                    border: "1px solid rgba(255,255,255,0.10)",
+                    background: "rgba(0,0,0,0.18)",
+                  }}
+                >
+                  <img
+                    src={referenceImageUrl}
+                    alt={referenceImageName || "Imagem de referência"}
+                    style={{
+                      display: "block",
+                      width: "100%",
+                      height: 140,
+                      objectFit: "cover",
+                    }}
+                  />
+                </div>
+
+                <div style={{ display: "grid", gap: 8 }}>
+                  <div style={{ fontSize: 14 }}>
+                    <strong>Arquivo:</strong> {referenceImageName || "Imagem enviada"}
+                  </div>
+
+                  <div
+                    style={{
+                      fontSize: 13,
+                      opacity: 0.82,
+                      lineHeight: 1.5,
+                      wordBreak: "break-word",
+                    }}
+                  >
+                    <strong>URL:</strong> {referenceImageUrl}
+                  </div>
+                </div>
+              </div>
+            </div>
+          ) : null}
+        </section>
+
         <section className="aurora-chat-app__quickActions">
           {quickActions.map((item) => (
             <button
@@ -487,7 +848,11 @@ export default function ChatClient() {
         <div className="aurora-chat-app__conversationHeader">
           <div>
             <h2>Chat da Aurora</h2>
-            <p>{planHint}</p>
+            <p>
+              {referenceImageUrl
+                ? "Imagem de referência ativa para apoiar campanhas e criação visual."
+                : planHint}
+            </p>
           </div>
 
           <span className="aurora-chat-app__livePill">online</span>
