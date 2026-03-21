@@ -26,6 +26,18 @@ type ChatApiResponse = {
   error?: string;
 };
 
+type MeApiResponse = {
+  email?: string;
+  plan?: string | null;
+  planStatus?: string | null;
+  planExpiresAt?: string | null;
+  lastPaymentAt?: string | null;
+  bonusImages?: number | null;
+  messagesRemaining?: number | null;
+  imagesRemaining?: number | null;
+  error?: string;
+};
+
 const quickActions = [
   "Criar campanha para Instagram",
   "Gerar imagem premium para anúncio",
@@ -61,10 +73,29 @@ function isLikelyImageRequest(text: string) {
   );
 }
 
+function formatPlanLabel(value: string | null | undefined) {
+  if (!value) return "FREE";
+  return String(value).trim().toUpperCase();
+}
+
+function formatPlanStatus(value: string | null | undefined) {
+  const normalized = String(value || "").trim().toLowerCase();
+
+  if (!normalized) return "-";
+  if (normalized === "active") return "Ativo";
+  if (normalized === "inactive") return "Inativo";
+  if (normalized === "canceled") return "Cancelado";
+  if (normalized === "expired") return "Expirado";
+
+  return normalized.toUpperCase();
+}
+
 export default function ChatClient() {
   const [input, setInput] = useState("");
   const [userEmail, setUserEmail] = useState("");
   const [plan, setPlan] = useState("FREE");
+  const [planStatus, setPlanStatus] = useState<string | null>(null);
+  const [planExpiresAt, setPlanExpiresAt] = useState<string | null>(null);
   const [messagesRemaining, setMessagesRemaining] = useState<number | null>(null);
   const [imagesRemaining, setImagesRemaining] = useState<number | null>(null);
   const [bonusImages, setBonusImages] = useState<number>(0);
@@ -103,10 +134,91 @@ export default function ChatClient() {
     );
   }, [userEmail]);
 
+  useEffect(() => {
+    if (!userEmail.trim()) return;
+
+    async function loadPlan() {
+      try {
+        const response = await fetch(
+          `/api/me?email=${encodeURIComponent(userEmail.trim().toLowerCase())}`
+        );
+
+        let data: MeApiResponse = {};
+        try {
+          data = (await response.json()) as MeApiResponse;
+        } catch {
+          data = {};
+        }
+
+        if (!response.ok) return;
+
+        if (typeof data.plan === "string" && data.plan.trim()) {
+          setPlan(data.plan);
+        }
+
+        if (typeof data.planStatus === "string") {
+          setPlanStatus(data.planStatus);
+        } else {
+          setPlanStatus(null);
+        }
+
+        if (typeof data.planExpiresAt === "string" && data.planExpiresAt.trim()) {
+          setPlanExpiresAt(data.planExpiresAt);
+        } else {
+          setPlanExpiresAt(null);
+        }
+
+        if (typeof data.messagesRemaining === "number") {
+          setMessagesRemaining(data.messagesRemaining);
+        }
+
+        if (typeof data.imagesRemaining === "number") {
+          setImagesRemaining(data.imagesRemaining);
+        }
+
+        if (typeof data.bonusImages === "number") {
+          setBonusImages(data.bonusImages);
+        }
+      } catch {
+        // silencioso
+      }
+    }
+
+    void loadPlan();
+  }, [userEmail]);
+
   const headerPlanLabel = useMemo(() => {
-    if (!plan) return "FREE";
-    return String(plan).toUpperCase();
+    return formatPlanLabel(plan);
   }, [plan]);
+
+  const headerPlanStatusLabel = useMemo(() => {
+    return formatPlanStatus(planStatus);
+  }, [planStatus]);
+
+  const daysRemaining = useMemo(() => {
+    if (!planExpiresAt) return null;
+
+    const now = new Date().getTime();
+    const expires = new Date(planExpiresAt).getTime();
+
+    if (Number.isNaN(expires)) return null;
+
+    const diff = expires - now;
+
+    if (diff <= 0) return 0;
+
+    return Math.ceil(diff / (1000 * 60 * 60 * 24));
+  }, [planExpiresAt]);
+
+  const planExpiresLabel = useMemo(() => {
+    if (!planExpiresAt) return "-";
+
+    const date = new Date(planExpiresAt);
+
+    if (Number.isNaN(date.getTime())) return "-";
+
+    return date.toLocaleDateString("pt-BR");
+  }, [planExpiresAt]);
 
   const canSend = useMemo(
     () => !loading && input.trim().length > 0,
@@ -282,6 +394,27 @@ export default function ChatClient() {
               <div className="aurora-chat-app__miniStat">
                 <span>Plano</span>
                 <strong>{headerPlanLabel}</strong>
+              </div>
+
+              <div className="aurora-chat-app__miniStat">
+                <span>Status</span>
+                <strong>{headerPlanStatusLabel}</strong>
+              </div>
+
+              <div className="aurora-chat-app__miniStat">
+                <span>Vence em</span>
+                <strong>
+                  {daysRemaining === null
+                    ? "-"
+                    : daysRemaining === 0
+                    ? "Expirado"
+                    : `${daysRemaining} dias`}
+                </strong>
+              </div>
+
+              <div className="aurora-chat-app__miniStat">
+                <span>Validade</span>
+                <strong>{planExpiresLabel}</strong>
               </div>
 
               <div className="aurora-chat-app__miniStat">

@@ -14,5 +14,5 @@ export default async function CheckoutPage({
     .trim()
     .toLowerCase();
 
-  return <CheckoutClient plan={plan === "total" ? "total" : "pro"} />;
+  return <CheckoutClient plan={plan === "premium" ? "premium" : "pro"} />;
 }

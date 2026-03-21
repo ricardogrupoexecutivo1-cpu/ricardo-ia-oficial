@@ -1,4 +1,4 @@
-export type PlanKey = "free" | "pro" | "total";
+export type PlanKey = "free" | "pro" | "premium";
 
 export type PlanDefinition = {
   key: PlanKey;
@@ -14,14 +14,7 @@ export type PlanDefinition = {
   highlight?: boolean;
 };
 
-const PRO_CHECKOUT_URL =
-  process.env.NEXT_PUBLIC_CHECKOUT_PRO_URL?.trim() ||
-  "https://www.asaas.com/paymentCampaign/show/3605974";
-
-const TOTAL_CHECKOUT_URL =
-  process.env.NEXT_PUBLIC_CHECKOUT_TOTAL_URL?.trim() || "#";
-
-const TOTAL_PRICE = 29.9;
+const PREMIUM_PRICE = 29.9;
 
 export const PLANS: Record<PlanKey, PlanDefinition> = {
   free: {
@@ -59,33 +52,32 @@ export const PLANS: Record<PlanKey, PlanDefinition> = {
       "Mais velocidade para vender",
     ],
     ctaLabel: "Assinar PRO",
-    checkoutHref: PRO_CHECKOUT_URL,
+    checkoutHref: "/checkout?plan=pro",
     highlight: true,
   },
-  total: {
-    key: "total",
-    name: "SCALE",
-    priceLabel: `R$ ${TOTAL_PRICE.toFixed(2).replace(".", ",")}/mês`,
-    priceValue: TOTAL_PRICE,
+  premium: {
+    key: "premium",
+    name: "PREMIUM",
+    priceLabel: `R$ ${PREMIUM_PRICE.toFixed(2).replace(".", ",")}/mês`,
+    priceValue: PREMIUM_PRICE,
     periodLabel: "/mês",
-    badge: "Crescimento",
+    badge: "Escala",
     description:
-      "Plano completo para quem quer usar mais recursos, vender mais e escalar com a Aurora IA.",
+      "Plano completo para quem quer escalar, automatizar e vender com força total usando a Aurora IA.",
     features: [
       "Tudo do plano PRO",
-      "Prioridade de uso",
-      "Mais poder de criação",
-      "Estrutura ideal para operação comercial",
-      "Melhor plano para fechar clientes",
+      "Prioridade máxima de uso",
+      "Mais poder de geração de imagens",
+      "Ideal para negócios e operações",
+      "Melhor plano para monetização",
     ],
-    ctaLabel:
-      TOTAL_CHECKOUT_URL === "#" ? "Configurar SCALE" : "Assinar SCALE",
-    checkoutHref: TOTAL_CHECKOUT_URL,
+    ctaLabel: "Assinar PREMIUM",
+    checkoutHref: "/checkout?plan=premium",
     highlight: false,
   },
 };
 
-export const PLAN_ORDER: PlanKey[] = ["free", "pro", "total"];
+export const PLAN_ORDER: PlanKey[] = ["free", "pro", "premium"];
 
 export function getPlanByKey(plan: string | null | undefined): PlanDefinition {
   if (!plan) return PLANS.free;
@@ -93,7 +85,7 @@ export function getPlanByKey(plan: string | null | undefined): PlanDefinition {
   const normalized = String(plan).trim().toLowerCase();
 
   if (normalized === "pro") return PLANS.pro;
-  if (normalized === "total") return PLANS.total;
+  if (normalized === "premium") return PLANS.premium;
 
   return PLANS.free;
 }

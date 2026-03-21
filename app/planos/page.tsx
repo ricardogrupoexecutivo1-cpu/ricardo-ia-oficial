@@ -277,11 +277,6 @@ const cardButtonFeaturedStyle: CSSProperties = {
   boxShadow: "0 18px 40px rgba(0,208,132,0.2)",
 };
 
-const disabledButtonStyle: CSSProperties = {
-  cursor: "not-allowed",
-  opacity: 0.7,
-};
-
 const bottomStyle: CSSProperties = {
   marginTop: "26px",
   padding: "22px",
@@ -379,7 +374,7 @@ export default function PlanosPage() {
               <div style={miniCardStyle}>
                 <div style={miniCardTitleStyle}>Escala</div>
                 <p style={miniCardTextStyle}>
-                  Entre no PRO ou va direto para o TOTAL e acelere sua subida.
+                  Entre no PRO ou va direto para o SCALE e acelere sua subida.
                 </p>
               </div>
             </div>
@@ -395,7 +390,6 @@ export default function PlanosPage() {
           {PLAN_ORDER.map((key) => {
             const plan = PLANS[key];
             const featured = Boolean(plan.highlight);
-            const isDisabled = plan.checkoutHref === "#";
 
             return (
               <article
@@ -449,35 +443,15 @@ export default function PlanosPage() {
                   ))}
                 </ul>
 
-                {isDisabled ? (
-                  <button
-                    type="button"
-                    style={{
-                      ...cardButtonBaseStyle,
-                      ...(featured ? cardButtonFeaturedStyle : {}),
-                      ...disabledButtonStyle,
-                    }}
-                    onClick={() => {
-                      alert(
-                        "Falta configurar o link do plano TOTAL no .env.local"
-                      );
-                    }}
-                  >
-                    {plan.ctaLabel}
-                  </button>
-                ) : (
-                  <a
-                    href={plan.checkoutHref}
-                    target="_blank"
-                    rel="noreferrer"
-                    style={{
-                      ...cardButtonBaseStyle,
-                      ...(featured ? cardButtonFeaturedStyle : {}),
-                    }}
-                  >
-                    {plan.ctaLabel}
-                  </a>
-                )}
+                <Link
+                  href={plan.checkoutHref}
+                  style={{
+                    ...cardButtonBaseStyle,
+                    ...(featured ? cardButtonFeaturedStyle : {}),
+                  }}
+                >
+                  {plan.ctaLabel}
+                </Link>
               </article>
             );
           })}
@@ -494,7 +468,7 @@ export default function PlanosPage() {
               <h3 style={bottomTitleStyle}>Qual escolher?</h3>
               <p style={bottomTextStyle}>
                 O plano PRO e ideal para quem quer comecar a usar a Aurora IA de
-                forma seria. O TOTAL e a escolha para quem quer mais forca,
+                forma seria. O SCALE e a escolha para quem quer mais forca,
                 operacao mais completa e melhor estrutura para fechar clientes.
               </p>
             </div>

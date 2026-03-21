@@ -2,152 +2,202 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const webhookToken = process.env.ASAAS_WEBHOOK_TOKEN;
 
-function getLimitsByPlan(plan: string | null) {
-  const normalized = (plan || "free").toLowerCase();
-
-  if (normalized === "total" || normalized === "agency") {
-    return {
-      plan: normalized,
-      messagesPerDay: -1,
-      imagesPerDay: -1,
-    };
+function getSupabaseAdmin() {
+  if (!supabaseUrl || !serviceRoleKey) {
+    throw new Error("Supabase env ausente no servidor.");
   }
 
-  if (normalized === "creator") {
-    return {
-      plan: "creator",
-      messagesPerDay: -1,
-      imagesPerDay: 300,
-    };
-  }
-
-  if (normalized === "developer" || normalized === "developer_starter") {
-    return {
-      plan: "developer_starter",
-      messagesPerDay: -1,
-      imagesPerDay: 200,
-    };
-  }
-
-  if (normalized === "developer_pro") {
-    return {
-      plan: "developer_pro",
-      messagesPerDay: -1,
-      imagesPerDay: 1000,
-    };
-  }
-
-  if (normalized === "pro") {
-    return {
-      plan: "pro",
-      messagesPerDay: -1,
-      imagesPerDay: 100,
-    };
-  }
-
-  return {
-    plan: "free",
-    messagesPerDay: -1,
-    imagesPerDay: 3,
-  };
+  return createClient(supabaseUrl, serviceRoleKey, {
+    auth: {
+      persistSession: false,
+      autoRefreshToken: false,
+    },
+  });
 }
 
-function startOfDayIso() {
-  const now = new Date();
-  const start = new Date(
-    now.getFullYear(),
-    now.getMonth(),
-    now.getDate(),
-    0,
-    0,
-    0,
-    0
-  );
-  return start.toISOString();
+function normalizeEmail(value: unknown) {
+  return String(value || "").trim().toLowerCase();
 }
 
-export async function GET(req: NextRequest) {
+function getPlanFromValue(value: number) {
+  if (value >= 29.9) return "premium";
+  if (value >= 9.9) return "pro";
+  return "free";
+}
+
+function extractEmail(payload: any) {
+  const candidates = [
+    payload?.payment?.customerEmail,
+    payload?.payment?.billingCustomer?.email,
+    payload?.payment?.customer?.email,
+    payload?.customer?.email,
+  ];
+
+  for (const item of candidates) {
+    const email = normalizeEmail(item);
+    if (email) return email;
+  }
+
+  return "";
+}
+
+function extractValue(payload: any) {
+  const raw =
+    payload?.payment?.value ??
+    payload?.payment?.netValue ??
+    payload?.value ??
+    0;
+
+  const value = Number(raw);
+  return Number.isFinite(value) ? value : 0;
+}
+
+export async function POST(req: NextRequest) {
   try {
-    if (!supabaseUrl || !supabaseAnonKey) {
+    const receivedToken =
+      req.headers.get("asaas-access-token") ||
+      req.headers.get("Asaas-Access-Token") ||
+      req.headers.get("authorization") ||
+      "";
+
+    if (!webhookToken) {
+      console.error("ASAAS_WEBHOOK_TOKEN não configurado.");
       return NextResponse.json(
-        { error: "Variáveis do Supabase não configuradas." },
+        { error: "Webhook token não configurado." },
         { status: 500 }
       );
     }
 
-    const email = (req.nextUrl.searchParams.get("email") || "")
-      .trim()
-      .toLowerCase();
+    const cleanedReceivedToken = String(receivedToken)
+      .replace(/^Bearer\s+/i, "")
+      .trim();
+
+    if (cleanedReceivedToken !== webhookToken.trim()) {
+      console.error("Token de webhook inválido.");
+      return NextResponse.json(
+        { error: "Token inválido." },
+        { status: 401 }
+      );
+    }
+
+    const body = await req.json();
+
+    console.log("Webhook Asaas recebido:", JSON.stringify(body));
+
+    const event = String(body?.event || "").trim().toUpperCase();
+
+    if (event !== "PAYMENT_CONFIRMED" && event !== "PAYMENT_RECEIVED") {
+      return NextResponse.json({ ok: true, ignored: true });
+    }
+
+    const email = extractEmail(body);
+    const value = extractValue(body);
+    const plan = getPlanFromValue(value);
 
     if (!email) {
+      console.error("Webhook sem email:", body);
       return NextResponse.json(
-        { error: "E-mail não informado." },
+        { error: "Email não encontrado no webhook." },
         { status: 400 }
       );
     }
 
-    const supabase = createClient(supabaseUrl, supabaseAnonKey);
+    const supabase = getSupabaseAdmin();
 
-    const { data: profile, error: profileError } = await supabase
+    const { data: existingProfile, error: profileFetchError } = await supabase
       .from("profiles")
-      .select("email, plan, bonus_images, plan_status, plan_expires_at, last_payment_at")
+      .select("id, email, plan")
       .eq("email", email)
       .maybeSingle();
 
-    if (profileError) {
+    if (profileFetchError) {
+      console.error("Erro buscando profile:", profileFetchError);
       return NextResponse.json(
-        { error: profileError.message },
+        { error: "Erro ao buscar profile." },
         { status: 500 }
       );
     }
 
-    const plan = (profile?.plan || "free").toLowerCase();
-    const planStatus = (profile?.plan_status || "inactive").toLowerCase();
-    const planExpiresAt = profile?.plan_expires_at || null;
-    const bonusImages = Number(profile?.bonus_images || 0);
-
-    const limits = getLimitsByPlan(plan);
-
-    let imagesUsedToday = 0;
-
-    const { count: imagesCount, error: imagesError } = await supabase
-      .from("generated_images")
-      .select("id", { count: "exact", head: true })
-      .eq("user_email", email)
-      .gte("created_at", startOfDayIso());
-
-    if (!imagesError) {
-      imagesUsedToday = Number(imagesCount || 0);
+    if (!existingProfile) {
+      console.error("Profile não encontrado para:", email);
+      return NextResponse.json(
+        { error: "Profile não encontrado para o email." },
+        { status: 404 }
+      );
     }
 
-    const imagesRemaining =
-      limits.imagesPerDay < 0
-        ? -1
-        : Math.max(limits.imagesPerDay + bonusImages - imagesUsedToday, 0);
+    const now = new Date();
+    const expiresAt = new Date();
+    expiresAt.setDate(now.getDate() + 30);
 
-    const isActivePlan =
-      plan !== "free" &&
-      planStatus === "active" &&
-      !!planExpiresAt &&
-      new Date(planExpiresAt).getTime() > Date.now();
+    const nowIso = now.toISOString();
+    const expiresAtIso = expiresAt.toISOString();
+
+    const { error: updateError } = await supabase
+      .from("profiles")
+      .update({
+        plan,
+        plan_status: "active",
+        plan_expires_at: expiresAtIso,
+        last_payment_at: nowIso,
+      })
+      .eq("id", existingProfile.id);
+
+    if (updateError) {
+      console.error("Erro atualizando plan no profiles:", updateError);
+      return NextResponse.json(
+        { error: "Erro ao atualizar plano." },
+        { status: 500 }
+      );
+    }
+
+    const { error: subscriptionError } = await supabase
+      .from("aurora_subscriptions")
+      .upsert(
+        {
+          email,
+          plan,
+          status: "active",
+          provider: "asaas",
+          updated_at: nowIso,
+        },
+        {
+          onConflict: "email",
+        }
+      );
+
+    if (subscriptionError) {
+      console.error(
+        "Erro ao atualizar aurora_subscriptions:",
+        subscriptionError
+      );
+      return NextResponse.json(
+        {
+          error: "Erro ao atualizar assinatura.",
+          details: subscriptionError.message,
+        },
+        { status: 500 }
+      );
+    }
 
     return NextResponse.json({
+      ok: true,
       email,
-      plan: isActivePlan ? plan : "free",
-      planStatus,
-      planExpiresAt,
-      lastPaymentAt: profile?.last_payment_at || null,
-      bonusImages,
-      messagesRemaining: null,
-      imagesRemaining:
-        isActivePlan || plan === "free" ? imagesRemaining : 3 + bonusImages,
+      plan,
+      event,
     });
   } catch (error) {
-    const message =
-      error instanceof Error ? error.message : "Erro ao carregar dados do usuário.";
+    console.error("Erro no webhook Asaas:", error);
 
-    return NextResponse.json({ error: message }, { status: 500 });
+    return NextResponse.json(
+      {
+        error: "Erro interno no webhook.",
+        details: error instanceof Error ? error.message : "Erro desconhecido.",
+      },
+      { status: 500 }
+    );
   }
 }

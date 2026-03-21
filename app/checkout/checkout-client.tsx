@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 
 type Props = {
-  plan: "pro" | "total";
+  plan: "pro" | "premium";
 };
 
 export default function CheckoutClient({ plan }: Props) {
@@ -22,10 +22,10 @@ export default function CheckoutClient({ plan }: Props) {
     }
 
     return {
-      name: "SCALE",
+      name: "PREMIUM",
       price: "R$ 29,90/mês",
       url:
-        process.env.NEXT_PUBLIC_CHECKOUT_TOTAL_URL ||
+        process.env.NEXT_PUBLIC_CHECKOUT_PREMIUM_URL ||
         "https://www.asaas.com/c/nw6ccxaqx9dck48z",
     };
   }, [plan]);
@@ -100,8 +100,7 @@ export default function CheckoutClient({ plan }: Props) {
             border: "none",
             fontWeight: "bold",
             cursor: "pointer",
-            background:
-              "linear-gradient(135deg, #00d084, #75ffbf)",
+            background: "linear-gradient(135deg, #00d084, #75ffbf)",
             color: "#000",
           }}
         >

@@ -16,8 +16,8 @@ function getPublicCheckoutUrl(plan: string) {
     );
   }
 
-  if (normalized === "total") {
-    return process.env.NEXT_PUBLIC_CHECKOUT_TOTAL_URL?.trim() || "";
+  if (normalized === "premium") {
+    return process.env.NEXT_PUBLIC_CHECKOUT_PREMIUM_URL?.trim() || "";
   }
 
   return "";
@@ -41,8 +41,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(
         {
           error:
-            plan === "total"
-              ? "O link do plano TOTAL ainda não foi configurado."
+            plan === "premium"
+              ? "O link do plano PREMIUM ainda não foi configurado."
               : "Link de checkout não configurado.",
         },
         { status: 400 }
