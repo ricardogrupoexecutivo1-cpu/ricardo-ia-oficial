@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import OpenAI from "openai";
 import { createClient } from "@supabase/supabase-js";
+import crypto from "node:crypto";
+
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -106,6 +110,7 @@ function startOfDayIso() {
     0,
     0
   );
+
   return start.toISOString();
 }
 
@@ -193,25 +198,35 @@ async function downloadReferenceImageAsFile(
   imageUrl: string,
   fileName: string | null
 ) {
-  const response = await fetch(imageUrl);
+  const response = await fetch(imageUrl, {
+    cache: "no-store",
+  });
 
   if (!response.ok) {
-    throw new Error(`Não foi possível baixar a imagem de referência. Status ${response.status}.`);
+    throw new Error(
+      `Não foi possível baixar a imagem de referência. Status ${response.status}.`
+    );
   }
 
   const contentType = response.headers.get("content-type") || "image/png";
   const arrayBuffer = await response.arrayBuffer();
+
   const extension =
     contentType.includes("jpeg") || contentType.includes("jpg")
       ? "jpg"
       : contentType.includes("webp")
       ? "webp"
+      : contentType.includes("heic")
+      ? "heic"
+      : contentType.includes("heif")
+      ? "heif"
       : "png";
 
   const safeName =
     (fileName || "referencia")
       .replace(/[^a-zA-Z0-9.\-_]/g, "-")
       .replace(/-+/g, "-")
+      .replace(/^-|-$/g, "")
       .toLowerCase() || "referencia";
 
   const finalName = safeName.includes(".") ? safeName : `${safeName}.${extension}`;
@@ -243,11 +258,9 @@ async function saveBase64ImageToSupabase(params: {
     throw new Error(`Erro ao salvar imagem gerada: ${uploadError.message}`);
   }
 
-  const { data: publicData } = supabaseAdmin.storage
-    .from(generatedBucketName)
-    .getPublicUrl(filePath);
-
-  const publicUrl = publicData?.publicUrl || null;
+  const {
+    data: { publicUrl },
+  } = supabaseAdmin.storage.from(generatedBucketName).getPublicUrl(filePath);
 
   if (!publicUrl) {
     throw new Error("Imagem gerada sem URL pública.");
@@ -544,23 +557,34 @@ ENTREGUE SEMPRE NESTA ESTRUTURA:
           )
         : -1;
 
-    return NextResponse.json({
-      reply: text,
-      plan: finalPlan,
-      messagesRemaining: nextMessagesRemaining,
-      imagesRemaining: nextImagesRemaining,
-      referenceImageUsed: Boolean(referenceImageUrl),
-      imageUrl: generatedImageUrl,
-    });
+    return NextResponse.json(
+      {
+        reply: text,
+        plan: finalPlan,
+        messagesRemaining: nextMessagesRemaining,
+        imagesRemaining: nextImagesRemaining,
+        referenceImageUsed: Boolean(referenceImageUrl),
+        imageUrl: generatedImageUrl,
+      },
+      {
+        status: 200,
+        headers: {
+          "Cache-Control": "no-store, max-age=0",
+        },
+      }
+    );
   } catch (error) {
     return NextResponse.json(
       {
         error:
-          error instanceof Error
-            ? error.message
-            : "Erro interno no chat.",
+          error instanceof Error ? error.message : "Erro interno no chat.",
       },
-      { status: 500 }
+      {
+        status: 500,
+        headers: {
+          "Cache-Control": "no-store, max-age=0",
+        },
+      }
     );
   }
 }
