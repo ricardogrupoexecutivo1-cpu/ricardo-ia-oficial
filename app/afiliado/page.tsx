@@ -42,14 +42,14 @@ export default function AfiliadoPage() {
       style={{
         minHeight: "100vh",
         background:
-          "radial-gradient(circle at top, rgba(0,208,132,0.16), transparent 38%), #020617",
+          "radial-gradient(circle at top, rgba(0,208,132,0.18), transparent 40%), #020617",
         color: "#fff",
         padding: "24px",
         display: "flex",
         justifyContent: "center",
       }}
     >
-      <div style={{ width: "100%", maxWidth: "760px" }}>
+      <div style={{ width: "100%", maxWidth: "860px" }}>
         <div
           style={{
             display: "flex",
@@ -65,6 +65,19 @@ export default function AfiliadoPage() {
           </Link>
 
           <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
+            <Link
+              href="/chat"
+              style={{
+                color: "#fff",
+                textDecoration: "none",
+                padding: "10px 14px",
+                borderRadius: "12px",
+                border: "1px solid rgba(255,255,255,0.12)",
+              }}
+            >
+              Chat
+            </Link>
+
             <Link
               href="/oferta"
               style={{
@@ -95,11 +108,12 @@ export default function AfiliadoPage() {
 
         <section
           style={{
-            borderRadius: "28px",
-            padding: "28px",
+            borderRadius: "30px",
+            padding: "30px",
             background: "rgba(255,255,255,0.04)",
             border: "1px solid rgba(0,208,132,0.16)",
             boxShadow: "0 24px 80px rgba(0,0,0,0.35)",
+            marginBottom: "18px",
           }}
         >
           <span
@@ -109,164 +123,210 @@ export default function AfiliadoPage() {
               borderRadius: "999px",
               background: "rgba(0,208,132,0.12)",
               color: "#75ffbf",
-              marginBottom: "14px",
-              fontSize: "0.9rem",
+              marginBottom: "16px",
             }}
           >
-            Programa de Afiliados Aurora IA
+            Aurora IA • Programa de Afiliados
           </span>
 
-          <h1 style={{ fontSize: "2.2rem", lineHeight: 1.1, marginBottom: "12px" }}>
-            Ganhe indicando a Aurora IA para outras pessoas.
+          <h1 style={{ fontSize: "2.35rem", lineHeight: 1.08, marginBottom: "14px" }}>
+            Indique a Aurora IA e transforme divulgação em receita.
           </h1>
 
-          <p style={{ opacity: 0.8, fontSize: "1.02rem", lineHeight: 1.6 }}>
-            Gere seu link, divulgue no Instagram, WhatsApp, grupos e páginas de
-            vendas. Quanto mais pessoas entrarem pelo seu link, maior seu potencial
-            de faturamento.
+          <p style={{ opacity: 0.82, lineHeight: 1.7, fontSize: "1.04rem" }}>
+            Gere seu link de indicação, compartilhe nas redes, grupos, WhatsApp e
+            para clientes. A Aurora foi feita para chamar atenção e facilitar venda,
+            então o afiliado entra com tráfego e aproveita uma oferta forte.
           </p>
 
           <div
             style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
-              gap: "14px",
-              marginTop: "24px",
-              marginBottom: "28px",
+              display: "flex",
+              gap: "12px",
+              flexWrap: "wrap",
+              marginTop: "20px",
             }}
           >
+            <a
+              href="#gerar-link"
+              style={{
+                padding: "14px 18px",
+                borderRadius: "14px",
+                textDecoration: "none",
+                background: "linear-gradient(135deg, #00d084, #75ffbf)",
+                color: "#000",
+                fontWeight: "bold",
+              }}
+            >
+              Entrar e pegar meu link
+            </a>
+
+            <Link
+              href="/planos"
+              style={{
+                padding: "14px 18px",
+                borderRadius: "14px",
+                textDecoration: "none",
+                border: "1px solid rgba(255,255,255,0.12)",
+                color: "#fff",
+              }}
+            >
+              Ver planos
+            </Link>
+          </div>
+        </section>
+
+        <section
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+            gap: "16px",
+            marginBottom: "18px",
+          }}
+        >
+          {[
+            ["1. Cadastre-se", "Entre na Aurora IA e tenha seu código/link pessoal de divulgação."],
+            ["2. Compartilhe", "Envie seu link no WhatsApp, Instagram, grupos e para clientes."],
+            ["3. Ganhe", "Cada venda originada pelo seu link pode gerar comissão e bônus."],
+          ].map(([title, text]) => (
+            <div
+              key={title}
+              style={{
+                borderRadius: "22px",
+                padding: "20px",
+                background: "rgba(255,255,255,0.04)",
+                border: "1px solid rgba(255,255,255,0.08)",
+              }}
+            >
+              <strong style={{ display: "block", marginBottom: "10px" }}>{title}</strong>
+              <span style={{ opacity: 0.78, lineHeight: 1.65 }}>{text}</span>
+            </div>
+          ))}
+        </section>
+
+        <section
+          style={{
+            borderRadius: "26px",
+            padding: "26px",
+            background: "rgba(117,255,191,0.06)",
+            border: "1px solid rgba(117,255,191,0.15)",
+            marginBottom: "18px",
+          }}
+        >
+          <h2 style={{ marginTop: 0, marginBottom: "12px" }}>
+            Para quem é o programa
+          </h2>
+
+          <div style={{ display: "grid", gap: "10px" }}>
             {[
-              ["Fácil de divulgar", "Link pronto para compartilhar"],
-              ["Ideal para social", "Instagram, Facebook e WhatsApp"],
-              ["Oferta forte", "Produto com uso real e recorrência"],
-              ["Escala", "Mais tráfego, mais chance de venda"],
-            ].map(([title, text]) => (
+              "Afiliados que querem vender uma ferramenta com recorrência mensal.",
+              "Agências, designers e social medias que querem agregar mais valor.",
+              "Vendedores e parceiros comerciais que já têm carteira de clientes.",
+              "Pessoas que querem monetizar indicação de uma IA com aplicação real.",
+            ].map((item) => (
               <div
-                key={title}
+                key={item}
                 style={{
-                  borderRadius: "18px",
-                  padding: "16px",
-                  background: "rgba(255,255,255,0.03)",
+                  padding: "14px 16px",
+                  borderRadius: "14px",
+                  background: "rgba(255,255,255,0.05)",
                   border: "1px solid rgba(255,255,255,0.08)",
                 }}
               >
-                <strong style={{ display: "block", marginBottom: "8px" }}>{title}</strong>
-                <span style={{ opacity: 0.75 }}>{text}</span>
+                {item}
               </div>
             ))}
           </div>
+        </section>
+
+        <section
+          id="gerar-link"
+          style={{
+            borderRadius: "26px",
+            padding: "26px",
+            background: "rgba(255,255,255,0.04)",
+            border: "1px solid rgba(255,255,255,0.08)",
+          }}
+        >
+          <h2 style={{ marginTop: 0, marginBottom: "12px" }}>
+            Gere seu link agora
+          </h2>
+
+          <p style={{ opacity: 0.84, lineHeight: 1.7, marginBottom: "14px" }}>
+            Digite seu e-mail para criar um link pronto para divulgação.
+          </p>
+
+          <input
+            type="email"
+            placeholder="seuemail@exemplo.com"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            style={{
+              width: "100%",
+              padding: "14px",
+              borderRadius: "14px",
+              border: "1px solid rgba(255,255,255,0.1)",
+              background: "rgba(255,255,255,0.05)",
+              color: "#fff",
+              marginBottom: "14px",
+            }}
+          />
 
           <div
             style={{
-              borderRadius: "22px",
-              padding: "20px",
-              background: "rgba(0,0,0,0.22)",
+              padding: "14px",
+              borderRadius: "14px",
+              background: "rgba(255,255,255,0.04)",
               border: "1px solid rgba(255,255,255,0.08)",
+              wordBreak: "break-all",
+              minHeight: "54px",
+              display: "flex",
+              alignItems: "center",
             }}
           >
-            <label
-              htmlFor="affiliate-email"
-              style={{ display: "block", marginBottom: "10px", opacity: 0.88 }}
-            >
-              Digite seu e-mail para gerar seu link de afiliado
-            </label>
-
-            <input
-              id="affiliate-email"
-              type="email"
-              placeholder="seuemail@exemplo.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              style={{
-                width: "100%",
-                padding: "14px",
-                borderRadius: "14px",
-                border: "1px solid rgba(255,255,255,0.1)",
-                background: "rgba(255,255,255,0.05)",
-                color: "#fff",
-                marginBottom: "14px",
-              }}
-            />
-
-            <div
-              style={{
-                padding: "14px",
-                borderRadius: "14px",
-                background: "rgba(255,255,255,0.04)",
-                border: "1px solid rgba(255,255,255,0.08)",
-                wordBreak: "break-all",
-                minHeight: "54px",
-                display: "flex",
-                alignItems: "center",
-              }}
-            >
-              {referralLink || "Seu link de afiliado aparecerá aqui"}
-            </div>
-
-            <div
-              style={{
-                display: "flex",
-                gap: "12px",
-                flexWrap: "wrap",
-                marginTop: "14px",
-              }}
-            >
-              <button
-                type="button"
-                onClick={copyLink}
-                style={{
-                  padding: "14px 18px",
-                  borderRadius: "14px",
-                  border: "none",
-                  cursor: "pointer",
-                  background: "linear-gradient(135deg, #00d084, #75ffbf)",
-                  color: "#000",
-                  fontWeight: "bold",
-                }}
-              >
-                {copied ? "Link copiado" : "Copiar link"}
-              </button>
-
-              <a
-                href={referralLink || "#"}
-                target="_blank"
-                rel="noreferrer"
-                style={{
-                  padding: "14px 18px",
-                  borderRadius: "14px",
-                  textDecoration: "none",
-                  border: "1px solid rgba(255,255,255,0.12)",
-                  color: "#fff",
-                  opacity: referralLink ? 1 : 0.5,
-                  pointerEvents: referralLink ? "auto" : "none",
-                }}
-              >
-                Abrir link
-              </a>
-            </div>
+            {referralLink || "Seu link de afiliado aparecerá aqui"}
           </div>
 
           <div
             style={{
-              marginTop: "24px",
-              padding: "18px",
-              borderRadius: "20px",
-              background: "rgba(117,255,191,0.07)",
-              border: "1px solid rgba(117,255,191,0.14)",
+              display: "flex",
+              gap: "12px",
+              flexWrap: "wrap",
+              marginTop: "14px",
             }}
           >
-            <strong style={{ display: "block", marginBottom: "10px" }}>
-              Sugestão de texto para divulgar
-            </strong>
+            <button
+              type="button"
+              onClick={copyLink}
+              style={{
+                padding: "14px 18px",
+                borderRadius: "14px",
+                border: "none",
+                cursor: "pointer",
+                background: "linear-gradient(135deg, #00d084, #75ffbf)",
+                color: "#000",
+                fontWeight: "bold",
+              }}
+            >
+              {copied ? "Link copiado" : "Copiar link"}
+            </button>
 
-            <p style={{ opacity: 0.85, lineHeight: 1.7, margin: 0 }}>
-              Conheça a Aurora IA e gere imagens, campanhas e ideias de negócio em
-              segundos. Teste agora pelo meu link:
-              <br />
-              <span style={{ color: "#75ffbf" }}>
-                {referralLink || "gere seu link acima"}
-              </span>
-            </p>
+            <a
+              href={referralLink || "#"}
+              target="_blank"
+              rel="noreferrer"
+              style={{
+                padding: "14px 18px",
+                borderRadius: "14px",
+                textDecoration: "none",
+                border: "1px solid rgba(255,255,255,0.12)",
+                color: "#fff",
+                opacity: referralLink ? 1 : 0.5,
+                pointerEvents: referralLink ? "auto" : "none",
+              }}
+            >
+              Abrir link
+            </a>
           </div>
         </section>
       </div>
