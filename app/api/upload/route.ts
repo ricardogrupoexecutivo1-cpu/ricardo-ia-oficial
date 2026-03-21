@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import crypto from "node:crypto";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -16,6 +17,27 @@ function sanitizeFileName(fileName: string) {
     .replace(/-+/g, "-")
     .replace(/^-|-$/g, "")
     .toLowerCase();
+}
+
+function getExtensionFromFile(file: File, safeOriginalName: string) {
+  const fromName = safeOriginalName.includes(".")
+    ? safeOriginalName.split(".").pop()?.toLowerCase()
+    : "";
+
+  if (fromName) {
+    return fromName;
+  }
+
+  const mimeToExtension: Record<string, string> = {
+    "image/png": "png",
+    "image/jpeg": "jpg",
+    "image/jpg": "jpg",
+    "image/webp": "webp",
+    "image/heic": "heic",
+    "image/heif": "heif",
+  };
+
+  return mimeToExtension[file.type] || "png";
 }
 
 export async function POST(request: NextRequest) {
@@ -46,10 +68,9 @@ export async function POST(request: NextRequest) {
 
     const file = maybeFile as File;
 
-    const allowedTypes = ["image/png", "image/jpeg", "image/jpg", "image/webp"];
-    if (!allowedTypes.includes(file.type)) {
+    if (!file.type || !file.type.startsWith("image/")) {
       return NextResponse.json(
-        { error: "Formato inválido. Use PNG, JPG ou WEBP." },
+        { error: "Formato inválido. Envie um arquivo de imagem." },
         { status: 400 }
       );
     }
@@ -65,19 +86,24 @@ export async function POST(request: NextRequest) {
     const arrayBuffer = await file.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
 
+    if (!buffer.length) {
+      return NextResponse.json(
+        { error: "O arquivo enviado está vazio." },
+        { status: 400 }
+      );
+    }
+
     const supabase = createClient(supabaseUrl, supabaseServiceRoleKey);
 
     const safeOriginalName = sanitizeFileName(file.name || "imagem");
-    const extension = safeOriginalName.includes(".")
-      ? safeOriginalName.split(".").pop()?.toLowerCase() || "png"
-      : "png";
+    const extension = getExtensionFromFile(file, safeOriginalName);
 
     const filePath = `uploads/${Date.now()}-${crypto.randomUUID()}.${extension}`;
 
     const { error: uploadError } = await supabase.storage
       .from(bucketName)
       .upload(filePath, buffer, {
-        contentType: file.type,
+        contentType: file.type || "application/octet-stream",
         upsert: false,
       });
 
@@ -88,20 +114,45 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { data } = supabase.storage.from(bucketName).getPublicUrl(filePath);
+    const {
+      data: { publicUrl },
+    } = supabase.storage.from(bucketName).getPublicUrl(filePath);
 
-    return NextResponse.json({
-      success: true,
-      publicUrl: data.publicUrl,
-      path: filePath,
-      fileName: file.name,
-      contentType: file.type,
-      size: file.size,
-    });
+    if (!publicUrl) {
+      return NextResponse.json(
+        { error: "Upload concluído, mas a URL pública não foi gerada." },
+        { status: 500 }
+      );
+    }
+
+    return NextResponse.json(
+      {
+        success: true,
+        publicUrl,
+        path: filePath,
+        fileName: file.name || safeOriginalName,
+        contentType: file.type,
+        size: file.size,
+      },
+      {
+        status: 200,
+        headers: {
+          "Cache-Control": "no-store, max-age=0",
+        },
+      }
+    );
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "Erro interno no upload.";
 
-    return NextResponse.json({ error: message }, { status: 500 });
+    return NextResponse.json(
+      { error: message },
+      {
+        status: 500,
+        headers: {
+          "Cache-Control": "no-store, max-age=0",
+        },
+      }
+    );
   }
 }
