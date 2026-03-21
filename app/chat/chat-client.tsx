@@ -1,7 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { ChangeEvent, FormEvent, useEffect, useMemo, useRef, useState } from "react";
+import {
+  ChangeEvent,
+  FormEvent,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import InstallPwaButton from "@/components/install-pwa-button";
 
 type Message = {
@@ -129,6 +136,7 @@ export default function ChatClient() {
   const endRef = useRef<HTMLDivElement | null>(null);
   const inputRef = useRef<HTMLTextAreaElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const cameraInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
@@ -239,7 +247,10 @@ export default function ChatClient() {
   }, [userEmail]);
 
   const headerPlanLabel = useMemo(() => formatPlanLabel(plan), [plan]);
-  const headerPlanStatusLabel = useMemo(() => formatPlanStatus(planStatus), [planStatus]);
+  const headerPlanStatusLabel = useMemo(
+    () => formatPlanStatus(planStatus),
+    [planStatus]
+  );
 
   const daysRemaining = useMemo(() => {
     if (!planExpiresAt) return null;
@@ -393,9 +404,11 @@ export default function ChatClient() {
     fileInputRef.current?.click();
   }
 
-  function handleFileChange(event: ChangeEvent<HTMLInputElement>) {
-    const file = event.target.files?.[0] || null;
+  function handleOpenCamera() {
+    cameraInputRef.current?.click();
+  }
 
+  function handleIncomingFile(file: File | null) {
     setUploadError(null);
     setSelectedFile(file);
 
@@ -422,6 +435,16 @@ export default function ChatClient() {
 
     const preview = URL.createObjectURL(file);
     setSelectedPreviewUrl(preview);
+  }
+
+  function handleFileChange(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0] || null;
+    handleIncomingFile(file);
+  }
+
+  function handleCameraChange(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0] || null;
+    handleIncomingFile(file);
   }
 
   async function handleUploadReferenceImage() {
@@ -483,6 +506,10 @@ export default function ChatClient() {
 
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
+    }
+
+    if (cameraInputRef.current) {
+      cameraInputRef.current.value = "";
     }
   }
 
@@ -629,7 +656,7 @@ export default function ChatClient() {
                 lineHeight: 1.5,
               }}
             >
-              Envie logo, produto, fachada, veículo ou arte para a Aurora criar
+              Envie uma imagem pronta ou tire uma foto agora para a Aurora criar
               campanhas com base visual.
             </div>
           </div>
@@ -637,8 +664,17 @@ export default function ChatClient() {
           <input
             ref={fileInputRef}
             type="file"
-            accept="image/png,image/jpeg,image/jpg,image/webp"
+            accept="image/png,image/jpeg,image/jpg,image/webp,image/*"
             onChange={handleFileChange}
+            style={{ display: "none" }}
+          />
+
+          <input
+            ref={cameraInputRef}
+            type="file"
+            accept="image/*"
+            capture="environment"
+            onChange={handleCameraChange}
             style={{ display: "none" }}
           />
 
@@ -664,6 +700,22 @@ export default function ChatClient() {
               }}
             >
               Selecionar imagem
+            </button>
+
+            <button
+              type="button"
+              onClick={handleOpenCamera}
+              style={{
+                border: "1px solid rgba(255,255,255,0.16)",
+                borderRadius: 12,
+                padding: "12px 16px",
+                fontWeight: 800,
+                cursor: "pointer",
+                background: "rgba(255,255,255,0.05)",
+                color: "inherit",
+              }}
+            >
+              Tirar foto
             </button>
 
             <button
@@ -777,8 +829,8 @@ export default function ChatClient() {
                   lineHeight: 1.5,
                 }}
               >
-                A Aurora vai usar essa imagem como base para campanhas, identidade
-                visual, anúncios, criativos e ideias de marketing.
+                A Aurora vai usar essa imagem como base para campanhas,
+                identidade visual, anúncios, criativos e ideias de marketing.
               </div>
 
               <div
