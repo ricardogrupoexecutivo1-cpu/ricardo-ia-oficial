@@ -49,54 +49,58 @@ function getLimitsByPlan(plan: string | null) {
   };
 }
 
-function isImageRequest(text: string) {
+function containsAny(text: string, terms: string[]) {
   const value = text.toLowerCase();
+  return terms.some((term) => value.includes(term));
+}
 
-  return (
-    value.includes("crie uma imagem") ||
-    value.includes("gere uma imagem") ||
-    value.includes("criar imagem") ||
-    value.includes("gerar imagem") ||
-    value.includes("faça uma imagem") ||
-    value.includes("imagem de") ||
-    value.includes("desenhe") ||
-    value.includes("create an image") ||
-    value.includes("generate an image") ||
-    value.includes("image of") ||
-    value.includes("arte") ||
-    value.includes("banner") ||
-    value.includes("story") ||
-    value.includes("post para instagram") ||
-    value.includes("anúncio") ||
-    value.includes("anuncio") ||
-    value.includes("criativo")
-  );
+function isImageRequest(text: string) {
+  return containsAny(text, [
+    "crie uma imagem",
+    "gere uma imagem",
+    "criar imagem",
+    "gerar imagem",
+    "faça uma imagem",
+    "faca uma imagem",
+    "imagem de",
+    "desenhe",
+    "crie arte",
+    "gere arte",
+    "crie a arte",
+    "gere a arte",
+    "crie o criativo",
+    "gere o criativo",
+    "crie um criativo",
+    "gere um criativo",
+    "crie um banner",
+    "gere um banner",
+    "crie um story",
+    "gere um story",
+    "crie um post",
+    "gere um post",
+    "crie um anúncio",
+    "gere um anúncio",
+    "crie um anuncio",
+    "gere um anuncio",
+    "crie a imagem da campanha",
+    "gere a imagem da campanha",
+    "crie a imagem do anúncio",
+    "gere a imagem do anúncio",
+    "crie a imagem do anuncio",
+    "gere a imagem do anuncio",
+    "create an image",
+    "generate an image",
+    "image of",
+    "banner",
+    "story",
+    "anúncio",
+    "anuncio",
+    "criativo",
+  ]);
 }
 
 function wantsGeneratedCampaignImage(text: string) {
-  const value = text.toLowerCase();
-
-  return (
-    value.includes("me mande as imagens") ||
-    value.includes("me mande a imagem") ||
-    value.includes("gere a imagem") ||
-    value.includes("gerar a imagem") ||
-    value.includes("crie a imagem") ||
-    value.includes("criar a imagem") ||
-    value.includes("gere a arte") ||
-    value.includes("crie a arte") ||
-    value.includes("gere um banner") ||
-    value.includes("crie um banner") ||
-    value.includes("gere um story") ||
-    value.includes("crie um story") ||
-    value.includes("imagem publicitária") ||
-    value.includes("imagem publicitaria") ||
-    value.includes("arte publicitária") ||
-    value.includes("arte publicitaria") ||
-    value.includes("criativo") ||
-    value.includes("anúncio") ||
-    value.includes("anuncio")
-  );
+  return isImageRequest(text);
 }
 
 function startOfDayIso() {
@@ -138,7 +142,7 @@ REGRAS DE USO DA REFERÊNCIA:
 - Use essa referência para construir campanha, copy, headline, CTA, legenda, oferta, criativo e direção de arte.
 - Não trave pedindo informações extras logo no início.
 - Se faltarem detalhes, assuma contexto comercial útil e prático.
-- Quando o pedido envolver campanha, entregue também uma proposta clara de arte publicitária baseada nessa imagem.
+- Quando o pedido envolver campanha ou imagem, entregue também uma proposta clara de arte publicitária baseada nessa imagem.
 - Não diga que você não consegue ver a imagem.
 - Use a imagem como referência estratégica e visual para responder.
 
@@ -151,12 +155,14 @@ function buildCampaignImagePrompt(params: {
   userMessage: string;
   assistantText: string;
   referenceImageName: string | null;
+  hasReferenceImage: boolean;
 }) {
   const userMessage = String(params.userMessage || "").trim();
   const assistantText = String(params.assistantText || "").trim();
   const referenceImageName = String(params.referenceImageName || "").trim();
 
-  return `
+  if (params.hasReferenceImage) {
+    return `
 Transforme a imagem enviada pelo usuário em uma ARTE PUBLICITÁRIA real e profissional.
 
 Arquivo de referência:
@@ -169,18 +175,18 @@ Campanha criada pela Aurora:
 ${assistantText}
 
 INSTRUÇÕES:
-- USE A PRÓPRIA IMAGEM ENVIADA COMO BASE REAL DA PEÇA
-- preserve o assunto principal da imagem
-- melhore a apresentação visual para parecer anúncio premium
-- adicionar composição publicitária profissional
-- deixar visual bonito, forte e comercial
-- foco em Instagram/Facebook
-- formato quadrado 1:1
-- headline forte e legível
-- CTA visível
-- contraste bom
-- sem poluição visual
-- aparência de peça pronta para vender
+- USE A PRÓPRIA IMAGEM ENVIADA COMO BASE REAL DA PEÇA.
+- Preserve o assunto principal da imagem.
+- Melhore a apresentação visual para parecer anúncio premium.
+- Adicione composição publicitária profissional.
+- Deixe visual bonito, forte e comercial.
+- Foco em Instagram, Facebook e anúncios.
+- Formato quadrado 1:1.
+- Headline forte e legível.
+- CTA visível.
+- Bom contraste.
+- Sem poluição visual.
+- Aparência de peça pronta para vender.
 
 Se for gastronômico:
 - destacar textura, calor, apetite, brilho e clima convidativo
@@ -190,7 +196,30 @@ Se for produto:
 
 Se for marca local:
 - dar cara de campanha profissional regional
-`.trim();
+    `.trim();
+  }
+
+  return `
+Crie uma imagem publicitária profissional com base no pedido abaixo.
+
+Pedido do usuário:
+${userMessage}
+
+Direção criativa criada pela Aurora:
+${assistantText}
+
+INSTRUÇÕES:
+- Gere uma imagem final pronta para campanha.
+- Aparência premium, comercial e chamativa.
+- Visual forte, bonito e limpo.
+- Composição publicitária profissional.
+- Boa iluminação e contraste.
+- Sem texto excessivo.
+- Sem marca d'água.
+- Alta qualidade.
+- Formato 1:1.
+- Pode parecer anúncio real para redes sociais.
+  `.trim();
 }
 
 async function downloadReferenceImageAsFile(
@@ -257,11 +286,9 @@ async function saveBase64ImageToSupabase(params: {
     throw new Error(`Erro ao salvar imagem gerada: ${uploadError.message}`);
   }
 
-  const { data: publicData } = supabaseAdmin.storage
-    .from(generatedBucketName)
-    .getPublicUrl(filePath);
-
-  const publicUrl = publicData?.publicUrl || null;
+  const {
+    data: { publicUrl },
+  } = supabaseAdmin.storage.from(generatedBucketName).getPublicUrl(filePath);
 
   if (!publicUrl) {
     throw new Error("Imagem gerada sem URL pública.");
@@ -399,9 +426,9 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const isImage = isImageRequest(message);
+    const imageRequested = wantsGeneratedCampaignImage(message);
 
-    if (isImage && limits.imagesPerDay >= 0 && imagesUsed >= limits.imagesPerDay) {
+    if (imageRequested && limits.imagesPerDay >= 0 && imagesUsed >= limits.imagesPerDay) {
       return NextResponse.json(
         {
           error: "Limite de imagens atingido hoje.",
@@ -434,15 +461,16 @@ REGRAS CRÍTICAS:
 - Sempre responda em português do Brasil.
 - Seja prática, direta, comercial e útil.
 - Não trave pedindo informações no início se já for possível ajudar.
-- Sua função é EXECUTAR.
+- Sua função é executar.
 - Quando o usuário pedir campanha, anúncio, legenda, copy, posicionamento, oferta, branding, roteiro ou criativo, entregue material pronto para uso.
+- Quando o usuário pedir imagem, arte, banner, criativo ou peça visual, responda de forma curta e útil, porque a imagem será gerada automaticamente.
 
 QUANDO EXISTIR IMAGEM DE REFERÊNCIA:
 - Assuma que a imagem enviada é o ativo visual principal do pedido.
 - Use essa referência para construir a campanha.
 - Não peça confirmação como primeira ação.
 - Não responda de forma genérica.
-- Entregue campanha + proposta visual da peça publicitária.
+- Entregue campanha e proposta visual da peça publicitária.
 
 SE O USUÁRIO PEDIR CAMPANHA:
 ENTREGUE SEMPRE NESTA ESTRUTURA:
@@ -453,6 +481,11 @@ ENTREGUE SEMPRE NESTA ESTRUTURA:
 5. Ideia visual baseada na imagem enviada
 6. Arte publicitária sugerida
 7. Estratégia básica de uso
+
+SE O USUÁRIO PEDIR IMAGEM:
+- Não entregue tutorial longo.
+- Não jogue a geração para outra ferramenta.
+- Entregue um texto curto de apoio para acompanhar a imagem.
           `.trim(),
         },
         {
@@ -462,16 +495,17 @@ ENTREGUE SEMPRE NESTA ESTRUTURA:
       ],
     });
 
-    const text =
+    let text =
       completion.choices[0]?.message?.content?.trim() || "Erro ao responder.";
 
     let generatedImageUrl: string | null = null;
 
-    if (wantsGeneratedCampaignImage(message)) {
+    if (imageRequested) {
       const imagePrompt = buildCampaignImagePrompt({
         userMessage: message,
         assistantText: text,
         referenceImageName,
+        hasReferenceImage: Boolean(referenceImageUrl),
       });
 
       let base64Image: string | null = null;
@@ -508,6 +542,11 @@ ENTREGUE SEMPRE NESTA ESTRUTURA:
         });
 
         generatedImageUrl = saved.publicUrl;
+        console.log("IMAGE GERADA:", generatedImageUrl);
+
+        if (!text || text.length < 8) {
+          text = "Imagem gerada com sucesso. Aqui está sua criação visual.";
+        }
       }
     }
 
@@ -565,7 +604,8 @@ ENTREGUE SEMPRE NESTA ESTRUTURA:
         messagesRemaining: nextMessagesRemaining,
         imagesRemaining: nextImagesRemaining,
         referenceImageUsed: Boolean(referenceImageUrl),
-        imageUrl: generatedImageUrl,
+        imageUrl: generatedImageUrl || null,
+        imagePageUrl: generatedImageUrl || null,
       },
       {
         status: 200,
@@ -575,6 +615,8 @@ ENTREGUE SEMPRE NESTA ESTRUTURA:
       }
     );
   } catch (error) {
+    console.error("ERRO /api/chat:", error);
+
     return NextResponse.json(
       {
         error:
