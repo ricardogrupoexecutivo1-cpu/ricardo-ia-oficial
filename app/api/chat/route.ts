@@ -110,7 +110,6 @@ function startOfDayIso() {
     0,
     0
   );
-
   return start.toISOString();
 }
 
@@ -210,7 +209,6 @@ async function downloadReferenceImageAsFile(
 
   const contentType = response.headers.get("content-type") || "image/png";
   const arrayBuffer = await response.arrayBuffer();
-
   const extension =
     contentType.includes("jpeg") || contentType.includes("jpg")
       ? "jpg"
@@ -226,10 +224,11 @@ async function downloadReferenceImageAsFile(
     (fileName || "referencia")
       .replace(/[^a-zA-Z0-9.\-_]/g, "-")
       .replace(/-+/g, "-")
-      .replace(/^-|-$/g, "")
       .toLowerCase() || "referencia";
 
-  const finalName = safeName.includes(".") ? safeName : `${safeName}.${extension}`;
+  const finalName = safeName.includes(".")
+    ? safeName
+    : `${safeName}.${extension}`;
 
   return new File([arrayBuffer], finalName, { type: contentType });
 }
@@ -258,9 +257,11 @@ async function saveBase64ImageToSupabase(params: {
     throw new Error(`Erro ao salvar imagem gerada: ${uploadError.message}`);
   }
 
-  const {
-    data: { publicUrl },
-  } = supabaseAdmin.storage.from(generatedBucketName).getPublicUrl(filePath);
+  const { data: publicData } = supabaseAdmin.storage
+    .from(generatedBucketName)
+    .getPublicUrl(filePath);
+
+  const publicUrl = publicData?.publicUrl || null;
 
   if (!publicUrl) {
     throw new Error("Imagem gerada sem URL pública.");
