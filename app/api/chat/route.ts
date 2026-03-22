@@ -36,9 +36,9 @@ type SaveGeneratedImageResult =
 
 function buildPrompt(message: string) {
   return [
-    "Crie uma imagem realista, forte e bem composta.",
-    "Visual premium, iluminação cinematográfica e alto detalhe.",
-    "Não adicionar texto na imagem.",
+    "Crie uma imagem realista, cinematográfica e bem composta.",
+    "Visual premium, alto detalhe, iluminação forte e textura realista.",
+    "Sem texto escrito na imagem.",
     `Cena: ${message}`,
   ].join(" ");
 }
@@ -90,13 +90,14 @@ async function generateImageWithTimeout(prompt: string) {
   const imagePromise = openai.images.generate({
     model: "gpt-image-1",
     prompt,
-    size: "auto",
+    size: "1024x1024",
+    quality: "low",
   });
 
   const timeoutPromise = new Promise<never>((_, reject) => {
     setTimeout(() => {
       reject(new Error("timeout_imagem"));
-    }, 45000);
+    }, 55000);
   });
 
   return Promise.race([imagePromise, timeoutPromise]);
