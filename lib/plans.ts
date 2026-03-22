@@ -1,91 +1,76 @@
-export type PlanKey = "free" | "pro" | "premium";
+export type PlanKey = "FREE" | "PRO" | "SCALE";
 
-export type PlanDefinition = {
+export type Plan = {
   key: PlanKey;
   name: string;
+  badge?: string;
+  highlight: boolean;
   priceLabel: string;
   priceValue: number;
-  periodLabel: string;
-  badge?: string;
   description: string;
   features: string[];
-  ctaLabel: string;
   checkoutHref: string;
-  highlight?: boolean;
+  ctaLabel: string;
 };
 
-const PREMIUM_PRICE = 29.9;
+export const PLAN_ORDER: PlanKey[] = ["FREE", "PRO", "SCALE"];
 
-export const PLANS: Record<PlanKey, PlanDefinition> = {
-  free: {
-    key: "free",
+export const PLANS: Record<PlanKey, Plan> = {
+  FREE: {
+    key: "FREE",
     name: "FREE",
+    badge: "Grátis",
+    highlight: false,
     priceLabel: "Grátis",
     priceValue: 0,
-    periodLabel: "",
-    badge: "Entrada",
     description:
-      "Para conhecer a Aurora IA, testar o chat e validar o valor da plataforma.",
+      "Para começar a conhecer a Aurora IA e testar os primeiros recursos.",
     features: [
-      "Acesso inicial à Aurora IA",
-      "Uso básico para testes",
+      "Uso básico do chat",
+      "Geração inicial de imagens",
       "Entrada rápida na plataforma",
-      "Ideal para conhecer a ferramenta",
     ],
-    ctaLabel: "Começar grátis",
     checkoutHref: "/chat",
+    ctaLabel: "Começar grátis",
   },
-  pro: {
-    key: "pro",
+
+  PRO: {
+    key: "PRO",
     name: "PRO",
-    priceLabel: "R$ 9,90/mês",
-    priceValue: 9.9,
-    periodLabel: "/mês",
-    badge: "Mais vendido",
+    badge: "Profissional",
+    highlight: false,
+    priceLabel: "R$ 19,90/mês",
+    priceValue: 19.9,
     description:
-      "Para quem quer usar a Aurora IA no dia a dia para criar, divulgar e vender mais.",
+      "Plano ideal para quem quer usar a Aurora IA com mais força e frequência.",
     features: [
-      "Chat com uso ampliado",
-      "Criação de campanhas",
-      "Geração de imagens",
-      "Uso comercial liberado",
-      "Mais velocidade para vender",
+      "Mais geração de imagens",
+      "Uso mais liberado do chat",
+      "Melhor desempenho geral",
     ],
+    checkoutHref:
+      process.env.NEXT_PUBLIC_PRO_PLAN_URL || "/checkout?plan=pro",
     ctaLabel: "Assinar PRO",
-    checkoutHref: "/checkout?plan=pro",
-    highlight: true,
   },
-  premium: {
-    key: "premium",
-    name: "PREMIUM",
-    priceLabel: `R$ ${PREMIUM_PRICE.toFixed(2).replace(".", ",")}/mês`,
-    priceValue: PREMIUM_PRICE,
-    periodLabel: "/mês",
-    badge: "Escala",
+
+  SCALE: {
+    key: "SCALE",
+    name: "SCALE",
+    badge: "Crescimento",
+    highlight: true,
+    priceLabel: "R$ 29,90/mês",
+    priceValue: 29.9,
     description:
-      "Plano completo para quem quer escalar, automatizar e vender com força total usando a Aurora IA.",
+      "Plano completo para quem quer usar mais recursos, vender mais e escalar com a Aurora IA.",
     features: [
       "Tudo do plano PRO",
-      "Prioridade máxima de uso",
-      "Mais poder de geração de imagens",
-      "Ideal para negócios e operações",
-      "Melhor plano para monetização",
+      "Prioridade de uso",
+      "Mais poder de criação",
+      "Estrutura ideal para operação comercial",
+      "Melhor plano para fechar clientes",
     ],
-    ctaLabel: "Assinar PREMIUM",
-    checkoutHref: "/checkout?plan=premium",
-    highlight: false,
+    checkoutHref:
+      process.env.NEXT_PUBLIC_SCALE_PLAN_URL || "/checkout?plan=scale",
+    ctaLabel: "Assinar SCALE",
   },
 };
-
-export const PLAN_ORDER: PlanKey[] = ["free", "pro", "premium"];
-
-export function getPlanByKey(plan: string | null | undefined): PlanDefinition {
-  if (!plan) return PLANS.free;
-
-  const normalized = String(plan).trim().toLowerCase();
-
-  if (normalized === "pro") return PLANS.pro;
-  if (normalized === "premium") return PLANS.premium;
-
-  return PLANS.free;
-}
