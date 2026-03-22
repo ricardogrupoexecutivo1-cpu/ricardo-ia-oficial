@@ -34,12 +34,66 @@ type SaveGeneratedImageResult =
       error?: string;
     };
 
-function buildPrompt(message: string) {
+function shouldGenerateImage(message: string) {
+  const text = message.toLowerCase().trim();
+
+  const strongTriggers = [
+    "crie uma imagem",
+    "gere uma imagem",
+    "gerar imagem",
+    "faça uma imagem",
+    "me mostre uma imagem",
+    "crie uma arte",
+    "gere uma arte",
+    "crie um banner",
+    "gere um banner",
+    "crie uma foto",
+    "gere uma foto",
+    "crie uma ilustração",
+    "gere uma ilustração",
+    "crie uma ilustracao",
+    "gere uma ilustracao",
+    "crie uma capa",
+    "gere uma capa",
+    "crie um post",
+    "gere um post",
+    "crie um criativo",
+    "gere um criativo",
+    "quero uma imagem",
+    "preciso de uma imagem",
+  ];
+
+  if (strongTriggers.some((term) => text.includes(term))) {
+    return true;
+  }
+
+  const genericImageWords = [
+    "imagem",
+    "foto",
+    "arte",
+    "banner",
+    "ilustração",
+    "ilustracao",
+    "post",
+    "criativo",
+    "thumbnail",
+    "capa",
+    "logo",
+    "cartaz",
+    "story",
+  ];
+
+  const hasImageWord = genericImageWords.some((term) => text.includes(term));
+
+  return hasImageWord;
+}
+
+function buildImagePrompt(message: string) {
   return [
     "Crie uma imagem realista, cinematográfica e bem composta.",
     "Visual premium, alto detalhe, iluminação forte e textura realista.",
-    "Sem texto escrito na imagem.",
-    `Cena: ${message}`,
+    "Sem texto escrito na imagem, a menos que o usuário peça explicitamente.",
+    `Cena solicitada: ${message}`,
   ].join(" ");
 }
 
@@ -135,6 +189,27 @@ function getReadableError(error: unknown) {
   return "erro_desconhecido";
 }
 
+async function generateTextReply(message: string) {
+  const completion = await openai.chat.completions.create({
+    model: "gpt-5-mini",
+    messages: [
+      {
+        role: "system",
+        content:
+          "Você é a Aurora IA, especialista em marketing, campanhas, vendas, copy, negócios e produtividade. Responda sempre em português do Brasil, de forma clara, útil, objetiva e comercial quando fizer sentido.",
+      },
+      {
+        role: "user",
+        content: message,
+      },
+    ],
+  });
+
+  const reply = completion.choices[0]?.message?.content?.trim();
+
+  return reply || "Recebi sua mensagem e estou pronta para ajudar.";
+}
+
 export async function POST(req: NextRequest) {
   try {
     if (!process.env.OPENAI_API_KEY) {
@@ -171,6 +246,29 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    const wantsImage = shouldGenerateImage(message);
+
+    if (!wantsImage) {
+      const reply = await generateTextReply(message);
+
+      return NextResponse.json(
+        {
+          reply,
+          imageUrl: null,
+          imagePageUrl: null,
+          imageSaved: false,
+          imageSavedId: null,
+          imageSaveError: null,
+        },
+        {
+          status: 200,
+          headers: {
+            "Cache-Control": "no-store, max-age=0",
+          },
+        }
+      );
+    }
+
     let reply = "Estou preparando sua imagem agora.";
     let imageUrl: string | null = null;
     let imageSaved = false;
@@ -178,7 +276,10 @@ export async function POST(req: NextRequest) {
     let imageSaveError: string | null = null;
 
     try {
-      const imageResponse = await generateImageWithTimeout(buildPrompt(message));
+      const imageResponse = await generateImageWithTimeout(
+        buildImagePrompt(message)
+      );
+
       imageUrl = resolveImageSrc(imageResponse);
 
       if (imageUrl) {
@@ -213,7 +314,7 @@ export async function POST(req: NextRequest) {
       } else {
         imageSaveError = "imagem_sem_url_ou_b64";
         reply =
-          "Recebi sua mensagem, mas a OpenAI não retornou URL nem base64 da imagem.";
+          "Recebi seu pedido de imagem, mas a OpenAI não retornou URL nem base64 da imagem.";
       }
     } catch (error) {
       const readableError = getReadableError(error);
@@ -224,7 +325,7 @@ export async function POST(req: NextRequest) {
       imageSaved = false;
       imageSavedId = null;
       imageSaveError = readableError;
-      reply = `Recebi sua mensagem, mas não consegui gerar a imagem agora. Motivo: ${readableError}`;
+      reply = `Recebi seu pedido de imagem, mas não consegui gerar agora. Motivo: ${readableError}`;
     }
 
     return NextResponse.json(
