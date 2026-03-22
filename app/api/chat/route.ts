@@ -4,7 +4,7 @@ import { createClient } from "@supabase/supabase-js";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-export const maxDuration = 30;
+export const maxDuration = 60;
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -36,10 +36,10 @@ type SaveGeneratedImageResult =
 
 function buildPrompt(message: string) {
   return [
-    "Crie uma imagem ultra realista, cinematográfica e de alta qualidade.",
-    "Visual premium, composição forte, iluminação profissional, textura realista.",
-    "Sem texto escrito na imagem, a menos que o usuário peça explicitamente.",
-    `Pedido do usuário: ${message}`,
+    "Crie uma imagem realista, forte e bem composta.",
+    "Visual premium, iluminação cinematográfica e alto detalhe.",
+    "Não adicionar texto na imagem.",
+    `Cena: ${message}`,
   ].join(" ");
 }
 
@@ -90,13 +90,13 @@ async function generateImageWithTimeout(prompt: string) {
   const imagePromise = openai.images.generate({
     model: "gpt-image-1",
     prompt,
-    size: "1024x1024",
+    size: "auto",
   });
 
   const timeoutPromise = new Promise<never>((_, reject) => {
     setTimeout(() => {
       reject(new Error("timeout_imagem"));
-    }, 20000);
+    }, 45000);
   });
 
   return Promise.race([imagePromise, timeoutPromise]);
