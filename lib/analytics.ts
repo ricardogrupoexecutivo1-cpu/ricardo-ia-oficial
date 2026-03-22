@@ -27,7 +27,9 @@ export type AnalyticsEventName =
 function sanitizeProperties(
   properties?: EventProperties
 ): SafeEventProperties | undefined {
-  if (!properties) return undefined;
+  if (!properties) {
+    return undefined;
+  }
 
   const safe: SafeEventProperties = {};
 
@@ -41,14 +43,16 @@ function sanitizeProperties(
     }
   }
 
-  return Object.keys(safe).length ? safe : undefined;
+  return Object.keys(safe).length > 0 ? safe : undefined;
 }
 
 export function trackEvent(
   eventName: AnalyticsEventName,
   properties?: EventProperties
 ) {
-  if (typeof window === "undefined") return;
+  if (typeof window === "undefined") {
+    return;
+  }
 
   try {
     const safeProperties = sanitizeProperties(properties);
