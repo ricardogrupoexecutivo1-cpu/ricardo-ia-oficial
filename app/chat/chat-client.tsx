@@ -19,10 +19,10 @@ type Message = {
 };
 
 type ChatResponse = {
-  reply?: string;
-  message?: string;
-  content?: string;
-  error?: string;
+  reply?: string | null;
+  message?: string | null;
+  content?: string | null;
+  error?: string | null;
   imageUrl?: string | null;
   image_url?: string | null;
   imagePageUrl?: string | null;
@@ -34,6 +34,9 @@ type ChatResponse = {
   referralCode?: string | null;
   referralLink?: string | null;
   referredBy?: string | null;
+  imageSaved?: boolean | null;
+  imageSavedId?: string | null;
+  imageSaveError?: string | null;
 };
 
 type UsageStatusResponse = {
@@ -70,9 +73,39 @@ function isImagePrompt(text: string) {
     "thumbnail",
     "capa",
     "logo",
+    "robô",
+    "robo",
+    "new york",
+    "nova york",
   ];
 
   return terms.some((term) => normalized.includes(term));
+}
+
+function resolveAssistantText(data: ChatResponse, imageUrl: string | null) {
+  const raw =
+    data.reply?.trim() ||
+    data.message?.trim() ||
+    data.content?.trim() ||
+    "";
+
+  if (raw) {
+    return raw;
+  }
+
+  if (imageUrl) {
+    return "Imagem gerada com sucesso.";
+  }
+
+  if (data.error?.trim()) {
+    return data.error.trim();
+  }
+
+  if (data.imageSaveError?.trim()) {
+    return `Recebi sua mensagem, mas houve um problema: ${data.imageSaveError.trim()}`;
+  }
+
+  return "Recebi sua mensagem, mas a resposta veio vazia.";
 }
 
 export default function ChatClient() {
@@ -81,7 +114,7 @@ export default function ChatClient() {
   const [loading, setLoading] = useState(false);
 
   const [userEmail, setUserEmail] = useState("");
-  const [plan, setPlan] = useState("TOTAL");
+  const [plan, setPlan] = useState("FREE");
   const [messagesRemaining, setMessagesRemaining] = useState<number | null>(null);
   const [imagesRemaining, setImagesRemaining] = useState<number | null>(null);
   const [bonusImages, setBonusImages] = useState(0);
@@ -100,11 +133,8 @@ export default function ChatClient() {
   }, []);
 
   useEffect(() => {
-    const savedEmail =
-      typeof window !== "undefined"
-        ? window.localStorage.getItem(EMAIL_STORAGE_KEY)
-        : null;
-
+    if (typeof window === "undefined") return;
+    const savedEmail = window.localStorage.getItem(EMAIL_STORAGE_KEY);
     if (savedEmail) {
       setUserEmail(savedEmail);
     }
@@ -112,7 +142,6 @@ export default function ChatClient() {
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-
     if (userEmail.trim()) {
       window.localStorage.setItem(EMAIL_STORAGE_KEY, userEmail.trim());
     }
@@ -239,25 +268,6 @@ export default function ChatClient() {
 
       const data: ChatResponse = await response.json();
 
-      if (!response.ok) {
-        const errorMessage =
-          data?.error || "Erro ao responder no chat.";
-
-        setMessages([
-          ...nextMessages,
-          {
-            role: "assistant",
-            content: errorMessage,
-          },
-        ]);
-
-        if (promptLooksLikeImage) {
-          trackImageGenerationFailed("chat-page", errorMessage);
-        }
-
-        return;
-      }
-
       if (typeof data?.messagesRemaining === "number") {
         setMessagesRemaining(data.messagesRemaining);
       }
@@ -286,14 +296,9 @@ export default function ChatClient() {
         setReferredBy(data.referredBy);
       }
 
-      const assistantText =
-        data.reply ||
-        data.message ||
-        data.content ||
-        "Resposta recebida com sucesso.";
-
       const imageUrl = data.imageUrl || data.image_url || null;
-      const imagePageUrl = data.imagePageUrl || data.image_page_url || null;
+      const imagePageUrl = data.imagePageUrl || data.image_page_url || imageUrl;
+      const assistantText = resolveAssistantText(data, imageUrl);
 
       setMessages([
         ...nextMessages,
@@ -308,7 +313,14 @@ export default function ChatClient() {
       if (imageUrl) {
         trackImageGenerationSucceeded("chat-page", "api-chat");
       } else if (promptLooksLikeImage) {
-        trackImageGenerationFailed("chat-page", "sem-imagem-retornada");
+        trackImageGenerationFailed(
+          "chat-page",
+          data.imageSaveError || data.error || "sem-imagem-retornada"
+        );
+      }
+
+      if (!response.ok) {
+        console.error("Erro retornado pela API /api/chat:", data);
       }
     } catch (error) {
       console.error("Erro ao enviar mensagem:", error);
@@ -340,33 +352,33 @@ export default function ChatClient() {
         <div className="aurora-chat-app__heroBadge">Aurora IA</div>
         <h1 className="aurora-chat-app__title">Chat da Aurora</h1>
         <p className="aurora-chat-app__subtitle">
-          Escreva normalmente ou peça uma imagem.
+          Converse normalmente ou peça campanhas e ideias.
         </p>
       </section>
 
       <section className="aurora-chat-app__panel aurora-chat-app__panel--status">
         <div className="aurora-chat-app__statusGrid">
           <div className="aurora-chat-app__statusCard">
-            <span className="aurora-chat-app__statusLabel">Plano atual</span>
-            <strong className="aurora-chat-app__statusValue">{plan || "TOTAL"}</strong>
+            <span className="aurora-chat-app__statusLabel">Plano</span>
+            <strong className="aurora-chat-app__statusValue">{plan || "FREE"}</strong>
           </div>
 
           <div className="aurora-chat-app__statusCard">
-            <span className="aurora-chat-app__statusLabel">Mensagens restantes hoje</span>
+            <span className="aurora-chat-app__statusLabel">Mensagens</span>
             <strong className="aurora-chat-app__statusValue">
               {messagesRemaining ?? "-"}
             </strong>
           </div>
 
           <div className="aurora-chat-app__statusCard">
-            <span className="aurora-chat-app__statusLabel">Imagens restantes hoje</span>
+            <span className="aurora-chat-app__statusLabel">Imagens</span>
             <strong className="aurora-chat-app__statusValue">
-              {imagesRemaining ?? "-"}
+              {imagesRemaining ?? "Ilimitado"}
             </strong>
           </div>
 
           <div className="aurora-chat-app__statusCard">
-            <span className="aurora-chat-app__statusLabel">Imagens bônus</span>
+            <span className="aurora-chat-app__statusLabel">Bônus</span>
             <strong className="aurora-chat-app__statusValue">{bonusImages}</strong>
           </div>
         </div>
@@ -384,31 +396,43 @@ export default function ChatClient() {
             value={userEmail}
             onChange={(event) => setUserEmail(event.target.value)}
           />
+
+          <p className="aurora-chat-app__helperText">
+            Esse e-mail ajuda a controlar plano, limites e recursos liberados.
+          </p>
         </div>
 
         <div className="aurora-chat-app__quickActions">
           <button
             type="button"
             className="aurora-chat-app__quickButton"
-            onClick={() => setInput("Crie uma campanha para minha empresa")}
+            onClick={() => setInput("Criar campanha para Instagram")}
           >
-            Criar campanha
+            Criar campanha para Instagram
           </button>
 
           <button
             type="button"
             className="aurora-chat-app__quickButton"
-            onClick={() => setInput("Gere uma imagem impactante para Instagram")}
+            onClick={() => setInput("Gerar imagem premium para anúncio")}
           >
-            Gerar imagem
+            Gerar imagem premium para anúncio
           </button>
 
           <button
             type="button"
             className="aurora-chat-app__quickButton"
-            onClick={() => setInput("Me dê uma ideia de negócio lucrativa")}
+            onClick={() => setInput("Ideia de negócio com IA")}
           >
-            Ideia de negócio
+            Ideia de negócio com IA
+          </button>
+
+          <button
+            type="button"
+            className="aurora-chat-app__quickButton"
+            onClick={() => setInput("Criar texto de vendas")}
+          >
+            Criar texto de vendas
           </button>
         </div>
       </section>
@@ -419,7 +443,7 @@ export default function ChatClient() {
         </h2>
 
         <p className="aurora-chat-app__sectionText">
-          Cada novo indicado válido pode render +5 imagens para você.
+          Cada novo indicado válido pode render mais imagens para você.
         </p>
 
         <div className="aurora-chat-app__referralGrid">
@@ -431,22 +455,12 @@ export default function ChatClient() {
           </div>
 
           <div className="aurora-chat-app__referralCard">
-            <span className="aurora-chat-app__statusLabel">Seu link de convite</span>
+            <span className="aurora-chat-app__statusLabel">Seu link</span>
             <strong className="aurora-chat-app__statusValue aurora-chat-app__statusValue--wrap">
               {referralLinkResolved || "-"}
             </strong>
           </div>
         </div>
-
-        {referredBy ? (
-          <p className="aurora-chat-app__sectionText">
-            Você foi indicado por: <strong>{referredBy}</strong>
-          </p>
-        ) : (
-          <p className="aurora-chat-app__sectionText">
-            Nenhuma indicação registrada até agora.
-          </p>
-        )}
 
         <div className="aurora-chat-app__referralActions">
           <button
@@ -455,18 +469,24 @@ export default function ChatClient() {
             onClick={handleCopyReferralLink}
             disabled={!referralLinkResolved}
           >
-            Copiar link de convite
+            Copiar link
           </button>
 
           <Link href="/planos" className="aurora-chat-app__linkButton">
             Ver planos
           </Link>
         </div>
+
+        {referredBy ? (
+          <p className="aurora-chat-app__sectionText">
+            Você foi indicado por: <strong>{referredBy}</strong>
+          </p>
+        ) : null}
       </section>
 
       <section className="aurora-chat-app__panel aurora-chat-app__panel--messages">
         <div className="aurora-chat-app__messagesHeader">
-          <h2 className="aurora-chat-app__sectionTitle">Conversa</h2>
+          <h2 className="aurora-chat-app__sectionTitle">Chat da Aurora</h2>
         </div>
 
         <div className="aurora-chat-app__messagesList">
@@ -535,7 +555,7 @@ export default function ChatClient() {
               </div>
 
               <div className="aurora-chat-app__messageContent">
-                <p>Pensando e preparando sua resposta...</p>
+                <p>Preparando sua resposta...</p>
               </div>
             </article>
           ) : null}
@@ -546,7 +566,7 @@ export default function ChatClient() {
         <form className="aurora-chat-app__form" onSubmit={handleSubmit}>
           <textarea
             className="aurora-chat-app__textarea"
-            placeholder="Escreva normalmente ou peça uma imagem."
+            placeholder="Digite sua mensagem ou descreva a imagem que deseja..."
             value={input}
             onChange={(event) => setInput(event.target.value)}
             rows={4}
@@ -562,6 +582,10 @@ export default function ChatClient() {
               {loading ? "Enviando..." : "Enviar"}
             </button>
           </div>
+
+          <p className="aurora-chat-app__helperText">
+            Enter envia. Shift + Enter quebra linha.
+          </p>
         </form>
       </section>
     </main>
