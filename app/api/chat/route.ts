@@ -10,281 +10,74 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-const supabase =
-  supabaseUrl && supabaseServiceRoleKey
-    ? createClient(supabaseUrl, supabaseServiceRoleKey, {
-        auth: {
-          persistSession: false,
-          autoRefreshToken: false,
-        },
-      })
-    : null;
-
-type SaveGeneratedImageResult =
-  | {
-      saved: true;
-      id: string | null;
-    }
-  | {
-      saved: false;
-      reason: "supabase_not_configured" | "insert_failed";
-      error?: string;
-    };
-
-function shouldGenerateImage(message: string) {
-  const text = message.toLowerCase().trim();
-
-  const strongTriggers = [
-    "crie uma imagem",
-    "gere uma imagem",
-    "gerar imagem",
-    "imagem de",
-    "foto de",
-    "faça uma imagem",
-    "crie um desenho",
-    "gere arte",
-    "render de",
-    "ilustração de",
-    "ilustracao de",
-  ];
-
-  const softTriggers = [
-    "robô",
-    "robo",
-    "new york",
-    "nova york",
-    "times square",
-    "cidade",
-    "rua",
-    "ruas",
-    "futurista",
-    "neon",
-    "banner",
-    "post",
-    "anúncio",
-    "anuncio",
-    "story",
-    "instagram",
-    "criativo",
-    "logo",
-    "capa",
-    "thumbnail",
-  ];
-
-  if (strongTriggers.some((trigger) => text.includes(trigger))) {
-    return true;
-  }
-
-  const softCount = softTriggers.filter((trigger) =>
-    text.includes(trigger)
-  ).length;
-
-  if (softCount >= 2) {
-    return true;
-  }
-
-  return false;
-}
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+);
 
 function buildPrompt(message: string) {
-  return [
-    "Crie uma imagem de alta qualidade, visual profissional e impacto comercial.",
-    "Estilo premium, bem iluminado, composição forte, estética moderna.",
-    "Responder ao pedido do usuário com riqueza visual.",
-    "Não colocar texto escrito na imagem, a menos que o usuário peça explicitamente.",
-    `Pedido do usuário: ${message}`,
-  ].join(" ");
+  return `
+Imagem ultra realista, cinematográfica, alta qualidade.
+
+${message}
+
+Detalhes:
+- iluminação profissional
+- composição cinematográfica
+- textura realista
+- 4k, ultra detalhado
+`;
 }
 
-async function saveGeneratedImage(params: {
-  prompt: string;
-  reply: string;
-  imageUrl: string;
-  email?: string | null;
-}): Promise<SaveGeneratedImageResult> {
-  if (!supabase) {
-    console.warn(
-      "Supabase não configurado para salvar imagens. Verifique NEXT_PUBLIC_SUPABASE_URL e SUPABASE_SERVICE_ROLE_KEY."
-    );
-
-    return {
-      saved: false,
-      reason: "supabase_not_configured",
-    };
-  }
-
-  const payload = {
-    prompt: params.prompt,
-    response_text: params.reply,
-    image_url: params.imageUrl,
-    image_page_url: params.imageUrl,
-    user_email: params.email || null,
-    source: "api/chat",
-    created_at: new Date().toISOString(),
-  };
-
-  const { data, error } = await supabase
-    .from("generated_images")
-    .insert(payload)
-    .select("id")
-    .single();
-
-  if (error) {
-    console.error("Erro ao salvar imagem no Supabase:", error);
-
-    return {
-      saved: false,
-      reason: "insert_failed",
-      error: error.message,
-    };
-  }
-
-  return {
-    saved: true,
-    id: data?.id ?? null,
-  };
-}
-
-async function generateImageWithTimeout(prompt: string) {
-  const imagePromise = openai.images.generate({
+async function generateImage(prompt: string) {
+  return openai.images.generate({
     model: "gpt-image-1",
     prompt,
     size: "512x512",
   });
-
-  const timeoutPromise = new Promise<never>((_, reject) => {
-    setTimeout(() => {
-      reject(new Error("timeout_imagem"));
-    }, 15000);
-  });
-
-  return Promise.race([imagePromise, timeoutPromise]);
 }
 
 export async function POST(req: NextRequest) {
   try {
-    if (!process.env.OPENAI_API_KEY) {
-      return NextResponse.json(
-        { error: "OPENAI_API_KEY não configurada." },
-        { status: 500 }
-      );
-    }
-
     const body = await req.json();
-    const message = String(body?.message || "").trim();
-    const email = String(body?.email || "").trim() || null;
+    const message = body.message;
+    const email = body.email || null;
 
     if (!message) {
-      return NextResponse.json(
-        { error: "Mensagem não enviada." },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Mensagem vazia" }, { status: 400 });
     }
 
-    const wantsImage = shouldGenerateImage(message);
+    // 🔥 FORÇADO: sempre gera imagem
+    const imageResponse = await generateImage(buildPrompt(message));
 
-    const systemContent = wantsImage
-      ? "Você é a Aurora IA, especialista em criação visual, campanhas e marketing. Quando o pedido do usuário indicar criação visual ou cena para imagem, responda de forma curta e objetiva, adequada para acompanhar a geração da imagem."
-      : "Você é a Aurora IA, especialista em marketing, campanhas, vendas, copy e criação visual. Sempre responda em português do Brasil de forma prática, comercial e útil.";
+    const imageUrl = imageResponse.data?.[0]?.url || null;
 
-    const completion = await openai.chat.completions.create({
-      model: "gpt-5-mini",
-      messages: [
-        {
-          role: "system",
-          content: systemContent,
-        },
-        {
-          role: "user",
-          content: message,
-        },
-      ],
+    if (!imageUrl) {
+      return NextResponse.json({
+        reply: "Não consegui gerar a imagem.",
+        imageUrl: null,
+      });
+    }
+
+    // salvar no banco
+    await supabase.from("generated_images").insert({
+      prompt: message,
+      image_url: imageUrl,
+      image_page_url: imageUrl,
+      user_email: email,
+      source: "chat",
     });
 
-    const reply =
-      completion.choices[0]?.message?.content?.trim() ||
-      (wantsImage
-        ? "Imagem preparada com base no seu pedido."
-        : "Não consegui responder agora.");
-
-    let imageUrl: string | null = null;
-    let imageSaved = false;
-    let imageSavedId: string | null = null;
-    let imageSaveError: string | null = null;
-
-    if (wantsImage) {
-      try {
-        const imageResponse = await generateImageWithTimeout(
-          buildPrompt(message)
-        );
-
-        imageUrl = imageResponse.data?.[0]?.url || null;
-        console.log("IMAGE URL:", imageUrl);
-
-        if (imageUrl) {
-          const saveResult = await saveGeneratedImage({
-            prompt: message,
-            reply,
-            imageUrl,
-            email,
-          });
-
-          imageSaved = saveResult.saved;
-
-          if (saveResult.saved) {
-            imageSavedId = saveResult.id ?? null;
-          } else if (saveResult.error) {
-            imageSaveError = saveResult.error;
-          } else {
-            imageSaveError = saveResult.reason;
-          }
-        } else {
-          imageSaveError = "imagem_nao_retorno_url";
-        }
-      } catch (error) {
-        console.error("Erro na geração da imagem:", error);
-
-        imageUrl = null;
-        imageSaved = false;
-        imageSavedId = null;
-        imageSaveError =
-          error instanceof Error ? error.message : "erro_geracao_imagem";
-      }
-    }
-
-    return NextResponse.json(
-      {
-        reply,
-        imageUrl,
-        imagePageUrl: imageUrl,
-        imageSaved,
-        imageSavedId,
-        imageSaveError,
-      },
-      {
-        status: 200,
-        headers: {
-          "Cache-Control": "no-store, max-age=0",
-        },
-      }
-    );
+    return NextResponse.json({
+      reply: "Imagem gerada com sucesso.",
+      imageUrl,
+      imagePageUrl: imageUrl,
+    });
   } catch (error) {
-    console.error("ERRO /api/chat:", error);
+    console.error(error);
 
-    return NextResponse.json(
-      {
-        error:
-          error instanceof Error ? error.message : "Erro interno no chat.",
-      },
-      {
-        status: 500,
-        headers: {
-          "Cache-Control": "no-store, max-age=0",
-        },
-      }
-    );
+    return NextResponse.json({
+      error: "Erro ao gerar imagem",
+    });
   }
 }
