@@ -73,10 +73,6 @@ function isImagePrompt(text: string) {
     "thumbnail",
     "capa",
     "logo",
-    "robô",
-    "robo",
-    "new york",
-    "nova york",
   ];
 
   return terms.some((term) => normalized.includes(term));
@@ -352,7 +348,7 @@ export default function ChatClient() {
         <div className="aurora-chat-app__heroBadge">Aurora IA</div>
         <h1 className="aurora-chat-app__title">Chat da Aurora</h1>
         <p className="aurora-chat-app__subtitle">
-          Converse normalmente ou peça campanhas e ideias.
+          Converse normalmente ou peça campanhas, ideias e imagens.
         </p>
       </section>
 
@@ -399,6 +395,33 @@ export default function ChatClient() {
 
           <p className="aurora-chat-app__helperText">
             Esse e-mail ajuda a controlar plano, limites e recursos liberados.
+          </p>
+        </div>
+
+        <div
+          style={{
+            marginTop: 16,
+            padding: "14px 16px",
+            borderRadius: 14,
+            border: "1px solid rgba(255,255,255,0.12)",
+            background:
+              "linear-gradient(135deg, rgba(255,193,7,0.14), rgba(255,255,255,0.05))",
+          }}
+        >
+          <strong style={{ display: "block", marginBottom: 6 }}>
+            Avisos importantes
+          </strong>
+
+          <p style={{ margin: 0, lineHeight: 1.6 }}>
+            Estamos em atualizações constantes para melhorar a plataforma. Em
+            alguns momentos, isso pode gerar instabilidade temporária.
+          </p>
+
+          <p style={{ margin: "8px 0 0", lineHeight: 1.6 }}>
+            A Aurora IA pode cometer erros, gerar respostas imprecisas ou
+            conteúdo incompleto. Sempre confira informações importantes antes de
+            usar comercialmente, financeiramente, juridicamente ou em decisões
+            sensíveis.
           </p>
         </div>
 
