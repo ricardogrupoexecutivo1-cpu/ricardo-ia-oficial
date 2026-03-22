@@ -90,7 +90,7 @@ async function generateImageWithTimeout(prompt: string) {
   const imagePromise = openai.images.generate({
     model: "gpt-image-1",
     prompt,
-    size: "512x512",
+    size: "1024x1024",
   });
 
   const timeoutPromise = new Promise<never>((_, reject) => {
