@@ -23,6 +23,17 @@ const supabase =
       })
     : null;
 
+type SaveGeneratedImageResult =
+  | {
+      saved: true;
+      id: string | null;
+    }
+  | {
+      saved: false;
+      reason: "supabase_not_configured" | "insert_failed";
+      error?: string;
+    };
+
 function buildPrompt(message: string) {
   return [
     "Crie uma imagem ultra realista, cinematográfica e de alta qualidade.",
@@ -37,11 +48,11 @@ async function saveGeneratedImage(params: {
   reply: string;
   imageUrl: string;
   email?: string | null;
-}) {
+}): Promise<SaveGeneratedImageResult> {
   if (!supabase) {
     return {
       saved: false,
-      reason: "supabase_not_configured" as const,
+      reason: "supabase_not_configured",
     };
   }
 
@@ -64,7 +75,7 @@ async function saveGeneratedImage(params: {
 
     return {
       saved: false,
-      reason: "insert_failed" as const,
+      reason: "insert_failed",
       error: error.message,
     };
   }
@@ -187,16 +198,15 @@ export async function POST(req: NextRequest) {
 
           imageSaved = saveResult.saved;
 
-          if ("id" in saveResult) {
+          if (saveResult.saved) {
             imageSavedId = saveResult.id ?? null;
-          }
-
-          if ("error" in saveResult && saveResult.error) {
+          } else if (saveResult.error) {
             imageSaveError = saveResult.error;
             reply = `Imagem gerada, mas não consegui salvar no banco: ${saveResult.error}`;
-          } else if (!saveResult.saved) {
-            imageSaveError = saveResult.reason;
-            reply = `Imagem gerada, mas não consegui salvar no banco: ${saveResult.reason}`;
+          } else {
+            const reason = saveResult.reason || "insert_failed";
+            imageSaveError = reason;
+            reply = `Imagem gerada, mas não consegui salvar no banco: ${reason}`;
           }
         }
       } else {
@@ -213,7 +223,6 @@ export async function POST(req: NextRequest) {
       imageSaved = false;
       imageSavedId = null;
       imageSaveError = readableError;
-
       reply = `Recebi sua mensagem, mas não consegui gerar a imagem agora. Motivo: ${readableError}`;
     }
 
