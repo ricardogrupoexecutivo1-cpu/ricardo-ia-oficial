@@ -39,7 +39,6 @@ async function saveGeneratedImage(params: {
   email?: string | null;
 }) {
   if (!supabase) {
-    console.warn("Supabase não configurado para salvar imagens.");
     return {
       saved: false,
       reason: "supabase_not_configured" as const,
@@ -62,6 +61,7 @@ async function saveGeneratedImage(params: {
 
   if (error) {
     console.error("Erro ao salvar imagem no Supabase:", error);
+
     return {
       saved: false,
       reason: "insert_failed" as const,
@@ -91,10 +91,14 @@ async function generateImageWithTimeout(prompt: string) {
   return Promise.race([imagePromise, timeoutPromise]);
 }
 
-function resolveImageSrc(imageResponse: Awaited<ReturnType<typeof generateImageWithTimeout>>) {
+function resolveImageSrc(
+  imageResponse: Awaited<ReturnType<typeof generateImageWithTimeout>>
+) {
   const item = imageResponse?.data?.[0];
 
-  if (!item) return null;
+  if (!item) {
+    return null;
+  }
 
   if ("url" in item && item.url) {
     return item.url;
@@ -107,6 +111,18 @@ function resolveImageSrc(imageResponse: Awaited<ReturnType<typeof generateImageW
   return null;
 }
 
+function getReadableError(error: unknown) {
+  if (error instanceof Error) {
+    return error.message;
+  }
+
+  if (typeof error === "string") {
+    return error;
+  }
+
+  return "erro_desconhecido";
+}
+
 export async function POST(req: NextRequest) {
   try {
     if (!process.env.OPENAI_API_KEY) {
@@ -116,6 +132,9 @@ export async function POST(req: NextRequest) {
           error: "OPENAI_API_KEY não configurada.",
           imageUrl: null,
           imagePageUrl: null,
+          imageSaved: false,
+          imageSavedId: null,
+          imageSaveError: "OPENAI_API_KEY não configurada.",
         },
         { status: 500 }
       );
@@ -132,6 +151,9 @@ export async function POST(req: NextRequest) {
           error: "Mensagem não enviada.",
           imageUrl: null,
           imagePageUrl: null,
+          imageSaved: false,
+          imageSavedId: null,
+          imageSaveError: "Mensagem não enviada.",
         },
         { status: 400 }
       );
@@ -150,40 +172,49 @@ export async function POST(req: NextRequest) {
       if (imageUrl) {
         reply = "Imagem gerada com sucesso.";
 
-        const saveResult = await saveGeneratedImage({
-          prompt: message,
-          reply,
-          imageUrl,
-          email,
-        });
+        if (imageUrl.startsWith("data:image/")) {
+          imageSaved = false;
+          imageSavedId = null;
+          imageSaveError = "imagem_em_base64_nao_salva_no_banco";
+          reply = "Imagem gerada com sucesso. Exibindo no chat.";
+        } else {
+          const saveResult = await saveGeneratedImage({
+            prompt: message,
+            reply,
+            imageUrl,
+            email,
+          });
 
-        imageSaved = saveResult.saved;
+          imageSaved = saveResult.saved;
 
-        if ("id" in saveResult) {
-          imageSavedId = saveResult.id ?? null;
-        }
+          if ("id" in saveResult) {
+            imageSavedId = saveResult.id ?? null;
+          }
 
-        if ("error" in saveResult && saveResult.error) {
-          imageSaveError = saveResult.error;
-          reply = "Imagem gerada, mas não consegui salvar no banco.";
+          if ("error" in saveResult && saveResult.error) {
+            imageSaveError = saveResult.error;
+            reply = `Imagem gerada, mas não consegui salvar no banco: ${saveResult.error}`;
+          } else if (!saveResult.saved) {
+            imageSaveError = saveResult.reason;
+            reply = `Imagem gerada, mas não consegui salvar no banco: ${saveResult.reason}`;
+          }
         }
       } else {
-        reply = "Recebi sua mensagem, mas a imagem não retornou corretamente.";
         imageSaveError = "imagem_sem_url_ou_b64";
+        reply =
+          "Recebi sua mensagem, mas a OpenAI não retornou URL nem base64 da imagem.";
       }
     } catch (error) {
-      console.error("Erro ao gerar imagem:", error);
+      const readableError = getReadableError(error);
 
-      reply =
-        error instanceof Error && error.message === "timeout_imagem"
-          ? "Recebi sua mensagem, mas a geração da imagem demorou além do limite. Tente novamente com um pedido mais curto."
-          : "Recebi sua mensagem, mas não consegui gerar a imagem agora.";
+      console.error("Erro ao gerar imagem:", error);
 
       imageUrl = null;
       imageSaved = false;
       imageSavedId = null;
-      imageSaveError =
-        error instanceof Error ? error.message : "erro_geracao_imagem";
+      imageSaveError = readableError;
+
+      reply = `Recebi sua mensagem, mas não consegui gerar a imagem agora. Motivo: ${readableError}`;
     }
 
     return NextResponse.json(
@@ -203,14 +234,19 @@ export async function POST(req: NextRequest) {
       }
     );
   } catch (error) {
+    const readableError = getReadableError(error);
+
     console.error("ERRO /api/chat:", error);
 
     return NextResponse.json(
       {
-        reply: "Recebi sua mensagem, mas ocorreu um erro interno no chat.",
-        error: error instanceof Error ? error.message : "Erro interno no chat.",
+        reply: `Recebi sua mensagem, mas ocorreu um erro interno no chat. Motivo: ${readableError}`,
+        error: readableError,
         imageUrl: null,
         imagePageUrl: null,
+        imageSaved: false,
+        imageSavedId: null,
+        imageSaveError: readableError,
       },
       {
         status: 500,
