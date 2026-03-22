@@ -35,22 +35,58 @@ type SaveGeneratedImageResult =
     };
 
 function shouldGenerateImage(message: string) {
-  const text = message.toLowerCase();
+  const text = message.toLowerCase().trim();
 
-  return (
-    text.includes("imagem") ||
-    text.includes("foto") ||
-    text.includes("arte") ||
-    text.includes("banner") ||
-    text.includes("story") ||
-    text.includes("post") ||
-    text.includes("anúncio") ||
-    text.includes("anuncio") ||
-    text.includes("criativo") ||
-    text.includes("desenhe") ||
-    text.includes("gere ") ||
-    text.includes("crie ")
-  );
+  const strongTriggers = [
+    "crie uma imagem",
+    "gere uma imagem",
+    "gerar imagem",
+    "imagem de",
+    "foto de",
+    "faça uma imagem",
+    "crie um desenho",
+    "gere arte",
+    "render de",
+    "ilustração de",
+    "ilustracao de",
+  ];
+
+  const softTriggers = [
+    "robô",
+    "robo",
+    "new york",
+    "nova york",
+    "times square",
+    "cidade",
+    "rua",
+    "ruas",
+    "futurista",
+    "neon",
+    "banner",
+    "post",
+    "anúncio",
+    "anuncio",
+    "story",
+    "instagram",
+    "criativo",
+    "logo",
+    "capa",
+    "thumbnail",
+  ];
+
+  if (strongTriggers.some((trigger) => text.includes(trigger))) {
+    return true;
+  }
+
+  const softCount = softTriggers.filter((trigger) =>
+    text.includes(trigger)
+  ).length;
+
+  if (softCount >= 2) {
+    return true;
+  }
+
+  return false;
 }
 
 function buildPrompt(message: string) {
@@ -148,13 +184,18 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    const wantsImage = shouldGenerateImage(message);
+
+    const systemContent = wantsImage
+      ? "Você é a Aurora IA, especialista em criação visual, campanhas e marketing. Quando o pedido do usuário indicar criação visual ou cena para imagem, responda de forma curta e objetiva, adequada para acompanhar a geração da imagem."
+      : "Você é a Aurora IA, especialista em marketing, campanhas, vendas, copy e criação visual. Sempre responda em português do Brasil de forma prática, comercial e útil.";
+
     const completion = await openai.chat.completions.create({
       model: "gpt-5-mini",
       messages: [
         {
           role: "system",
-          content:
-            "Você é a Aurora IA, especialista em marketing, campanhas, vendas, copy e criação visual. Sempre responda em português do Brasil de forma prática, comercial e útil.",
+          content: systemContent,
         },
         {
           role: "user",
@@ -165,14 +206,16 @@ export async function POST(req: NextRequest) {
 
     const reply =
       completion.choices[0]?.message?.content?.trim() ||
-      "Não consegui responder agora.";
+      (wantsImage
+        ? "Imagem preparada com base no seu pedido."
+        : "Não consegui responder agora.");
 
     let imageUrl: string | null = null;
     let imageSaved = false;
     let imageSavedId: string | null = null;
     let imageSaveError: string | null = null;
 
-    if (shouldGenerateImage(message)) {
+    if (wantsImage) {
       try {
         const imageResponse = await generateImageWithTimeout(
           buildPrompt(message)
