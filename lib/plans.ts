@@ -1,4 +1,4 @@
-export type PlanKey = "FREE" | "PRO" | "SCALE";
+export type PlanKey = "FREE" | "PRO" | "TOTAL";
 
 export type Plan = {
   key: PlanKey;
@@ -13,64 +13,65 @@ export type Plan = {
   ctaLabel: string;
 };
 
-export const PLAN_ORDER: PlanKey[] = ["FREE", "PRO", "SCALE"];
+export const PLAN_ORDER: PlanKey[] = ["FREE", "PRO", "TOTAL"];
 
 export const PLANS: Record<PlanKey, Plan> = {
   FREE: {
     key: "FREE",
     name: "FREE",
-    badge: "Grátis",
+    badge: "Ideal para começar",
     highlight: false,
     priceLabel: "Grátis",
     priceValue: 0,
     description:
-      "Para começar a conhecer a Aurora IA e testar os primeiros recursos.",
+      "Plano de entrada para conhecer a Aurora IA e testar os primeiros recursos da plataforma.",
     features: [
-      "Uso básico do chat",
-      "Geração inicial de imagens",
-      "Entrada rápida na plataforma",
+      "3 imagens por dia",
+      "Chat básico",
+      "Testes iniciais",
     ],
     checkoutHref: "/chat",
-    ctaLabel: "Começar grátis",
+    ctaLabel: "Plano atual",
   },
 
   PRO: {
     key: "PRO",
     name: "PRO",
-    badge: "Profissional",
+    badge: "Para quem quer acelerar",
     highlight: false,
     priceLabel: "R$ 19,90/mês",
     priceValue: 19.9,
     description:
-      "Plano ideal para quem quer usar a Aurora IA com mais força e frequência.",
+      "Plano para quem quer usar a Aurora IA com mais força, mais constância e melhor desempenho.",
     features: [
-      "Mais geração de imagens",
-      "Uso mais liberado do chat",
-      "Melhor desempenho geral",
+      "Mais imagens por dia",
+      "Prioridade no sistema",
+      "Recursos avançados",
     ],
     checkoutHref:
       process.env.NEXT_PUBLIC_PRO_PLAN_URL || "/checkout?plan=pro",
-    ctaLabel: "Assinar PRO",
+    ctaLabel: "🚀 Assinar PRO",
   },
 
-  SCALE: {
-    key: "SCALE",
-    name: "SCALE",
-    badge: "Crescimento",
+  TOTAL: {
+    key: "TOTAL",
+    name: "TOTAL",
+    badge: "Liberação completa + Veículos",
     highlight: true,
-    priceLabel: "R$ 29,90/mês",
-    priceValue: 29.9,
+    priceLabel: "R$ 49,90/mês",
+    priceValue: 49.9,
     description:
-      "Plano completo para quem quer usar mais recursos, vender mais e escalar com a Aurora IA.",
+      "Plano premium para quem quer uso total da Aurora IA, operação comercial mais forte e apoio para compra, venda e aluguel de veículos.",
     features: [
-      "Tudo do plano PRO",
-      "Prioridade de uso",
-      "Mais poder de criação",
-      "Estrutura ideal para operação comercial",
-      "Melhor plano para fechar clientes",
+      "Imagens ilimitadas",
+      "Acesso total",
+      "Futuras funções liberadas",
+      "Estrutura para compra e venda de veículos",
+      "Apoio para aluguel e operação de locadoras",
+      "Plano ideal para uso comercial mais pesado",
     ],
     checkoutHref:
-      process.env.NEXT_PUBLIC_SCALE_PLAN_URL || "/checkout?plan=scale",
-    ctaLabel: "Assinar SCALE",
+      process.env.NEXT_PUBLIC_TOTAL_PLAN_URL || "/checkout?plan=total",
+    ctaLabel: "🚗 Assinar TOTAL + Veículos",
   },
 };
