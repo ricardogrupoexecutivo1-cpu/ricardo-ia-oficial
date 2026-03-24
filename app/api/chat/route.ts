@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import OpenAI from "openai";
-import { createClient } from "@supabase/supabase-js";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -9,30 +8,6 @@ export const maxDuration = 60;
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-const supabase =
-  supabaseUrl && supabaseServiceRoleKey
-    ? createClient(supabaseUrl, supabaseServiceRoleKey, {
-        auth: {
-          persistSession: false,
-          autoRefreshToken: false,
-        },
-      })
-    : null;
-
-type SaveGeneratedImageResult =
-  | {
-      saved: true;
-      id: string | null;
-    }
-  | {
-      saved: false;
-      reason: "supabase_not_configured" | "insert_failed";
-      error?: string;
-    };
 
 function shouldGenerateImage(message: string) {
   const text = message.toLowerCase().trim();
@@ -83,98 +58,7 @@ function shouldGenerateImage(message: string) {
     "story",
   ];
 
-  const hasImageWord = genericImageWords.some((term) => text.includes(term));
-
-  return hasImageWord;
-}
-
-function buildImagePrompt(message: string) {
-  return [
-    "Crie uma imagem realista, cinematográfica e bem composta.",
-    "Visual premium, alto detalhe, iluminação forte e textura realista.",
-    "Sem texto escrito na imagem, a menos que o usuário peça explicitamente.",
-    `Cena solicitada: ${message}`,
-  ].join(" ");
-}
-
-async function saveGeneratedImage(params: {
-  prompt: string;
-  reply: string;
-  imageUrl: string;
-  email?: string | null;
-}): Promise<SaveGeneratedImageResult> {
-  if (!supabase) {
-    return {
-      saved: false,
-      reason: "supabase_not_configured",
-    };
-  }
-
-  const { data, error } = await supabase
-    .from("generated_images")
-    .insert({
-      prompt: params.prompt,
-      response_text: params.reply,
-      image_url: params.imageUrl,
-      image_page_url: params.imageUrl,
-      user_email: params.email || null,
-      source: "api/chat",
-      created_at: new Date().toISOString(),
-    })
-    .select("id")
-    .single();
-
-  if (error) {
-    console.error("Erro ao salvar imagem no Supabase:", error);
-
-    return {
-      saved: false,
-      reason: "insert_failed",
-      error: error.message,
-    };
-  }
-
-  return {
-    saved: true,
-    id: data?.id ?? null,
-  };
-}
-
-async function generateImageWithTimeout(prompt: string) {
-  const imagePromise = openai.images.generate({
-    model: "gpt-image-1",
-    prompt,
-    size: "1024x1024",
-    quality: "low",
-  });
-
-  const timeoutPromise = new Promise<never>((_, reject) => {
-    setTimeout(() => {
-      reject(new Error("timeout_imagem"));
-    }, 55000);
-  });
-
-  return Promise.race([imagePromise, timeoutPromise]);
-}
-
-function resolveImageSrc(
-  imageResponse: Awaited<ReturnType<typeof generateImageWithTimeout>>
-) {
-  const item = imageResponse?.data?.[0];
-
-  if (!item) {
-    return null;
-  }
-
-  if ("url" in item && item.url) {
-    return item.url;
-  }
-
-  if ("b64_json" in item && item.b64_json) {
-    return `data:image/png;base64,${item.b64_json}`;
-  }
-
-  return null;
+  return genericImageWords.some((term) => text.includes(term));
 }
 
 function getReadableError(error: unknown) {
@@ -187,6 +71,27 @@ function getReadableError(error: unknown) {
   }
 
   return "erro_desconhecido";
+}
+
+function getBaseUrl(req: NextRequest) {
+  const envBase =
+    process.env.NEXT_PUBLIC_SITE_URL?.trim() ||
+    process.env.NEXT_PUBLIC_APP_URL?.trim();
+
+  if (envBase) {
+    return envBase.replace(/\/+$/, "");
+  }
+
+  const host = req.headers.get("host");
+  const proto =
+    req.headers.get("x-forwarded-proto") ||
+    (host?.includes("localhost") ? "http" : "https");
+
+  if (host) {
+    return `${proto}://${host}`;
+  }
+
+  return "http://localhost:3000";
 }
 
 async function generateTextReply(message: string) {
@@ -209,6 +114,18 @@ async function generateTextReply(message: string) {
 
   return reply || "Recebi sua mensagem e estou pronta para ajudar.";
 }
+
+type ImageApiResponse = {
+  reply?: string | null;
+  message?: string | null;
+  imageUrl?: string | null;
+  imagePageUrl?: string | null;
+  publicPageUrl?: string | null;
+  shareUrl?: string | null;
+  savedToDatabase?: boolean | null;
+  databaseError?: string | null;
+  error?: string | null;
+};
 
 export async function POST(req: NextRequest) {
   try {
@@ -269,81 +186,76 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    let reply = "Estou preparando sua imagem agora.";
-    let imageUrl: string | null = null;
-    let imageSaved = false;
-    let imageSavedId: string | null = null;
-    let imageSaveError: string | null = null;
+    const baseUrl = getBaseUrl(req);
 
     try {
-      const imageResponse = await generateImageWithTimeout(
-        buildImagePrompt(message)
-      );
+      const imageResponse = await fetch(`${baseUrl}/api/image`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        cache: "no-store",
+        body: JSON.stringify({
+          prompt: message,
+          email,
+        }),
+      });
 
-      imageUrl = resolveImageSrc(imageResponse);
+      const imageData = (await imageResponse.json()) as ImageApiResponse;
 
-      if (imageUrl) {
-        reply = "Imagem gerada com sucesso.";
+      const imageUrl = imageData.imageUrl || null;
+      const imagePageUrl =
+        imageData.imagePageUrl ||
+        imageData.publicPageUrl ||
+        imageData.shareUrl ||
+        imageUrl;
 
-        if (imageUrl.startsWith("data:image/")) {
-          imageSaved = false;
-          imageSavedId = null;
-          imageSaveError = "imagem_em_base64_nao_salva_no_banco";
-          reply = "Imagem gerada com sucesso. Exibindo no chat.";
-        } else {
-          const saveResult = await saveGeneratedImage({
-            prompt: message,
-            reply,
-            imageUrl,
-            email,
-          });
+      const reply =
+        imageData.reply?.trim() ||
+        imageData.message?.trim() ||
+        (imageUrl
+          ? "Imagem gerada com sucesso. Exibindo no chat."
+          : "Recebi seu pedido de imagem, mas não consegui gerar agora.");
 
-          imageSaved = saveResult.saved;
-
-          if (saveResult.saved) {
-            imageSavedId = saveResult.id ?? null;
-          } else if (saveResult.error) {
-            imageSaveError = saveResult.error;
-            reply = `Imagem gerada, mas não consegui salvar no banco: ${saveResult.error}`;
-          } else {
-            const reason = saveResult.reason || "insert_failed";
-            imageSaveError = reason;
-            reply = `Imagem gerada, mas não consegui salvar no banco: ${reason}`;
-          }
+      return NextResponse.json(
+        {
+          reply,
+          imageUrl,
+          imagePageUrl,
+          imageSaved: Boolean(imageData.savedToDatabase),
+          imageSavedId: null,
+          imageSaveError: imageData.databaseError || imageData.error || null,
+        },
+        {
+          status: imageResponse.ok ? 200 : 500,
+          headers: {
+            "Cache-Control": "no-store, max-age=0",
+          },
         }
-      } else {
-        imageSaveError = "imagem_sem_url_ou_b64";
-        reply =
-          "Recebi seu pedido de imagem, mas a OpenAI não retornou URL nem base64 da imagem.";
-      }
+      );
     } catch (error) {
       const readableError = getReadableError(error);
 
-      console.error("Erro ao gerar imagem:", error);
+      console.error("Erro ao chamar /api/image pelo chat:", error);
 
-      imageUrl = null;
-      imageSaved = false;
-      imageSavedId = null;
-      imageSaveError = readableError;
-      reply = `Recebi seu pedido de imagem, mas não consegui gerar agora. Motivo: ${readableError}`;
-    }
-
-    return NextResponse.json(
-      {
-        reply,
-        imageUrl,
-        imagePageUrl: imageUrl,
-        imageSaved,
-        imageSavedId,
-        imageSaveError,
-      },
-      {
-        status: 200,
-        headers: {
-          "Cache-Control": "no-store, max-age=0",
+      return NextResponse.json(
+        {
+          reply: `Recebi seu pedido de imagem, mas não consegui gerar agora. Motivo: ${readableError}`,
+          error: readableError,
+          imageUrl: null,
+          imagePageUrl: null,
+          imageSaved: false,
+          imageSavedId: null,
+          imageSaveError: readableError,
         },
-      }
-    );
+        {
+          status: 500,
+          headers: {
+            "Cache-Control": "no-store, max-age=0",
+          },
+        }
+      );
+    }
   } catch (error) {
     const readableError = getReadableError(error);
 
