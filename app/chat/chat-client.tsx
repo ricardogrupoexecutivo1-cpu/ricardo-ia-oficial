@@ -104,6 +104,30 @@ function resolveAssistantText(data: ChatResponse, imageUrl: string | null) {
   return "Recebi sua mensagem, mas a resposta veio vazia.";
 }
 
+function buildWhatsappShareUrl(url: string) {
+  return `https://wa.me/?text=${encodeURIComponent(url)}`;
+}
+
+function buildFacebookShareUrl(url: string) {
+  return `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(
+    url
+  )}`;
+}
+
+function buildXShareUrl(url: string) {
+  return `https://twitter.com/intent/tweet?url=${encodeURIComponent(url)}`;
+}
+
+function buildLinkedinShareUrl(url: string) {
+  return `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(
+    url
+  )}`;
+}
+
+function buildTelegramShareUrl(url: string) {
+  return `https://t.me/share/url?url=${encodeURIComponent(url)}`;
+}
+
 export default function ChatClient() {
   const [messages, setMessages] = useState<Message[]>([INITIAL_MESSAGE]);
   const [input, setInput] = useState("");
@@ -220,6 +244,18 @@ export default function ChatClient() {
     } catch (error) {
       console.error("Erro ao copiar link de convite:", error);
       window.alert("Não foi possível copiar o link de convite.");
+    }
+  }
+
+  async function handleCopyImageLink(url: string | null | undefined) {
+    if (!url) return;
+
+    try {
+      await navigator.clipboard.writeText(url);
+      window.alert("Link da imagem copiado com sucesso.");
+    } catch (error) {
+      console.error("Erro ao copiar link da imagem:", error);
+      window.alert("Não foi possível copiar o link da imagem.");
     }
   }
 
@@ -515,6 +551,7 @@ export default function ChatClient() {
         <div className="aurora-chat-app__messagesList">
           {messages.map((message, index) => {
             const isAssistant = message.role === "assistant";
+            const shareUrl = message.imagePageUrl || message.imageUrl || null;
 
             return (
               <article
@@ -550,6 +587,63 @@ export default function ChatClient() {
                           >
                             Ver imagem
                           </a>
+                        ) : null}
+
+                        {shareUrl ? (
+                          <>
+                            <button
+                              type="button"
+                              className="aurora-chat-app__imageButton"
+                              onClick={() => handleCopyImageLink(shareUrl)}
+                            >
+                              Copiar link
+                            </button>
+
+                            <a
+                              href={buildWhatsappShareUrl(shareUrl)}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="aurora-chat-app__imageButton"
+                            >
+                              WhatsApp
+                            </a>
+
+                            <a
+                              href={buildFacebookShareUrl(shareUrl)}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="aurora-chat-app__imageButton"
+                            >
+                              Facebook
+                            </a>
+
+                            <a
+                              href={buildXShareUrl(shareUrl)}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="aurora-chat-app__imageButton"
+                            >
+                              X
+                            </a>
+
+                            <a
+                              href={buildLinkedinShareUrl(shareUrl)}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="aurora-chat-app__imageButton"
+                            >
+                              LinkedIn
+                            </a>
+
+                            <a
+                              href={buildTelegramShareUrl(shareUrl)}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="aurora-chat-app__imageButton"
+                            >
+                              Telegram
+                            </a>
+                          </>
                         ) : null}
 
                         <button
