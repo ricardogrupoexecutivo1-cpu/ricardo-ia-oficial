@@ -6,7 +6,7 @@ import { SpeedInsights } from "@vercel/speed-insights/next";
 export const metadata: Metadata = {
   title: "Aurora IA",
   description:
-    "Aurora IA: converse, crie imagens, campanhas e ideias de negócio com uma experiência premium.",
+    "Aurora IA para conversar, criar imagens, campanhas, ideias e acelerar sua operação digital.",
 };
 
 export default function RootLayout({
