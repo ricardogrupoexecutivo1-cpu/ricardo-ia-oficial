@@ -7,8 +7,8 @@ type DuplicateEditorBody = {
 };
 
 function getSupabaseAdmin() {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim();
 
   if (!supabaseUrl || !serviceRoleKey) {
     throw new Error(
@@ -24,11 +24,35 @@ function getSupabaseAdmin() {
   });
 }
 
+function normalizeEmail(value: string) {
+  return value.trim().toLowerCase();
+}
+
+function normalizeId(value: string) {
+  return value.trim();
+}
+
+function isValidEmail(email: string) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+}
+
+function buildCopyTitle(title: string) {
+  const cleaned = title.replace(/\s+/g, " ").trim() || "Arte Aurora";
+  const copyTitle = `${cleaned} (cópia)`;
+
+  if (copyTitle.length <= 140) {
+    return copyTitle;
+  }
+
+  return `${cleaned.slice(0, 130).trim()} (cópia)`;
+}
+
 export async function POST(req: NextRequest) {
   try {
     const body = (await req.json()) as DuplicateEditorBody;
-    const id = (body.id || "").trim();
-    const email = (body.email || "").trim().toLowerCase();
+
+    const id = normalizeId(body.id || "");
+    const email = normalizeEmail(body.email || "");
 
     if (!id) {
       return NextResponse.json(
@@ -44,11 +68,18 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    if (!isValidEmail(email)) {
+      return NextResponse.json(
+        { error: "E-mail inválido." },
+        { status: 400 }
+      );
+    }
+
     const supabase = getSupabaseAdmin();
 
     const { data: original, error: fetchError } = await supabase
       .from("editor_projects")
-      .select("id, user_email, title, design_data")
+      .select("id, user_email, title, design_data, preview_image_url")
       .eq("id", id)
       .eq("user_email", email)
       .single();
@@ -61,18 +92,21 @@ export async function POST(req: NextRequest) {
     }
 
     const originalTitle =
-      typeof original.title === "string" && original.title.trim()
-        ? original.title.trim()
-        : "Arte Aurora";
+      typeof original.title === "string" ? original.title : "Arte Aurora";
+
+    const duplicatedTitle = buildCopyTitle(originalTitle);
 
     const { data: created, error: createError } = await supabase
       .from("editor_projects")
       .insert({
         user_email: email,
-        title: `${originalTitle} (cópia)`,
+        title: duplicatedTitle,
         design_data: original.design_data,
+        preview_image_url: original.preview_image_url || null,
       })
-      .select("id, user_email, title, design_data, created_at, updated_at")
+      .select(
+        "id, user_email, title, design_data, preview_image_url, created_at, updated_at"
+      )
       .single();
 
     if (createError) {
@@ -88,7 +122,9 @@ export async function POST(req: NextRequest) {
     });
   } catch (error) {
     const message =
-      error instanceof Error ? error.message : "Erro interno ao duplicar projeto.";
+      error instanceof Error
+        ? error.message
+        : "Erro interno ao duplicar projeto.";
 
     return NextResponse.json({ error: message }, { status: 500 });
   }
