@@ -17,6 +17,17 @@ type ImageRequestBody = {
   email?: string;
 };
 
+type InsertImageParams = {
+  prompt: string;
+  imageUrl: string;
+  email: string;
+};
+
+type InsertImageResult = {
+  id: string | null;
+  error: string | null;
+};
+
 async function readJsonBody(req: NextRequest) {
   const raw = await req.text();
 
@@ -32,8 +43,8 @@ async function readJsonBody(req: NextRequest) {
 }
 
 function getSupabaseAdmin() {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim();
 
   if (!supabaseUrl || !serviceRoleKey) {
     throw new Error(
@@ -45,7 +56,19 @@ function getSupabaseAdmin() {
 }
 
 function getStorageBucketName() {
-  return process.env.SUPABASE_STORAGE_BUCKET?.trim() || "images";
+  return (
+    process.env.SUPABASE_STORAGE_BUCKET?.trim() ||
+    process.env.NEXT_PUBLIC_SUPABASE_STORAGE_BUCKET?.trim() ||
+    "aurora-images"
+  );
+}
+
+function getSiteUrl() {
+  return (
+    process.env.NEXT_PUBLIC_SITE_URL?.trim() ||
+    process.env.NEXT_PUBLIC_APP_URL?.trim() ||
+    "http://localhost:3000"
+  );
 }
 
 function sanitizeFilePart(value: string) {
@@ -187,6 +210,7 @@ function buildEnhancedPrompt(userPrompt: string) {
 
 async function downloadImageAsBuffer(imageUrl: string) {
   console.log("BAIXANDO IMAGEM DA URL DA OPENAI...");
+
   const response = await fetch(imageUrl);
 
   console.log("DOWNLOAD STATUS:", response.status);
@@ -201,14 +225,38 @@ async function downloadImageAsBuffer(imageUrl: string) {
   return Buffer.from(arrayBuffer);
 }
 
-async function insertImageRecord(params: {
-  prompt: string;
-  imageUrl: string;
-  email: string;
-}) {
+async function insertImageRecord(
+  params: InsertImageParams
+): Promise<InsertImageResult> {
   const supabase = getSupabaseAdmin();
 
   const attempts = [
+    {
+      label: "prompt,image_url,email,is_public",
+      payload: {
+        prompt: params.prompt,
+        image_url: params.imageUrl,
+        email: params.email || null,
+        is_public: true,
+      },
+    },
+    {
+      label: "prompt,image_url,user_email,is_public",
+      payload: {
+        prompt: params.prompt,
+        image_url: params.imageUrl,
+        user_email: params.email || null,
+        is_public: true,
+      },
+    },
+    {
+      label: "prompt,image_url,is_public",
+      payload: {
+        prompt: params.prompt,
+        image_url: params.imageUrl,
+        is_public: true,
+      },
+    },
     {
       label: "prompt,image_url,email",
       payload: {
@@ -304,13 +352,9 @@ export async function POST(req: NextRequest) {
       Boolean(process.env.SUPABASE_SERVICE_ROLE_KEY)
     );
     console.log("SUPABASE_STORAGE_BUCKET:", getStorageBucketName());
-    console.log(
-      "NEXT_PUBLIC_SITE_URL:",
-      process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"
-    );
+    console.log("NEXT_PUBLIC_SITE_URL:", getSiteUrl());
 
-    const siteUrl =
-      process.env.NEXT_PUBLIC_SITE_URL?.trim() || "http://localhost:3000";
+    const siteUrl = getSiteUrl();
 
     console.log("CHAMANDO OPENAI IMAGES...");
     const openAiResponse = await fetch(
@@ -336,6 +380,7 @@ export async function POST(req: NextRequest) {
     console.log("OPENAI RAW TEXT RECEBIDO");
 
     let openAiData: OpenAIImageResponse;
+
     try {
       openAiData = JSON.parse(openAiText) as OpenAIImageResponse;
     } catch {
@@ -459,6 +504,8 @@ export async function POST(req: NextRequest) {
         : "Imagem gerada e salva no storage, mas não entrou na galeria.",
       imageUrl: publicImageUrl,
       imagePageUrl,
+      publicPageUrl: imagePageUrl,
+      shareUrl: imagePageUrl || publicImageUrl,
       savedToDatabase: Boolean(insertResult.id),
       databaseError: insertResult.error,
       originalPrompt: prompt,
