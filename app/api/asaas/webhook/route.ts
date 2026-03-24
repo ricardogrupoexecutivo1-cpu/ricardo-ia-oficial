@@ -1,16 +1,19 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-const webhookToken = process.env.ASAAS_WEBHOOK_TOKEN;
+export const runtime = "nodejs";
+
+const ASAAS_WEBHOOK_TOKEN = process.env.ASAAS_WEBHOOK_TOKEN || "";
+const SUPABASE_URL =
+  process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || "";
+const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
 
 function getSupabaseAdmin() {
-  if (!supabaseUrl || !serviceRoleKey) {
-    throw new Error("Supabase env ausente no servidor.");
+  if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
+    return null;
   }
 
-  return createClient(supabaseUrl, serviceRoleKey, {
+  return createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
     auth: {
       persistSession: false,
       autoRefreshToken: false,
@@ -18,177 +21,103 @@ function getSupabaseAdmin() {
   });
 }
 
-function normalizeEmail(value: unknown) {
-  return String(value || "").trim().toLowerCase();
+function normalizeEmail(value: unknown): string | null {
+  if (typeof value !== "string") return null;
+  const email = value.trim().toLowerCase();
+  return email || null;
 }
 
-function getPlanFromValue(value: number) {
-  if (value >= 29.9) return "premium";
-  if (value >= 9.9) return "pro";
-  return "free";
-}
-
-function extractEmail(payload: any) {
-  const candidates = [
-    payload?.payment?.customerEmail,
-    payload?.payment?.billingCustomer?.email,
-    payload?.payment?.customer?.email,
-    payload?.customer?.email,
-  ];
-
-  for (const item of candidates) {
-    const email = normalizeEmail(item);
-    if (email) return email;
-  }
-
-  return "";
-}
-
-function extractValue(payload: any) {
-  const raw =
-    payload?.payment?.value ??
-    payload?.payment?.netValue ??
-    payload?.value ??
-    0;
-
-  const value = Number(raw);
-  return Number.isFinite(value) ? value : 0;
-}
-
-export async function POST(req: NextRequest) {
+export async function POST(request: Request) {
   try {
-    const receivedToken =
-      req.headers.get("asaas-access-token") ||
-      req.headers.get("Asaas-Access-Token") ||
-      req.headers.get("authorization") ||
+    const incomingToken =
+      request.headers.get("asaas-access-token") ||
+      request.headers.get("Asaas-Access-Token") ||
       "";
 
-    if (!webhookToken) {
-      console.error("ASAAS_WEBHOOK_TOKEN não configurado.");
+    if (!ASAAS_WEBHOOK_TOKEN) {
       return NextResponse.json(
-        { error: "Webhook token não configurado." },
+        { ok: false, error: "ASAAS_WEBHOOK_TOKEN não configurado." },
         { status: 500 }
       );
     }
 
-    const cleanedReceivedToken = String(receivedToken)
-      .replace(/^Bearer\s+/i, "")
-      .trim();
-
-    if (cleanedReceivedToken !== webhookToken.trim()) {
-      console.error("Token de webhook inválido.");
-      return NextResponse.json({ error: "Token inválido." }, { status: 401 });
-    }
-
-    const body = await req.json();
-
-    console.log("Webhook Asaas recebido:", JSON.stringify(body));
-
-    const event = String(body?.event || "").trim().toUpperCase();
-
-    if (event !== "PAYMENT_CONFIRMED" && event !== "PAYMENT_RECEIVED") {
-      return NextResponse.json({ ok: true, ignored: true });
-    }
-
-    const email = extractEmail(body);
-    const value = extractValue(body);
-    const plan = getPlanFromValue(value);
-
-    if (!email) {
-      console.error("Webhook sem email:", body);
+    if (!incomingToken || incomingToken !== ASAAS_WEBHOOK_TOKEN) {
       return NextResponse.json(
-        { error: "Email não encontrado no webhook." },
-        { status: 400 }
+        { ok: false, error: "Token inválido." },
+        { status: 401 }
       );
     }
+
+    const payload = await request.json();
+
+    const event =
+      typeof payload?.event === "string" ? payload.event.trim() : null;
+
+    const paymentId =
+      typeof payload?.payment?.id === "string"
+        ? payload.payment.id.trim()
+        : null;
+
+    const customerEmail =
+      normalizeEmail(payload?.payment?.customerEmail) ||
+      normalizeEmail(payload?.payment?.billingAddress?.email) ||
+      normalizeEmail(payload?.customer?.email);
+
+    const value =
+      typeof payload?.payment?.value === "number"
+        ? payload.payment.value
+        : typeof payload?.payment?.value === "string"
+        ? Number(payload.payment.value)
+        : null;
+
+    const status =
+      typeof payload?.payment?.status === "string"
+        ? payload.payment.status.trim()
+        : null;
 
     const supabase = getSupabaseAdmin();
 
-    const { data: existingProfile, error: profileFetchError } = await supabase
-      .from("profiles")
-      .select("id, email, plan")
-      .eq("email", email)
-      .maybeSingle();
-
-    if (profileFetchError) {
-      console.error("Erro buscando profile:", profileFetchError);
-      return NextResponse.json(
-        { error: "Erro ao buscar profile." },
-        { status: 500 }
-      );
+    if (supabase) {
+      try {
+        await supabase.from("asaas_webhooks").insert({
+          received_at: new Date().toISOString(),
+          event,
+          payment_id: paymentId,
+          customer_email: customerEmail,
+          payment_value: Number.isFinite(value as number) ? value : null,
+          payment_status: status,
+          raw_payload: payload,
+        });
+      } catch (dbError) {
+        console.error("Falha ao registrar webhook no banco:", dbError);
+      }
     }
 
-    if (!existingProfile) {
-      console.error("Profile não encontrado para:", email);
-      return NextResponse.json(
-        { error: "Profile não encontrado para o email." },
-        { status: 404 }
-      );
-    }
-
-    const nowIso = new Date().toISOString();
-    const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
-
-    const { error: updateError } = await supabase
-      .from("profiles")
-      .update({
-        plan,
-        plan_status: "active",
-        last_payment_at: nowIso,
-        plan_expires_at: expiresAt,
-      })
-      .eq("id", existingProfile.id);
-
-    if (updateError) {
-      console.error("Erro atualizando plan no profiles:", updateError);
-      return NextResponse.json(
-        { error: "Erro ao atualizar plano." },
-        { status: 500 }
-      );
-    }
-
-    const { error: subscriptionError } = await supabase
-      .from("aurora_subscriptions")
-      .upsert(
-        {
-          email,
-          plan,
-          status: "active",
-          provider: "asaas",
-          updated_at: nowIso,
-        },
-        {
-          onConflict: "email",
-        }
-      );
-
-    if (subscriptionError) {
-      console.error(
-        "Erro ao atualizar aurora_subscriptions:",
-        subscriptionError
-      );
-      return NextResponse.json(
-        {
-          error: "Erro ao atualizar assinatura.",
-          details: subscriptionError.message,
-        },
-        { status: 500 }
-      );
-    }
+    console.log("ASAAS WEBHOOK RECEBIDO", {
+      event,
+      paymentId,
+      customerEmail,
+      value,
+      status,
+    });
 
     return NextResponse.json({
       ok: true,
-      email,
-      plan,
+      received: true,
       event,
+      paymentId,
+      customerEmail,
     });
   } catch (error) {
     console.error("Erro no webhook Asaas:", error);
 
     return NextResponse.json(
       {
-        error: "Erro interno no webhook.",
-        details: error instanceof Error ? error.message : "Erro desconhecido.",
+        ok: false,
+        error:
+          error instanceof Error
+            ? error.message
+            : "Erro interno no webhook.",
       },
       { status: 500 }
     );
