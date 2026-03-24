@@ -2,8 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
 function getSupabaseAdmin() {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim();
 
   if (!supabaseUrl || !serviceRoleKey) {
     throw new Error(
@@ -19,15 +19,39 @@ function getSupabaseAdmin() {
   });
 }
 
+function normalizeEmail(value: string) {
+  return value.trim().toLowerCase();
+}
+
+function isValidEmail(email: string) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+}
+
+function normalizeLimit(value: string | null) {
+  const parsed = Number(value);
+
+  if (!Number.isFinite(parsed)) {
+    return 30;
+  }
+
+  return Math.min(Math.max(Math.floor(parsed), 1), 100);
+}
+
 export async function GET(req: NextRequest) {
   try {
-    const email = (
-      req.nextUrl.searchParams.get("email") || ""
-    ).trim().toLowerCase();
+    const email = normalizeEmail(req.nextUrl.searchParams.get("email") || "");
+    const limit = normalizeLimit(req.nextUrl.searchParams.get("limit"));
 
     if (!email) {
       return NextResponse.json(
         { error: "E-mail não informado." },
+        { status: 400 }
+      );
+    }
+
+    if (!isValidEmail(email)) {
+      return NextResponse.json(
+        { error: "E-mail inválido." },
         { status: 400 }
       );
     }
@@ -40,8 +64,8 @@ export async function GET(req: NextRequest) {
         "id, user_email, title, design_data, preview_image_url, created_at, updated_at"
       )
       .eq("user_email", email)
-      .order("created_at", { ascending: false })
-      .limit(30);
+      .order("updated_at", { ascending: false })
+      .limit(limit);
 
     if (error) {
       return NextResponse.json(
@@ -52,7 +76,8 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      projects: data || [],
+      count: Array.isArray(data) ? data.length : 0,
+      projects: Array.isArray(data) ? data : [],
     });
   } catch (error) {
     const message =
