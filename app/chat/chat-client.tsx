@@ -85,17 +85,9 @@ function resolveAssistantText(data: ChatResponse, imageUrl: string | null) {
     data.content?.trim() ||
     "";
 
-  if (raw) {
-    return raw;
-  }
-
-  if (imageUrl) {
-    return "Imagem gerada com sucesso.";
-  }
-
-  if (data.error?.trim()) {
-    return data.error.trim();
-  }
+  if (raw) return raw;
+  if (imageUrl) return "Imagem gerada com sucesso.";
+  if (data.error?.trim()) return data.error.trim();
 
   if (data.imageSaveError?.trim()) {
     return `Recebi sua mensagem, mas houve um problema: ${data.imageSaveError.trim()}`;
@@ -155,9 +147,7 @@ export default function ChatClient() {
   useEffect(() => {
     if (typeof window === "undefined") return;
     const savedEmail = window.localStorage.getItem(EMAIL_STORAGE_KEY);
-    if (savedEmail) {
-      setUserEmail(savedEmail);
-    }
+    if (savedEmail) setUserEmail(savedEmail);
   }, []);
 
   useEffect(() => {
@@ -188,33 +178,17 @@ export default function ChatClient() {
 
         const data: UsageStatusResponse = await response.json();
 
-        if (typeof data.plan === "string" && data.plan) {
-          setPlan(data.plan);
-        }
-
+        if (typeof data.plan === "string" && data.plan) setPlan(data.plan);
         if (typeof data.messagesRemaining === "number") {
           setMessagesRemaining(data.messagesRemaining);
         }
-
         if (typeof data.imagesRemaining === "number") {
           setImagesRemaining(data.imagesRemaining);
         }
-
-        if (typeof data.bonusImages === "number") {
-          setBonusImages(data.bonusImages);
-        }
-
-        if (typeof data.referralCode === "string") {
-          setReferralCode(data.referralCode);
-        }
-
-        if (typeof data.referralLink === "string") {
-          setReferralLink(data.referralLink);
-        }
-
-        if (typeof data.referredBy === "string") {
-          setReferredBy(data.referredBy);
-        }
+        if (typeof data.bonusImages === "number") setBonusImages(data.bonusImages);
+        if (typeof data.referralCode === "string") setReferralCode(data.referralCode);
+        if (typeof data.referralLink === "string") setReferralLink(data.referralLink);
+        if (typeof data.referredBy === "string") setReferredBy(data.referredBy);
       } catch (error) {
         console.error("Erro ao carregar status de uso:", error);
       }
@@ -380,63 +354,136 @@ export default function ChatClient() {
 
   return (
     <main className="aurora-chat-app">
-      <section className="aurora-chat-app__hero">
-        <div className="aurora-chat-app__heroBadge">Aurora IA</div>
-        <h1 className="aurora-chat-app__title">Chat da Aurora</h1>
-        <p className="aurora-chat-app__subtitle">
-          Converse normalmente ou peça campanhas, ideias e imagens.
-        </p>
-      </section>
+      <div className="aurora-chat-app__bg aurora-chat-app__bg--1" />
+      <div className="aurora-chat-app__bg aurora-chat-app__bg--2" />
 
-      <section className="aurora-chat-app__panel aurora-chat-app__panel--status">
-        <div className="aurora-chat-app__statusGrid">
-          <div className="aurora-chat-app__statusCard">
-            <span className="aurora-chat-app__statusLabel">Plano</span>
-            <strong className="aurora-chat-app__statusValue">{plan || "FREE"}</strong>
+      <header className="aurora-chat-app__header">
+        <div className="aurora-chat-app__topbar">
+          <Link href="/" className="aurora-chat-app__backButton">
+            Home
+          </Link>
+
+          <div className="aurora-chat-app__brand">
+            <span className="aurora-chat-app__brandDot" />
+            <div>
+              <strong>Aurora IA</strong>
+              <span>Chat premium</span>
+            </div>
           </div>
 
-          <div className="aurora-chat-app__statusCard">
-            <span className="aurora-chat-app__statusLabel">Mensagens</span>
-            <strong className="aurora-chat-app__statusValue">
-              {messagesRemaining ?? "-"}
-            </strong>
-          </div>
-
-          <div className="aurora-chat-app__statusCard">
-            <span className="aurora-chat-app__statusLabel">Imagens</span>
-            <strong className="aurora-chat-app__statusValue">
-              {imagesRemaining ?? "Ilimitado"}
-            </strong>
-          </div>
-
-          <div className="aurora-chat-app__statusCard">
-            <span className="aurora-chat-app__statusLabel">Bônus</span>
-            <strong className="aurora-chat-app__statusValue">{bonusImages}</strong>
-          </div>
+          <Link href="/planos" className="aurora-chat-app__ghostButton">
+            Planos
+          </Link>
         </div>
 
-        <div className="aurora-chat-app__emailBox">
-          <label className="aurora-chat-app__label" htmlFor="aurora-email">
-            Digite seu e-mail para controle do seu plano
-          </label>
+        <section className="aurora-chat-app__heroCard">
+          <div className="aurora-chat-app__heroText">
+            <div className="aurora-chat-app__heroBadge">Aurora IA</div>
+            <h1>Chat da Aurora</h1>
+            <p>
+              Converse, crie imagens e segure atenção com cara de app real.
+              A Aurora está pronta para responder, gerar ideias e entregar
+              visual melhor para retenção e conversão.
+            </p>
 
-          <input
-            id="aurora-email"
-            type="email"
-            className="aurora-chat-app__input"
-            placeholder="seuemail@exemplo.com"
-            value={userEmail}
-            onChange={(event) => setUserEmail(event.target.value)}
-          />
+            <div className="aurora-chat-app__quickActions">
+              <button
+                type="button"
+                className="aurora-chat-app__quickButton"
+                onClick={() => setInput("Criar campanha para Instagram")}
+              >
+                Criar campanha para Instagram
+              </button>
 
-          <p className="aurora-chat-app__helperText">
-            Esse e-mail ajuda a controlar plano, limites e recursos liberados.
-          </p>
+              <button
+                type="button"
+                className="aurora-chat-app__quickButton"
+                onClick={() => setInput("Gerar imagem premium para anúncio")}
+              >
+                Gerar imagem premium para anúncio
+              </button>
+
+              <button
+                type="button"
+                className="aurora-chat-app__quickButton"
+                onClick={() => setInput("Ideia de negócio com IA")}
+              >
+                Ideia de negócio com IA
+              </button>
+
+              <button
+                type="button"
+                className="aurora-chat-app__quickButton"
+                onClick={() => setInput("Criar texto de vendas")}
+              >
+                Criar texto de vendas
+              </button>
+            </div>
+          </div>
+
+          <div className="aurora-chat-app__heroSide">
+            <div className="aurora-chat-app__miniStats">
+              <div className="aurora-chat-app__miniStat">
+                <span>Plano</span>
+                <strong>{plan || "FREE"}</strong>
+              </div>
+
+              <div className="aurora-chat-app__miniStat">
+                <span>Mensagens</span>
+                <strong>{messagesRemaining ?? "-"}</strong>
+              </div>
+
+              <div className="aurora-chat-app__miniStat">
+                <span>Imagens</span>
+                <strong>{imagesRemaining ?? "Ilimitado"}</strong>
+              </div>
+
+              <div className="aurora-chat-app__miniStat">
+                <span>Bônus</span>
+                <strong>{bonusImages}</strong>
+              </div>
+            </div>
+
+            <div className="aurora-chat-app__emailCard">
+              <label className="aurora-chat-app__label" htmlFor="aurora-email">
+                Digite seu e-mail para controle do seu plano
+              </label>
+
+              <input
+                id="aurora-email"
+                type="email"
+                className="aurora-chat-app__emailInput"
+                placeholder="seuemail@exemplo.com"
+                value={userEmail}
+                onChange={(event) => setUserEmail(event.target.value)}
+              />
+
+              <p className="aurora-chat-app__emailHint">
+                Esse e-mail ajuda a controlar plano, limites e recursos liberados.
+              </p>
+            </div>
+          </div>
+        </section>
+      </header>
+
+      <section className="aurora-chat-app__conversation">
+        <div className="aurora-chat-app__conversationHeader">
+          <div>
+            <h2>Chat Aurora IA</h2>
+            <p>
+              {messages.length > 1
+                ? "Converse normalmente ou peça imagens, campanhas e ideias."
+                : "Converse normalmente ou peça imagens, campanhas e ideias."}
+            </p>
+          </div>
+
+          <span className="aurora-chat-app__livePill">online</span>
         </div>
 
         <div
           style={{
             marginTop: 16,
+            marginBottom: 16,
             padding: "14px 16px",
             borderRadius: 14,
             border: "1px solid rgba(255,255,255,0.12)",
@@ -461,94 +508,67 @@ export default function ChatClient() {
           </p>
         </div>
 
-        <div className="aurora-chat-app__quickActions">
-          <button
-            type="button"
-            className="aurora-chat-app__quickButton"
-            onClick={() => setInput("Criar campanha para Instagram")}
-          >
-            Criar campanha para Instagram
-          </button>
+        <div
+          style={{
+            marginBottom: 16,
+            padding: 16,
+            borderRadius: 22,
+            border: "1px solid rgba(0,208,132,0.12)",
+            background: "rgba(255,255,255,0.03)",
+          }}
+        >
+          <h2 style={{ margin: 0 }} className="aurora-chat-app__sectionTitle">
+            Convide amigos e ganhe imagens bônus
+          </h2>
 
-          <button
-            type="button"
-            className="aurora-chat-app__quickButton"
-            onClick={() => setInput("Gerar imagem premium para anúncio")}
-          >
-            Gerar imagem premium para anúncio
-          </button>
-
-          <button
-            type="button"
-            className="aurora-chat-app__quickButton"
-            onClick={() => setInput("Ideia de negócio com IA")}
-          >
-            Ideia de negócio com IA
-          </button>
-
-          <button
-            type="button"
-            className="aurora-chat-app__quickButton"
-            onClick={() => setInput("Criar texto de vendas")}
-          >
-            Criar texto de vendas
-          </button>
-        </div>
-      </section>
-
-      <section className="aurora-chat-app__panel aurora-chat-app__panel--referral">
-        <h2 className="aurora-chat-app__sectionTitle">
-          Convide amigos e ganhe imagens bônus
-        </h2>
-
-        <p className="aurora-chat-app__sectionText">
-          Cada novo indicado válido pode render mais imagens para você.
-        </p>
-
-        <div className="aurora-chat-app__referralGrid">
-          <div className="aurora-chat-app__referralCard">
-            <span className="aurora-chat-app__statusLabel">Seu código</span>
-            <strong className="aurora-chat-app__statusValue">
-              {referralCode || "-"}
-            </strong>
-          </div>
-
-          <div className="aurora-chat-app__referralCard">
-            <span className="aurora-chat-app__statusLabel">Seu link</span>
-            <strong className="aurora-chat-app__statusValue aurora-chat-app__statusValue--wrap">
-              {referralLinkResolved || "-"}
-            </strong>
-          </div>
-        </div>
-
-        <div className="aurora-chat-app__referralActions">
-          <button
-            type="button"
-            className="aurora-chat-app__quickButton"
-            onClick={handleCopyReferralLink}
-            disabled={!referralLinkResolved}
-          >
-            Copiar link
-          </button>
-
-          <Link href="/planos" className="aurora-chat-app__linkButton">
-            Ver planos
-          </Link>
-        </div>
-
-        {referredBy ? (
           <p className="aurora-chat-app__sectionText">
-            Você foi indicado por: <strong>{referredBy}</strong>
+            Cada novo indicado válido pode render mais imagens para você.
           </p>
-        ) : null}
-      </section>
 
-      <section className="aurora-chat-app__panel aurora-chat-app__panel--messages">
-        <div className="aurora-chat-app__messagesHeader">
-          <h2 className="aurora-chat-app__sectionTitle">Chat da Aurora</h2>
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+              gap: 12,
+              marginTop: 14,
+            }}
+          >
+            <div className="aurora-chat-app__miniStat">
+              <span>Seu código</span>
+              <strong>{referralCode || "-"}</strong>
+            </div>
+
+            <div className="aurora-chat-app__miniStat">
+              <span>Seu link</span>
+              <strong style={{ wordBreak: "break-word", lineHeight: 1.5 }}>
+                {referralLinkResolved || "-"}
+              </strong>
+            </div>
+          </div>
+
+          <div className="aurora-chat-app__quickActions" style={{ marginTop: 14 }}>
+            <button
+              type="button"
+              className="aurora-chat-app__quickButton"
+              onClick={handleCopyReferralLink}
+              disabled={!referralLinkResolved}
+            >
+              Copiar link
+            </button>
+
+            <Link href="/planos" className="aurora-chat-app__ghostButton">
+              Ver planos
+            </Link>
+          </div>
+
+          {referredBy ? (
+            <p className="aurora-chat-app__sectionText">
+              Você foi indicado por: <strong>{referredBy}</strong>
+            </p>
+          ) : null}
         </div>
 
-        <div className="aurora-chat-app__messagesList">
+        <div className="aurora-chat-app__messages">
           {messages.map((message, index) => {
             const isAssistant = message.role === "assistant";
             const shareUrl = message.imagePageUrl || message.imageUrl || null;
@@ -566,24 +586,36 @@ export default function ChatClient() {
                   <span>{isAssistant ? "Aurora IA" : "Você"}</span>
                 </div>
 
-                <div className="aurora-chat-app__messageContent">
+                <div className="aurora-chat-app__bubble">
                   <p>{message.content}</p>
 
                   {message.imageUrl ? (
-                    <div className="aurora-chat-app__imageWrap">
-                      <img
-                        src={message.imageUrl}
-                        alt="Imagem gerada pela Aurora IA"
-                        className="aurora-chat-app__image"
-                      />
+                    <div className="aurora-chat-app__imageWrap aurora-chat-app__imageWrap--premium">
+                      <div className="aurora-chat-app__imageHeader">
+                        <span className="aurora-chat-app__imageBadge">
+                          Imagem gerada pela Aurora IA
+                        </span>
+                      </div>
 
-                      <div className="aurora-chat-app__imageActions">
+                      <div className="aurora-chat-app__imageContainer">
+                        <img
+                          src={message.imageUrl}
+                          alt="Imagem gerada pela Aurora IA"
+                          className="aurora-chat-app__image aurora-chat-app__image--premium"
+                        />
+
+                        <div className="aurora-chat-app__imageOverlay">
+                          Página pública pronta para compartilhar e divulgar.
+                        </div>
+                      </div>
+
+                      <div className="aurora-chat-app__imageActions aurora-chat-app__imageActions--premium">
                         {message.imagePageUrl ? (
                           <a
                             href={message.imagePageUrl}
                             target="_blank"
                             rel="noreferrer"
-                            className="aurora-chat-app__imageButton"
+                            className="aurora-chat-app__imageButton aurora-chat-app__imageButton--primary"
                           >
                             Ver imagem
                           </a>
@@ -671,16 +703,20 @@ export default function ChatClient() {
                 <span>Aurora IA</span>
               </div>
 
-              <div className="aurora-chat-app__messageContent">
-                <p>Preparando sua resposta...</p>
+              <div className="aurora-chat-app__bubble aurora-chat-app__bubble--loading">
+                <span className="aurora-chat-app__typingDot" />
+                <span className="aurora-chat-app__typingDot" />
+                <span className="aurora-chat-app__typingDot" />
               </div>
             </article>
           ) : null}
 
           <div ref={messagesEndRef} />
         </div>
+      </section>
 
-        <form className="aurora-chat-app__form" onSubmit={handleSubmit}>
+      <section className="aurora-chat-app__composer">
+        <form className="aurora-chat-app__composerBox" onSubmit={handleSubmit}>
           <textarea
             className="aurora-chat-app__textarea"
             placeholder="Digite sua mensagem ou descreva a imagem que deseja..."
@@ -690,20 +726,18 @@ export default function ChatClient() {
             disabled={loading}
           />
 
-          <div className="aurora-chat-app__formActions">
-            <button
-              type="submit"
-              className="aurora-chat-app__submit"
-              disabled={loading || !input.trim()}
-            >
-              {loading ? "Enviando..." : "Enviar"}
-            </button>
-          </div>
-
-          <p className="aurora-chat-app__helperText">
-            Enter envia. Shift + Enter quebra linha.
-          </p>
+          <button
+            type="submit"
+            className="aurora-chat-app__sendButton"
+            disabled={loading || !input.trim()}
+          >
+            {loading ? "Enviando..." : "Enviar"}
+          </button>
         </form>
+
+        <p className="aurora-chat-app__composerHint">
+          Enter envia. Shift + Enter quebra linha.
+        </p>
       </section>
     </main>
   );
