@@ -1587,4 +1587,272 @@ img {
   .aurora-plans__smallButton {
     width: 100%;
   }
+}/* ===== CHAT AURORA - COMPATIBILIDADE DA VERSÃO ATUAL ===== */
+
+.aurora-chat-app__hero {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 1080px;
+  margin: 0 auto 18px;
+  padding: 20px;
+  border-radius: 28px;
+  border: 1px solid rgba(0, 208, 132, 0.14);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.03));
+  box-shadow:
+    0 24px 60px rgba(0, 0, 0, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  backdrop-filter: blur(16px);
+}
+
+.aurora-chat-app__title {
+  margin: 14px 0 10px;
+  font-size: clamp(1.8rem, 4vw, 3rem);
+  line-height: 1.02;
+  letter-spacing: -0.04em;
+  font-weight: 800;
+}
+
+.aurora-chat-app__subtitle {
+  margin: 0;
+  color: rgba(236, 255, 245, 0.74);
+  line-height: 1.65;
+  font-size: 1rem;
+}
+
+.aurora-chat-app__panel {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 1080px;
+  margin: 0 auto 18px;
+  padding: 18px;
+  border-radius: 28px;
+  border: 1px solid rgba(0, 208, 132, 0.12);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.025));
+  box-shadow:
+    0 24px 60px rgba(0, 0, 0, 0.18),
+    inset 0 1px 0 rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(14px);
+}
+
+.aurora-chat-app__panel--status,
+.aurora-chat-app__panel--referral,
+.aurora-chat-app__panel--messages {
+  overflow: hidden;
+}
+
+.aurora-chat-app__statusGrid,
+.aurora-chat-app__referralGrid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.aurora-chat-app__statusCard,
+.aurora-chat-app__referralCard {
+  padding: 16px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(0, 208, 132, 0.12);
+  box-shadow:
+    0 20px 40px rgba(0, 0, 0, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.03);
+}
+
+.aurora-chat-app__statusValue {
+  display: block;
+  margin-top: 6px;
+  color: #9effcf;
+  font-size: 1rem;
+  font-weight: 800;
+}
+
+.aurora-chat-app__statusValue--wrap {
+  word-break: break-word;
+  line-height: 1.5;
+}
+
+.aurora-chat-app__emailBox {
+  margin-top: 16px;
+  padding: 16px;
+  border-radius: 22px;
+  border: 1px solid rgba(0, 208, 132, 0.12);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.aurora-chat-app__input {
+  width: 100%;
+  min-height: 52px;
+  padding: 0 14px;
+  border-radius: 16px;
+  outline: none;
+  color: #ecfff5;
+  font: inherit;
+  background: rgba(4, 17, 13, 0.84);
+  border: 1px solid rgba(0, 208, 132, 0.16);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
+}
+
+.aurora-chat-app__input::placeholder {
+  color: rgba(236, 255, 245, 0.42);
+}
+
+.aurora-chat-app__helperText {
+  margin: 10px 0 0;
+  color: rgba(236, 255, 245, 0.62);
+  font-size: 0.85rem;
+  line-height: 1.5;
+}
+
+.aurora-chat-app__sectionTitle {
+  margin: 0;
+  font-size: 1.16rem;
+  font-weight: 800;
+}
+
+.aurora-chat-app__sectionText {
+  margin: 10px 0 0;
+  color: rgba(236, 255, 245, 0.68);
+  line-height: 1.65;
+}
+
+.aurora-chat-app__referralActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.aurora-chat-app__linkButton {
+  min-height: 42px;
+  padding: 0 14px;
+  border-radius: 999px;
+  border: 1px solid rgba(0, 208, 132, 0.18);
+  background: rgba(255, 255, 255, 0.03);
+  color: #ecfff5;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+}
+
+.aurora-chat-app__messagesHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.aurora-chat-app__messagesList {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding-top: 16px;
+  min-height: 340px;
+}
+
+.aurora-chat-app__messageContent {
+  width: min(100%, 760px);
+  padding: 14px 16px;
+  border-radius: 22px;
+  line-height: 1.7;
+  box-shadow:
+    0 18px 44px rgba(0, 0, 0, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.02);
+}
+
+.aurora-chat-app__message--assistant .aurora-chat-app__messageContent {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(0, 208, 132, 0.12);
+  border-top-left-radius: 8px;
+}
+
+.aurora-chat-app__message--user .aurora-chat-app__messageContent {
+  background: linear-gradient(135deg, rgba(0, 208, 132, 0.18), rgba(0, 208, 132, 0.1));
+  border: 1px solid rgba(0, 208, 132, 0.18);
+  border-top-right-radius: 8px;
+}
+
+.aurora-chat-app__messageContent p {
+  margin: 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.aurora-chat-app__form {
+  margin-top: 18px;
+  padding: 10px;
+  border-radius: 24px;
+  background: rgba(7, 18, 15, 0.88);
+  border: 1px solid rgba(0, 208, 132, 0.16);
+  backdrop-filter: blur(18px);
+  box-shadow:
+    0 24px 70px rgba(0, 0, 0, 0.34),
+    inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+.aurora-chat-app__formActions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 10px;
+}
+
+.aurora-chat-app__submit {
+  min-width: 112px;
+  min-height: 52px;
+  padding: 0 18px;
+  border: none;
+  border-radius: 18px;
+  cursor: pointer;
+  font-weight: 800;
+  color: #04110d;
+  background: linear-gradient(135deg, #75ffbf 0%, #00d084 100%);
+  box-shadow: 0 14px 34px rgba(0, 208, 132, 0.22);
+}
+
+.aurora-chat-app__submit:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+@media (max-width: 900px) {
+  .aurora-chat-app__statusGrid,
+  .aurora-chat-app__referralGrid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .aurora-chat-app__hero,
+  .aurora-chat-app__panel {
+    padding: 16px;
+    border-radius: 22px;
+  }
+
+  .aurora-chat-app__statusGrid,
+  .aurora-chat-app__referralGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .aurora-chat-app__messageContent {
+    width: 100%;
+  }
+
+  .aurora-chat-app__referralActions,
+  .aurora-chat-app__formActions {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .aurora-chat-app__linkButton,
+  .aurora-chat-app__submit {
+    width: 100%;
+  }
 }
