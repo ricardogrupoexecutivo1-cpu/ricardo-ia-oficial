@@ -1,13 +1,37 @@
 import { NextRequest, NextResponse } from "next/server";
 import OpenAI from "openai";
+import { env, hasOpenAi } from "../../../lib/env";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+export const revalidate = 0;
 export const maxDuration = 60;
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+function jsonNoStore(body: unknown, init?: ResponseInit) {
+  const response = NextResponse.json(body, init);
+
+  response.headers.set(
+    "Cache-Control",
+    "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0"
+  );
+  response.headers.set("Pragma", "no-cache");
+  response.headers.set("Expires", "0");
+  response.headers.set("Surrogate-Control", "no-store");
+  response.headers.set("CDN-Cache-Control", "no-store");
+  response.headers.set("Vercel-CDN-Cache-Control", "no-store");
+
+  return response;
+}
+
+function getOpenAiClient() {
+  if (!hasOpenAi()) {
+    throw new Error("OPENAI_API_KEY não configurada.");
+  }
+
+  return new OpenAI({
+    apiKey: env.openAiApiKey as string,
+  });
+}
 
 function shouldGenerateImage(message: string) {
   const text = message.toLowerCase().trim();
@@ -17,6 +41,7 @@ function shouldGenerateImage(message: string) {
     "gere uma imagem",
     "gerar imagem",
     "faça uma imagem",
+    "faca uma imagem",
     "me mostre uma imagem",
     "crie uma arte",
     "gere uma arte",
@@ -74,9 +99,7 @@ function getReadableError(error: unknown) {
 }
 
 function getBaseUrl(req: NextRequest) {
-  const envBase =
-    process.env.NEXT_PUBLIC_SITE_URL?.trim() ||
-    process.env.NEXT_PUBLIC_APP_URL?.trim();
+  const envBase = env.siteUrl || env.appUrl;
 
   if (envBase) {
     return envBase.replace(/\/+$/, "");
@@ -94,7 +117,26 @@ function getBaseUrl(req: NextRequest) {
   return "http://localhost:3000";
 }
 
+async function readJsonBody(req: NextRequest) {
+  const raw = await req.text();
+
+  if (!raw || !raw.trim()) {
+    throw new Error("Body vazio na requisição.");
+  }
+
+  try {
+    return JSON.parse(raw) as {
+      message?: string;
+      email?: string;
+    };
+  } catch {
+    throw new Error("JSON inválido na requisição.");
+  }
+}
+
 async function generateTextReply(message: string) {
+  const openai = getOpenAiClient();
+
   const completion = await openai.chat.completions.create({
     model: "gpt-5-mini",
     messages: [
@@ -127,10 +169,44 @@ type ImageApiResponse = {
   error?: string | null;
 };
 
+async function callImageApi(
+  baseUrl: string,
+  message: string,
+  email: string | null
+) {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 60000);
+
+  try {
+    const imageResponse = await fetch(`${baseUrl}/api/image`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      cache: "no-store",
+      signal: controller.signal,
+      body: JSON.stringify({
+        prompt: message,
+        email,
+      }),
+    });
+
+    const imageData = (await imageResponse.json()) as ImageApiResponse;
+
+    return {
+      ok: imageResponse.ok,
+      status: imageResponse.status,
+      data: imageData,
+    };
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
 export async function POST(req: NextRequest) {
   try {
-    if (!process.env.OPENAI_API_KEY) {
-      return NextResponse.json(
+    if (!hasOpenAi()) {
+      return jsonNoStore(
         {
           reply: "A chave da OpenAI não está configurada.",
           error: "OPENAI_API_KEY não configurada.",
@@ -144,12 +220,12 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const body = await req.json();
+    const body = await readJsonBody(req);
     const message = String(body?.message || "").trim();
-    const email = String(body?.email || "").trim() || null;
+    const email = String(body?.email || "").trim().toLowerCase() || null;
 
     if (!message) {
-      return NextResponse.json(
+      return jsonNoStore(
         {
           reply: "Digite uma mensagem para eu continuar.",
           error: "Mensagem não enviada.",
@@ -168,7 +244,7 @@ export async function POST(req: NextRequest) {
     if (!wantsImage) {
       const reply = await generateTextReply(message);
 
-      return NextResponse.json(
+      return jsonNoStore(
         {
           reply,
           imageUrl: null,
@@ -177,31 +253,15 @@ export async function POST(req: NextRequest) {
           imageSavedId: null,
           imageSaveError: null,
         },
-        {
-          status: 200,
-          headers: {
-            "Cache-Control": "no-store, max-age=0",
-          },
-        }
+        { status: 200 }
       );
     }
 
     const baseUrl = getBaseUrl(req);
 
     try {
-      const imageResponse = await fetch(`${baseUrl}/api/image`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        cache: "no-store",
-        body: JSON.stringify({
-          prompt: message,
-          email,
-        }),
-      });
-
-      const imageData = (await imageResponse.json()) as ImageApiResponse;
+      const imageResult = await callImageApi(baseUrl, message, email);
+      const imageData = imageResult.data;
 
       const imageUrl = imageData.imageUrl || null;
       const imagePageUrl =
@@ -217,7 +277,7 @@ export async function POST(req: NextRequest) {
           ? "Imagem gerada com sucesso. Exibindo no chat."
           : "Recebi seu pedido de imagem, mas não consegui gerar agora.");
 
-      return NextResponse.json(
+      return jsonNoStore(
         {
           reply,
           imageUrl,
@@ -227,18 +287,18 @@ export async function POST(req: NextRequest) {
           imageSaveError: imageData.databaseError || imageData.error || null,
         },
         {
-          status: imageResponse.ok ? 200 : 500,
-          headers: {
-            "Cache-Control": "no-store, max-age=0",
-          },
+          status: imageResult.ok ? 200 : 500,
         }
       );
     } catch (error) {
-      const readableError = getReadableError(error);
+      const readableError =
+        error instanceof Error && error.name === "AbortError"
+          ? "Tempo excedido ao gerar imagem."
+          : getReadableError(error);
 
-      console.error("Erro ao chamar /api/image pelo chat:", error);
+      console.error("Aurora IA: erro ao chamar /api/image pelo chat:", error);
 
-      return NextResponse.json(
+      return jsonNoStore(
         {
           reply: `Recebi seu pedido de imagem, mas não consegui gerar agora. Motivo: ${readableError}`,
           error: readableError,
@@ -248,20 +308,15 @@ export async function POST(req: NextRequest) {
           imageSavedId: null,
           imageSaveError: readableError,
         },
-        {
-          status: 500,
-          headers: {
-            "Cache-Control": "no-store, max-age=0",
-          },
-        }
+        { status: 500 }
       );
     }
   } catch (error) {
     const readableError = getReadableError(error);
 
-    console.error("ERRO /api/chat:", error);
+    console.error("Aurora IA: erro em /api/chat:", error);
 
-    return NextResponse.json(
+    return jsonNoStore(
       {
         reply: `Recebi sua mensagem, mas ocorreu um erro interno no chat. Motivo: ${readableError}`,
         error: readableError,
@@ -271,12 +326,7 @@ export async function POST(req: NextRequest) {
         imageSavedId: null,
         imageSaveError: readableError,
       },
-      {
-        status: 500,
-        headers: {
-          "Cache-Control": "no-store, max-age=0",
-        },
-      }
+      { status: 500 }
     );
   }
 }
