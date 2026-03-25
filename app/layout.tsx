@@ -1,25 +1,23 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import { Analytics } from "@vercel/analytics/react";
-import { SpeedInsights } from "@vercel/speed-insights/next";
+import AuroraClientBoot from "../components/AuroraClientBoot";
 
 export const metadata: Metadata = {
   title: "Aurora IA",
   description:
-    "Aurora IA para conversar, criar imagens, campanhas, ideias e acelerar sua operação digital.",
+    "Aurora IA - converse, crie imagens, campanhas, ideias de negócio e experiências visuais com IA.",
 };
 
 export default function RootLayout({
   children,
-}: {
+}: Readonly<{
   children: React.ReactNode;
-}) {
+}>) {
   return (
-    <html lang="pt-BR">
-      <body>
+    <html lang="pt-BR" suppressHydrationWarning>
+      <body suppressHydrationWarning>
+        <AuroraClientBoot />
         {children}
-        <Analytics />
-        <SpeedInsights />
       </body>
     </html>
   );
