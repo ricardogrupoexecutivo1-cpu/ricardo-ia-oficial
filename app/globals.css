@@ -1855,4 +1855,15 @@ img {
   .aurora-chat-app__submit {
     width: 100%;
   }
+}/* UX ABSURDO - esconder docks ao digitar */
+.aurora-hide-ui [style*="position: fixed"] {
+  transform: translateY(120px) !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+  transition: all 0.25s ease;
+}
+
+/* estado normal */
+[style*="position: fixed"] {
+  transition: all 0.25s ease;
 }
