@@ -27,7 +27,10 @@ export default function LanguageSwitcher() {
 
   useEffect(() => {
     try {
-      const saved = window.localStorage.getItem(STORAGE_KEY) as LocaleCode | null;
+      const saved = window.localStorage.getItem(
+        STORAGE_KEY
+      ) as LocaleCode | null;
+
       if (saved && LANGUAGES.some((item) => item.code === saved)) {
         setLocale(saved);
         setDocumentLanguage(saved);
@@ -57,32 +60,30 @@ export default function LanguageSwitcher() {
     <div
       style={{
         position: "fixed",
-        top: 12,
-        left: 12,
-        zIndex: 9999,
-        display: "grid",
-        gap: 8,
-        maxWidth: 320,
+        top: 76,
+        right: 12,
+        zIndex: 50,
+        width: "min(240px, calc(100vw - 24px))",
       }}
     >
       <div
         style={{
-          background: "rgba(5,10,16,0.82)",
-          border: "1px solid rgba(255,255,255,0.10)",
-          borderRadius: 16,
-          padding: "10px 12px",
-          boxShadow: "0 16px 40px rgba(0,0,0,0.30)",
+          background: "rgba(5,10,16,0.84)",
+          border: "1px solid rgba(255,255,255,0.08)",
+          borderRadius: 14,
+          padding: "8px 10px",
+          boxShadow: "0 12px 30px rgba(0,0,0,0.24)",
           backdropFilter: "blur(10px)",
         }}
       >
         <div
           style={{
-            fontSize: 11,
+            fontSize: 10,
             fontWeight: 800,
             letterSpacing: 1,
             textTransform: "uppercase",
             color: "#7ee7b8",
-            marginBottom: 8,
+            marginBottom: 6,
           }}
         >
           Aurora Global
@@ -91,7 +92,7 @@ export default function LanguageSwitcher() {
         <div
           style={{
             display: "flex",
-            gap: 8,
+            gap: 6,
             flexWrap: "wrap",
           }}
         >
@@ -107,20 +108,20 @@ export default function LanguageSwitcher() {
                 aria-label={item.label}
                 style={{
                   border: active
-                    ? "1px solid rgba(126,231,184,0.65)"
-                    : "1px solid rgba(255,255,255,0.12)",
+                    ? "1px solid rgba(126,231,184,0.55)"
+                    : "1px solid rgba(255,255,255,0.10)",
                   background: active
-                    ? "rgba(126,231,184,0.18)"
-                    : "rgba(255,255,255,0.05)",
+                    ? "rgba(126,231,184,0.16)"
+                    : "rgba(255,255,255,0.04)",
                   color: "#f5fbff",
-                  borderRadius: 12,
-                  padding: "8px 10px",
+                  borderRadius: 10,
+                  padding: "6px 8px",
                   fontWeight: 800,
-                  fontSize: 12,
+                  fontSize: 11,
                   cursor: "pointer",
                   display: "inline-flex",
                   alignItems: "center",
-                  gap: 6,
+                  gap: 5,
                 }}
               >
                 <span aria-hidden="true">{item.flag}</span>
@@ -132,10 +133,10 @@ export default function LanguageSwitcher() {
 
         <p
           style={{
-            margin: "10px 0 0",
-            fontSize: 12,
-            lineHeight: 1.45,
-            color: "rgba(235,242,250,0.78)",
+            margin: "8px 0 0",
+            fontSize: 11,
+            lineHeight: 1.35,
+            color: "rgba(235,242,250,0.72)",
           }}
         >
           Aurora speaks Portuguese, English and Spanish.
