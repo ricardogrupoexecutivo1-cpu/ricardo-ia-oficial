@@ -1,77 +1,48 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import crypto from "node:crypto";
+import { env, hasOpenAi, hasServiceRole } from "../../../lib/env";
 
-type OpenAIImageResponse = {
-  created?: number;
-  data?: Array<{
-    url?: string;
-    b64_json?: string;
-  }>;
-  error?: {
-    message?: string;
-  };
-};
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
-type ImageRequestBody = {
-  prompt?: string;
-  email?: string;
-};
+function jsonNoStore(body: unknown, init?: ResponseInit) {
+  const res = NextResponse.json(body, init);
 
-type InsertImageParams = {
-  prompt: string;
-  imageUrl: string;
-  email: string;
-};
+  res.headers.set(
+    "Cache-Control",
+    "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0"
+  );
+  res.headers.set("Pragma", "no-cache");
+  res.headers.set("Expires", "0");
 
-type InsertImageResult = {
-  id: string | null;
-  error: string | null;
-};
-
-async function readJsonBody(req: NextRequest) {
-  const raw = await req.text();
-
-  if (!raw || !raw.trim()) {
-    throw new Error("Body vazio na requisição.");
-  }
-
-  try {
-    return JSON.parse(raw) as ImageRequestBody;
-  } catch {
-    throw new Error(`JSON inválido na requisição: ${raw}`);
-  }
+  return res;
 }
 
 function getSupabaseAdmin() {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
-  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim();
-
-  if (!supabaseUrl || !serviceRoleKey) {
-    throw new Error(
-      "Variáveis do Supabase não configuradas. Verifique NEXT_PUBLIC_SUPABASE_URL e SUPABASE_SERVICE_ROLE_KEY."
-    );
+  if (!hasServiceRole()) {
+    throw new Error("SUPABASE_SERVICE_ROLE_KEY não configurada.");
   }
 
-  return createClient(supabaseUrl, serviceRoleKey);
+  return createClient(env.supabaseUrl, env.supabaseServiceRoleKey as string, {
+    auth: { persistSession: false },
+  });
 }
 
-function getStorageBucketName() {
+function getBucket() {
   return (
-    process.env.SUPABASE_STORAGE_BUCKET?.trim() ||
-    process.env.NEXT_PUBLIC_SUPABASE_STORAGE_BUCKET?.trim() ||
+    process.env.SUPABASE_STORAGE_BUCKET ||
+    process.env.NEXT_PUBLIC_SUPABASE_STORAGE_BUCKET ||
     "aurora-images"
   );
 }
 
 function getSiteUrl() {
-  return (
-    process.env.NEXT_PUBLIC_SITE_URL?.trim() ||
-    process.env.NEXT_PUBLIC_APP_URL?.trim() ||
-    "http://localhost:3000"
-  );
+  return env.siteUrl || "http://localhost:3000";
 }
 
-function sanitizeFilePart(value: string) {
+function sanitize(value: string) {
   return value
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
@@ -81,444 +52,172 @@ function sanitizeFilePart(value: string) {
     .slice(0, 60);
 }
 
-function normalizeSpaces(value: string) {
-  return value.replace(/\s+/g, " ").trim();
+async function readBody(req: NextRequest) {
+  const text = await req.text();
+
+  if (!text.trim()) {
+    throw new Error("Body vazio.");
+  }
+
+  return JSON.parse(text);
 }
 
-function containsAny(text: string, items: string[]) {
-  const value = text.toLowerCase();
-  return items.some((item) => value.includes(item));
-}
+async function downloadImage(url: string) {
+  const res = await fetch(url);
 
-function inferVisualMode(userPrompt: string) {
-  const prompt = userPrompt.toLowerCase();
-
-  if (
-    containsAny(prompt, [
-      "instagram",
-      "anúncio",
-      "anuncio",
-      "campanha",
-      "propaganda",
-      "venda",
-      "tráfego",
-      "trafego",
-      "marketing",
-      "story",
-      "stories",
-      "feed",
-      "banner",
-      "criativo",
-      "publicidade",
-    ])
-  ) {
-    return "ad";
+  if (!res.ok) {
+    throw new Error("Erro ao baixar imagem da OpenAI.");
   }
 
-  if (
-    containsAny(prompt, [
-      "logo",
-      "logomarca",
-      "marca",
-      "identidade visual",
-      "brand",
-    ])
-  ) {
-    return "brand";
-  }
-
-  if (
-    containsAny(prompt, [
-      "realista",
-      "fotorealista",
-      "foto",
-      "photorealistic",
-      "cinematográfico",
-      "cinematografico",
-    ])
-  ) {
-    return "realistic";
-  }
-
-  return "premium";
-}
-
-function buildEnhancedPrompt(userPrompt: string) {
-  const cleanPrompt = normalizeSpaces(userPrompt);
-  const mode = inferVisualMode(cleanPrompt);
-
-  const base = [
-    "Criar uma imagem extremamente bonita, premium, impactante e memorável.",
-    "Visual com alto nível de direção de arte, composição forte e acabamento profissional.",
-    "Imagem com contraste elegante, profundidade, iluminação cinematográfica, definição alta e visual que prenda atenção imediatamente.",
-    "Evitar resultado genérico, sem aparência amadora, sem visual lavado, sem composição fraca.",
-    "Priorizar beleza visual, desejo, impacto, sofisticação e percepção de alto valor.",
-  ];
-
-  const premiumLook = [
-    "Estética premium contemporânea.",
-    "Luzes volumétricas sutis, reflexos elegantes, brilho controlado e riqueza de detalhes.",
-    "Paleta visual forte, moderna e comercialmente atrativa.",
-    "Composição central muito bem resolvida, com sensação de produto de alto nível.",
-  ];
-
-  const adMode = [
-    "A imagem deve ter força publicitária e aparência de campanha de alto impacto.",
-    "Deve parecer peça de marca premium feita para chamar clique e conversão.",
-    "Transmitir desejo, inovação, modernidade e autoridade.",
-    "Visual pensado para anúncios, redes sociais e campanhas pagas.",
-  ];
-
-  const brandMode = [
-    "A imagem deve reforçar identidade visual premium e percepção de marca forte.",
-    "Visual limpo, sofisticado, elegante e memorável.",
-    "A composição deve funcionar bem para branding e presença digital.",
-  ];
-
-  const realisticMode = [
-    "Fotorealismo refinado, com textura natural, iluminação cinematográfica e acabamento de campanha premium.",
-    "Pele, materiais, ambiente e profundidade com aparência real e elegante.",
-  ];
-
-  const premiumMode = [
-    "Visual futurista premium, refinado, sofisticado e altamente atraente.",
-    "A composição deve causar espanto positivo e vontade de continuar vendo mais.",
-  ];
-
-  const finish = [
-    "Alta resolução, muitos detalhes, nitidez premium, aspecto polido e profissional.",
-    "Sem texto embutido na imagem, salvo se o usuário pedir explicitamente.",
-    `Pedido do usuário: ${cleanPrompt}`,
-  ];
-
-  const blocks = [...base, ...premiumLook];
-
-  if (mode === "ad") {
-    blocks.push(...adMode);
-  } else if (mode === "brand") {
-    blocks.push(...brandMode);
-  } else if (mode === "realistic") {
-    blocks.push(...realisticMode);
-  } else {
-    blocks.push(...premiumMode);
-  }
-
-  blocks.push(...finish);
-
-  return blocks.join(" ");
-}
-
-async function downloadImageAsBuffer(imageUrl: string) {
-  console.log("BAIXANDO IMAGEM DA URL DA OPENAI...");
-
-  const response = await fetch(imageUrl);
-
-  console.log("DOWNLOAD STATUS:", response.status);
-
-  if (!response.ok) {
-    throw new Error(
-      `Não foi possível baixar a imagem retornada pela OpenAI. Status ${response.status}.`
-    );
-  }
-
-  const arrayBuffer = await response.arrayBuffer();
-  return Buffer.from(arrayBuffer);
-}
-
-async function insertImageRecord(
-  params: InsertImageParams
-): Promise<InsertImageResult> {
-  const supabase = getSupabaseAdmin();
-
-  const attempts = [
-    {
-      label: "prompt,image_url,email,is_public",
-      payload: {
-        prompt: params.prompt,
-        image_url: params.imageUrl,
-        email: params.email || null,
-        is_public: true,
-      },
-    },
-    {
-      label: "prompt,image_url,user_email,is_public",
-      payload: {
-        prompt: params.prompt,
-        image_url: params.imageUrl,
-        user_email: params.email || null,
-        is_public: true,
-      },
-    },
-    {
-      label: "prompt,image_url,is_public",
-      payload: {
-        prompt: params.prompt,
-        image_url: params.imageUrl,
-        is_public: true,
-      },
-    },
-    {
-      label: "prompt,image_url,email",
-      payload: {
-        prompt: params.prompt,
-        image_url: params.imageUrl,
-        email: params.email || null,
-      },
-    },
-    {
-      label: "prompt,image_url,user_email",
-      payload: {
-        prompt: params.prompt,
-        image_url: params.imageUrl,
-        user_email: params.email || null,
-      },
-    },
-    {
-      label: "prompt,image_url",
-      payload: {
-        prompt: params.prompt,
-        image_url: params.imageUrl,
-      },
-    },
-  ];
-
-  let lastError: string | null = null;
-
-  for (const attempt of attempts) {
-    console.log("TENTANDO INSERT:", attempt.label);
-
-    const result = await supabase
-      .from("images")
-      .insert(attempt.payload)
-      .select("id")
-      .single();
-
-    if (!result.error && result.data?.id) {
-      console.log("INSERT OK:", attempt.label, result.data.id);
-      return {
-        id: String(result.data.id),
-        error: null,
-      };
-    }
-
-    lastError = result.error?.message || "Erro desconhecido ao inserir imagem.";
-    console.log("INSERT FALHOU:", attempt.label, lastError);
-  }
-
-  return {
-    id: null,
-    error: lastError,
-  };
+  const buffer = Buffer.from(await res.arrayBuffer());
+  return buffer;
 }
 
 export async function POST(req: NextRequest) {
   try {
-    console.log("API IMAGE CHAMADA");
+    const body = await readBody(req);
 
-    const body = await readJsonBody(req);
-    const prompt = typeof body?.prompt === "string" ? body.prompt.trim() : "";
-    const email =
-      typeof body?.email === "string" ? body.email.trim().toLowerCase() : "";
-
-    console.log("BODY OK:", { prompt, email });
+    const prompt = body?.prompt?.trim();
+    const email = body?.email?.trim()?.toLowerCase() || "";
 
     if (!prompt) {
-      return NextResponse.json(
-        { error: "Prompt não enviado." },
-        { status: 400 }
-      );
+      return jsonNoStore({ error: "Prompt não enviado." }, { status: 400 });
     }
 
-    if (!process.env.OPENAI_API_KEY) {
-      console.log("FALTA OPENAI_API_KEY");
-      return NextResponse.json(
+    if (!hasOpenAi()) {
+      return jsonNoStore(
         { error: "OPENAI_API_KEY não configurada." },
         { status: 500 }
       );
     }
 
-    const enhancedPrompt = buildEnhancedPrompt(prompt);
-
-    console.log("PROMPT ORIGINAL:", prompt);
-    console.log("PROMPT MELHORADO:", enhancedPrompt);
-
-    console.log("OPENAI_API_KEY OK");
-    console.log(
-      "NEXT_PUBLIC_SUPABASE_URL OK:",
-      Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL)
-    );
-    console.log(
-      "SUPABASE_SERVICE_ROLE_KEY OK:",
-      Boolean(process.env.SUPABASE_SERVICE_ROLE_KEY)
-    );
-    console.log("SUPABASE_STORAGE_BUCKET:", getStorageBucketName());
-    console.log("NEXT_PUBLIC_SITE_URL:", getSiteUrl());
-
-    const siteUrl = getSiteUrl();
-
-    console.log("CHAMANDO OPENAI IMAGES...");
-    const openAiResponse = await fetch(
+    // 🔥 chamada OpenAI
+    const aiRes = await fetch(
       "https://api.openai.com/v1/images/generations",
       {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+          Authorization: `Bearer ${env.openAiApiKey}`,
         },
         body: JSON.stringify({
           model: "gpt-image-1",
-          prompt: enhancedPrompt,
+          prompt,
           size: "1024x1024",
           quality: "high",
         }),
       }
     );
 
-    console.log("OPENAI STATUS:", openAiResponse.status);
+    const raw = await aiRes.text();
 
-    const openAiText = await openAiResponse.text();
-    console.log("OPENAI RAW TEXT RECEBIDO");
-
-    let openAiData: OpenAIImageResponse;
-
+    let data: any;
     try {
-      openAiData = JSON.parse(openAiText) as OpenAIImageResponse;
+      data = JSON.parse(raw);
     } catch {
-      console.log("ERRO PARSE OPENAI:", openAiText);
-      return NextResponse.json(
+      return jsonNoStore(
         { error: "Resposta inválida da OpenAI." },
         { status: 500 }
       );
     }
 
-    console.log("RESPOSTA OPENAI IMAGE:", {
-      ok: openAiResponse.ok,
-      status: openAiResponse.status,
-      hasUrl: Boolean(openAiData?.data?.[0]?.url),
-      hasB64: Boolean(openAiData?.data?.[0]?.b64_json),
-      error: openAiData?.error?.message || null,
-    });
-
-    if (!openAiResponse.ok) {
-      return NextResponse.json(
-        {
-          error:
-            openAiData?.error?.message || "Erro ao gerar imagem na OpenAI.",
-        },
+    if (!aiRes.ok) {
+      return jsonNoStore(
+        { error: data?.error?.message || "Erro na OpenAI." },
         { status: 500 }
       );
     }
 
-    const firstImage = openAiData?.data?.[0];
-    const imageUrlFromApi = firstImage?.url;
-    const imageBase64 = firstImage?.b64_json;
+    const item = data?.data?.[0];
 
     let buffer: Buffer | null = null;
 
-    if (typeof imageBase64 === "string" && imageBase64.trim()) {
-      console.log("USANDO B64 DA OPENAI");
-      buffer = Buffer.from(imageBase64, "base64");
-    } else if (typeof imageUrlFromApi === "string" && imageUrlFromApi.trim()) {
-      console.log("USANDO URL DA OPENAI");
-      buffer = await downloadImageAsBuffer(imageUrlFromApi);
-    } else {
-      console.log("OPENAI NÃO RETORNOU URL NEM B64");
+    if (item?.b64_json) {
+      buffer = Buffer.from(item.b64_json, "base64");
+    } else if (item?.url) {
+      buffer = await downloadImage(item.url);
     }
 
     if (!buffer) {
-      return NextResponse.json(
-        { error: "Imagem não retornada pela API." },
+      return jsonNoStore(
+        { error: "Imagem não retornada." },
         { status: 500 }
       );
     }
 
-    console.log("BUFFER OK:", buffer.length);
-
+    // 🔥 upload supabase
     const supabase = getSupabaseAdmin();
-    const bucketName = getStorageBucketName();
+    const bucket = getBucket();
 
-    const safeEmailPart = email ? sanitizeFilePart(email) : "anon";
-    const safePromptPart = sanitizeFilePart(prompt) || "imagem";
-    const fileId = crypto.randomUUID();
-    const fileName = `${safeEmailPart}/${Date.now()}-${safePromptPart}-${fileId}.png`;
+    const fileName = `${sanitize(email || "anon")}/${Date.now()}-${sanitize(
+      prompt
+    )}-${crypto.randomUUID()}.png`;
 
-    console.log("UPLOAD STORAGE BUCKET:", bucketName);
-    console.log("UPLOAD STORAGE FILE:", fileName);
-
-    const uploadResult = await supabase.storage
-      .from(bucketName)
+    const upload = await supabase.storage
+      .from(bucket)
       .upload(fileName, buffer, {
         contentType: "image/png",
         upsert: false,
       });
 
-    if (uploadResult.error) {
-      console.log("ERRO STORAGE:", uploadResult.error.message);
-      return NextResponse.json(
-        { error: `Erro ao salvar no Storage: ${uploadResult.error.message}` },
+    if (upload.error) {
+      return jsonNoStore(
+        { error: upload.error.message },
         { status: 500 }
       );
     }
 
-    console.log("UPLOAD STORAGE OK");
+    const publicUrl = supabase.storage
+      .from(bucket)
+      .getPublicUrl(fileName).data.publicUrl;
 
-    const publicUrlResult = supabase.storage
-      .from(bucketName)
-      .getPublicUrl(fileName);
-
-    const publicImageUrl = publicUrlResult.data.publicUrl;
-
-    console.log("PUBLIC URL:", publicImageUrl);
-
-    if (!publicImageUrl) {
-      return NextResponse.json(
-        { error: "Não foi possível gerar a URL pública da imagem." },
+    if (!publicUrl) {
+      return jsonNoStore(
+        { error: "Erro ao gerar URL." },
         { status: 500 }
       );
     }
 
-    const insertResult = await insertImageRecord({
-      prompt,
-      imageUrl: publicImageUrl,
-      email,
+    // 🔥 salvar no banco
+    let imageId: string | null = null;
+
+    try {
+      const result = await supabase
+        .from("images")
+        .insert({
+          prompt,
+          image_url: publicUrl,
+          email,
+          is_public: true,
+        })
+        .select("id")
+        .single();
+
+      if (!result.error) {
+        imageId = result.data?.id;
+      }
+    } catch {}
+
+    const pageUrl = imageId
+      ? `${getSiteUrl()}/i/${imageId}`
+      : publicUrl;
+
+    return jsonNoStore({
+      reply: "Imagem gerada com sucesso.",
+      message: "Imagem gerada com sucesso.",
+      imageUrl: publicUrl,
+      imagePageUrl: pageUrl,
+      shareUrl: pageUrl,
+      savedToDatabase: Boolean(imageId),
     });
+  } catch (err) {
+    console.error("ERRO IMAGE API:", err);
 
-    let imagePageUrl: string | null = null;
-
-    if (insertResult.id) {
-      imagePageUrl = `${siteUrl}/i/${insertResult.id}`;
-    } else {
-      imagePageUrl = publicImageUrl;
-      console.log("AVISO: salvou no storage, mas não registrou na tabela images.");
-      console.log("ERRO BANCO:", insertResult.error);
-    }
-
-    console.log("RETORNANDO SUCESSO FINAL");
-
-    return NextResponse.json({
-      reply: insertResult.id
-        ? "Imagem gerada e salva com sucesso."
-        : "Imagem gerada e salva no storage, mas não entrou na galeria.",
-      message: insertResult.id
-        ? "Imagem gerada e salva com sucesso."
-        : "Imagem gerada e salva no storage, mas não entrou na galeria.",
-      imageUrl: publicImageUrl,
-      imagePageUrl,
-      publicPageUrl: imagePageUrl,
-      shareUrl: imagePageUrl || publicImageUrl,
-      savedToDatabase: Boolean(insertResult.id),
-      databaseError: insertResult.error,
-      originalPrompt: prompt,
-      enhancedPrompt,
-    });
-  } catch (error) {
-    console.log("ERRO IMAGE API:", error);
-
-    return NextResponse.json(
+    return jsonNoStore(
       {
         error:
-          error instanceof Error
-            ? error.message
+          err instanceof Error
+            ? err.message
             : "Erro interno ao gerar imagem.",
       },
       { status: 500 }
