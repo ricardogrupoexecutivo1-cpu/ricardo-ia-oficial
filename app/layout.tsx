@@ -1,11 +1,13 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import "./globals.css";
+
 import AuroraClientBoot from "../components/AuroraClientBoot";
 import AuroraLanguageBoot from "../components/AuroraLanguageBoot";
 import LanguageSwitcher from "../components/LanguageSwitcher";
 import AuroraVoiceDock from "../components/AuroraVoiceDock";
 import AuroraReferenceUploadDock from "../components/AuroraReferenceUploadDock";
+import PwaInstallButton from "../components/PwaInstallButton";
 
 export const metadata: Metadata = {
   title: "Aurora IA",
@@ -26,9 +28,9 @@ const navLinkStyle: React.CSSProperties = {
 
 export default function RootLayout({
   children,
-}: Readonly<{
+}: {
   children: React.ReactNode;
-}>) {
+}) {
   return (
     <html lang="pt-BR" suppressHydrationWarning>
       <body
@@ -39,12 +41,17 @@ export default function RootLayout({
           color: "#eef6ff",
         }}
       >
+        {/* CORE SYSTEM */}
         <AuroraClientBoot />
         <AuroraLanguageBoot />
         <LanguageSwitcher />
+
+        {/* FEATURES */}
         <AuroraVoiceDock />
         <AuroraReferenceUploadDock />
+        <PwaInstallButton />
 
+        {/* HEADER */}
         <header
           style={{
             position: "sticky",
@@ -107,8 +114,10 @@ export default function RootLayout({
           </div>
         </header>
 
+        {/* MAIN */}
         <main>{children}</main>
 
+        {/* BOTÃO LIVRO */}
         <Link
           href="/livro"
           style={{
