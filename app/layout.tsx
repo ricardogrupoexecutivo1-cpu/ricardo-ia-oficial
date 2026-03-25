@@ -17,8 +17,31 @@ export default function RootLayout({
   return (
     <html lang="pt-BR" suppressHydrationWarning>
       <body suppressHydrationWarning style={{ margin: 0 }}>
+
         <AuroraClientBoot />
 
+        {/* 🌍 Idiomas no topo */}
+        <div
+          style={{
+            position: "fixed",
+            top: 10,
+            left: 10,
+            zIndex: 9999,
+            display: "flex",
+            gap: 8,
+            background: "rgba(0,0,0,0.6)",
+            padding: "6px 10px",
+            borderRadius: 12,
+            fontSize: 12,
+            backdropFilter: "blur(6px)",
+          }}
+        >
+          <span>🇧🇷 PT</span>
+          <span>🇺🇸 EN</span>
+          <span>🇪🇸 ES</span>
+        </div>
+
+        {/* 📘 Botão livro */}
         <Link
           href="/livro"
           style={{
@@ -37,11 +60,9 @@ export default function RootLayout({
             color: "#04110a",
             background: "linear-gradient(135deg, #22c55e, #86efac)",
             boxShadow: "0 16px 40px rgba(0,0,0,0.35)",
-            border: "1px solid rgba(255,255,255,0.18)",
           }}
         >
-          <span aria-hidden="true">📘</span>
-          <span>Livro</span>
+          📘 Livro
         </Link>
 
         {children}
