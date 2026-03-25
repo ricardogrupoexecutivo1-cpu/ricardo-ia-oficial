@@ -269,34 +269,38 @@ export default function AuroraVoiceDock() {
         right: 12,
         top: 132,
         zIndex: 120,
-        width: expanded ? "min(280px, calc(100vw - 24px))" : "auto",
-        display: "grid",
-        gap: 8,
       }}
     >
       <button
         type="button"
         onClick={() => setExpanded((prev) => !prev)}
         style={{
-          justifySelf: "end",
           border: "1px solid rgba(255,255,255,0.10)",
           background: "rgba(5,10,16,0.88)",
           color: "#eef6ff",
           borderRadius: 999,
-          padding: "10px 14px",
+          padding: "10px 12px",
           fontWeight: 800,
-          fontSize: 13,
+          fontSize: 12,
           cursor: "pointer",
           boxShadow: "0 12px 30px rgba(0,0,0,0.26)",
           backdropFilter: "blur(10px)",
+          display: "inline-flex",
+          alignItems: "center",
+          gap: 6,
         }}
       >
-        {speaking ? "🔊 Falando" : enabled ? "🎙 Voz ativa" : "🎙 Voz"}
+        <span aria-hidden="true">{speaking ? "🔊" : "🎙"}</span>
+        <span>{enabled ? "Voz" : "Áudio"}</span>
       </button>
 
       {expanded ? (
         <div
           style={{
+            position: "absolute",
+            top: 46,
+            right: 0,
+            width: "min(240px, calc(100vw - 24px))",
             background: "rgba(5,10,16,0.92)",
             border: "1px solid rgba(255,255,255,0.10)",
             borderRadius: 16,
@@ -307,52 +311,15 @@ export default function AuroraVoiceDock() {
         >
           <div
             style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              gap: 10,
-              marginBottom: 10,
+              fontSize: 11,
+              fontWeight: 800,
+              textTransform: "uppercase",
+              letterSpacing: 1,
+              color: "#7ee7b8",
+              marginBottom: 8,
             }}
           >
-            <div>
-              <div
-                style={{
-                  fontSize: 11,
-                  fontWeight: 800,
-                  textTransform: "uppercase",
-                  letterSpacing: 1,
-                  color: "#7ee7b8",
-                }}
-              >
-                Aurora Voice
-              </div>
-
-              <div
-                style={{
-                  fontSize: 12,
-                  color: "rgba(235,242,250,0.82)",
-                  marginTop: 4,
-                }}
-              >
-                Voz no chat sem atrapalhar sua digitação
-              </div>
-            </div>
-
-            <button
-              type="button"
-              onClick={() => setExpanded(false)}
-              style={{
-                border: "1px solid rgba(255,255,255,0.10)",
-                background: "rgba(255,255,255,0.04)",
-                color: "#eef6ff",
-                borderRadius: 10,
-                padding: "6px 8px",
-                fontWeight: 800,
-                cursor: "pointer",
-              }}
-            >
-              Fechar
-            </button>
+            Aurora Voice
           </div>
 
           {!supported ? (
@@ -418,12 +385,12 @@ export default function AuroraVoiceDock() {
               <p
                 style={{
                   margin: "10px 0 0",
-                  fontSize: 12,
-                  lineHeight: 1.45,
+                  fontSize: 11,
+                  lineHeight: 1.4,
                   color: "rgba(235,242,250,0.72)",
                 }}
               >
-                O painel agora fica fora da área de digitação no celular.
+                Painel compacto para não cobrir a digitação.
               </p>
             </>
           )}
