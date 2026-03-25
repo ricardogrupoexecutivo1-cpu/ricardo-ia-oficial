@@ -1,13 +1,39 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import crypto from "node:crypto";
+import { env, hasServiceRole } from "../../../lib/env";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const bucketName = "campaign-assets";
+const maxSizeInBytes = 10 * 1024 * 1024;
+
+const allowedMimeTypes = new Set([
+  "image/png",
+  "image/jpeg",
+  "image/jpg",
+  "image/webp",
+  "image/heic",
+  "image/heif",
+]);
+
+function jsonNoStore(body: unknown, init?: ResponseInit) {
+  const response = NextResponse.json(body, init);
+
+  response.headers.set(
+    "Cache-Control",
+    "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0"
+  );
+  response.headers.set("Pragma", "no-cache");
+  response.headers.set("Expires", "0");
+  response.headers.set("Surrogate-Control", "no-store");
+  response.headers.set("CDN-Cache-Control", "no-store");
+  response.headers.set("Vercel-CDN-Cache-Control", "no-store");
+
+  return response;
+}
 
 function sanitizeFileName(fileName: string) {
   return fileName
@@ -40,19 +66,30 @@ function getExtensionFromFile(file: File, safeOriginalName: string) {
   return mimeToExtension[file.type] || "png";
 }
 
+function buildSupabaseAdmin() {
+  if (!hasServiceRole()) {
+    throw new Error("SUPABASE_SERVICE_ROLE_KEY não configurada.");
+  }
+
+  return createClient(env.supabaseUrl, env.supabaseServiceRoleKey as string, {
+    auth: {
+      persistSession: false,
+      autoRefreshToken: false,
+    },
+  });
+}
+
 export async function POST(request: NextRequest) {
   try {
-    if (!supabaseUrl) {
-      return NextResponse.json(
-        { error: "NEXT_PUBLIC_SUPABASE_URL não configurada." },
-        { status: 500 }
-      );
-    }
+    const contentType = request.headers.get("content-type") || "";
 
-    if (!supabaseServiceRoleKey) {
-      return NextResponse.json(
-        { error: "SUPABASE_SERVICE_ROLE_KEY não configurada." },
-        { status: 500 }
+    if (!contentType.toLowerCase().includes("multipart/form-data")) {
+      return jsonNoStore(
+        {
+          ok: false,
+          error: "Envie o arquivo como multipart/form-data.",
+        },
+        { status: 400 }
       );
     }
 
@@ -60,25 +97,54 @@ export async function POST(request: NextRequest) {
     const maybeFile = formData.get("file");
 
     if (!maybeFile || typeof maybeFile === "string") {
-      return NextResponse.json(
-        { error: "Nenhum arquivo válido foi enviado no campo 'file'." },
+      return jsonNoStore(
+        {
+          ok: false,
+          error: "Nenhum arquivo válido foi enviado no campo 'file'.",
+        },
         { status: 400 }
       );
     }
 
     const file = maybeFile as File;
 
-    if (!file.type || !file.type.startsWith("image/")) {
-      return NextResponse.json(
-        { error: "Formato inválido. Envie um arquivo de imagem." },
+    if (!file.name?.trim()) {
+      return jsonNoStore(
+        {
+          ok: false,
+          error: "O arquivo enviado não possui nome válido.",
+        },
         { status: 400 }
       );
     }
 
-    const maxSizeInBytes = 10 * 1024 * 1024;
+    if (!file.type || !allowedMimeTypes.has(file.type.toLowerCase())) {
+      return jsonNoStore(
+        {
+          ok: false,
+          error:
+            "Formato inválido. Envie PNG, JPG, JPEG, WEBP, HEIC ou HEIF.",
+        },
+        { status: 400 }
+      );
+    }
+
+    if (file.size <= 0) {
+      return jsonNoStore(
+        {
+          ok: false,
+          error: "O arquivo enviado está vazio.",
+        },
+        { status: 400 }
+      );
+    }
+
     if (file.size > maxSizeInBytes) {
-      return NextResponse.json(
-        { error: "Arquivo muito grande. Limite de 10MB." },
+      return jsonNoStore(
+        {
+          ok: false,
+          error: "Arquivo muito grande. Limite de 10MB.",
+        },
         { status: 400 }
       );
     }
@@ -87,17 +153,19 @@ export async function POST(request: NextRequest) {
     const buffer = Buffer.from(arrayBuffer);
 
     if (!buffer.length) {
-      return NextResponse.json(
-        { error: "O arquivo enviado está vazio." },
+      return jsonNoStore(
+        {
+          ok: false,
+          error: "Não foi possível ler o conteúdo do arquivo.",
+        },
         { status: 400 }
       );
     }
 
-    const supabase = createClient(supabaseUrl, supabaseServiceRoleKey);
+    const supabase = buildSupabaseAdmin();
 
     const safeOriginalName = sanitizeFileName(file.name || "imagem");
     const extension = getExtensionFromFile(file, safeOriginalName);
-
     const filePath = `uploads/${Date.now()}-${crypto.randomUUID()}.${extension}`;
 
     const { error: uploadError } = await supabase.storage
@@ -108,8 +176,13 @@ export async function POST(request: NextRequest) {
       });
 
     if (uploadError) {
-      return NextResponse.json(
-        { error: `Erro no upload: ${uploadError.message}` },
+      console.error("Aurora IA: erro no upload para storage.", uploadError);
+
+      return jsonNoStore(
+        {
+          ok: false,
+          error: `Erro no upload: ${uploadError.message}`,
+        },
         { status: 500 }
       );
     }
@@ -119,40 +192,40 @@ export async function POST(request: NextRequest) {
     } = supabase.storage.from(bucketName).getPublicUrl(filePath);
 
     if (!publicUrl) {
-      return NextResponse.json(
-        { error: "Upload concluído, mas a URL pública não foi gerada." },
+      return jsonNoStore(
+        {
+          ok: false,
+          error: "Upload concluído, mas a URL pública não foi gerada.",
+        },
         { status: 500 }
       );
     }
 
-    return NextResponse.json(
+    return jsonNoStore(
       {
+        ok: true,
         success: true,
+        url: publicUrl,
         publicUrl,
         path: filePath,
         fileName: file.name || safeOriginalName,
         contentType: file.type,
         size: file.size,
       },
-      {
-        status: 200,
-        headers: {
-          "Cache-Control": "no-store, max-age=0",
-        },
-      }
+      { status: 200 }
     );
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "Erro interno no upload.";
 
-    return NextResponse.json(
-      { error: message },
+    console.error("Aurora IA: erro inesperado em /api/upload", error);
+
+    return jsonNoStore(
       {
-        status: 500,
-        headers: {
-          "Cache-Control": "no-store, max-age=0",
-        },
-      }
+        ok: false,
+        error: message,
+      },
+      { status: 500 }
     );
   }
 }
