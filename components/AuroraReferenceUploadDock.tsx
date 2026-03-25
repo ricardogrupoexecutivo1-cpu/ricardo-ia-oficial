@@ -110,7 +110,7 @@ export default function AuroraReferenceUploadDock() {
     if (!file) return;
 
     if (!isImageFile(file)) {
-      setMessage("Selecione uma imagem válida para usar como referência.");
+      setMessage("Selecione uma imagem válida.");
       return;
     }
 
@@ -141,7 +141,7 @@ export default function AuroraReferenceUploadDock() {
       const url = normalizeUploadUrl(data);
 
       if (!url) {
-        throw new Error("Upload concluído, mas a URL não foi retornada.");
+        throw new Error("Upload ok, mas sem URL.");
       }
 
       const uploadedRef: UploadedReference = {
@@ -154,7 +154,7 @@ export default function AuroraReferenceUploadDock() {
 
       setCurrentRef(uploadedRef);
       persistReference(uploadedRef);
-      setMessage("Imagem de referência ativa com sucesso.");
+      setMessage("Imagem ativa com sucesso.");
       setExpanded(true);
     } catch (error) {
       const text =
@@ -182,17 +182,17 @@ export default function AuroraReferenceUploadDock() {
       style={{
         position: "fixed",
         right: 16,
-        bottom: 76,
+        bottom: 60, // 🔥 ajuste fino aqui
         zIndex: 9999,
-        width: "min(360px, calc(100vw - 32px))",
+        width: "min(320px, calc(100vw - 32px))",
       }}
     >
       <div
         style={{
-          borderRadius: 20,
-          border: "1px solid rgba(255,255,255,0.10)",
-          background: "rgba(5,10,16,0.92)",
-          boxShadow: "0 18px 48px rgba(0,0,0,0.34)",
+          borderRadius: 18,
+          border: "1px solid rgba(255,255,255,0.08)",
+          background: "rgba(5,10,16,0.85)",
+          boxShadow: "0 12px 30px rgba(0,0,0,0.25)",
           backdropFilter: "blur(10px)",
           overflow: "hidden",
         }}
@@ -208,197 +208,69 @@ export default function AuroraReferenceUploadDock() {
             display: "flex",
             alignItems: "center",
             justifyContent: "space-between",
-            gap: 12,
-            padding: 14,
+            padding: 12,
             cursor: "pointer",
             fontWeight: 800,
-            fontSize: 14,
+            fontSize: 13,
           }}
         >
-          <span
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              gap: 10,
-            }}
-          >
-            <span aria-hidden="true">🖼️</span>
-            <span>Imagem própria / logomarca</span>
+          <span style={{ display: "flex", gap: 8 }}>
+            🖼️ Imagem / logo
           </span>
-
-          <span
-            style={{
-              fontSize: 12,
-              color: "rgba(255,255,255,0.72)",
-            }}
-          >
+          <span style={{ fontSize: 11 }}>
             {expanded ? "Fechar" : "Abrir"}
           </span>
         </button>
 
-        {expanded ? (
-          <div
-            style={{
-              borderTop: "1px solid rgba(255,255,255,0.08)",
-              padding: 14,
-              display: "grid",
-              gap: 12,
-            }}
-          >
-            <p
-              style={{
-                margin: 0,
-                fontSize: 12,
-                lineHeight: 1.5,
-                color: "rgba(235,242,250,0.78)",
-              }}
+        {expanded && (
+          <div style={{ padding: 12 }}>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleFileSelected}
+            />
+
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              disabled={uploading}
+              style={primaryButton}
             >
-              Suba sua imagem, arte ou logomarca para usar como referência em
-              campanhas, criativos e geração visual.
-            </p>
+              {uploading ? "Enviando..." : "Subir imagem"}
+            </button>
 
-            <div
-              style={{
-                display: "grid",
-                gap: 10,
-              }}
-            >
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/png,image/jpeg,image/webp,image/jpg"
-                onChange={handleFileSelected}
-                style={{
-                  color: "#eef6ff",
-                  fontSize: 13,
-                }}
-              />
+            {currentRef && (
+              <button onClick={removeReference} style={secondaryButton}>
+                Remover
+              </button>
+            )}
 
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: currentRef ? "1fr 1fr" : "1fr",
-                  gap: 10,
-                }}
-              >
-                <button
-                  type="button"
-                  onClick={() => fileInputRef.current?.click()}
-                  disabled={uploading}
-                  style={primaryButton}
-                >
-                  {uploading ? "Enviando..." : "Subir imagem / logo"}
-                </button>
-
-                {currentRef ? (
-                  <button
-                    type="button"
-                    onClick={removeReference}
-                    style={secondaryButton}
-                  >
-                    Remover referência
-                  </button>
-                ) : null}
-              </div>
-            </div>
-
-            {currentRef ? (
-              <div
-                style={{
-                  borderRadius: 16,
-                  border: "1px solid rgba(126,231,184,0.25)",
-                  background: "rgba(126,231,184,0.08)",
-                  padding: 12,
-                  display: "grid",
-                  gap: 10,
-                }}
-              >
-                <div
-                  style={{
-                    fontSize: 12,
-                    fontWeight: 800,
-                    color: "#7ee7b8",
-                    textTransform: "uppercase",
-                    letterSpacing: 1,
-                  }}
-                >
-                  Referência ativa
-                </div>
-
-                <div
-                  style={{
-                    display: "grid",
-                    gap: 6,
-                    color: "#eef6ff",
-                    fontSize: 13,
-                  }}
-                >
-                  <div>
-                    <strong>Arquivo:</strong> {currentRef.name}
-                  </div>
-                  <div>
-                    <strong>Tipo:</strong>{" "}
-                    {currentRef.type === "logo" ? "Logomarca" : "Imagem"}
-                  </div>
-                </div>
-
-                <a
-                  href={currentRef.url}
-                  target="_blank"
-                  rel="noreferrer"
-                  style={{
-                    textDecoration: "none",
-                    color: "#04110a",
-                    background: "linear-gradient(135deg, #22c55e, #86efac)",
-                    padding: "10px 12px",
-                    borderRadius: 12,
-                    fontWeight: 800,
-                    textAlign: "center",
-                  }}
-                >
-                  Ver referência enviada
-                </a>
-              </div>
-            ) : null}
-
-            {message ? (
-              <div
-                style={{
-                  borderRadius: 14,
-                  padding: 12,
-                  background: "rgba(255,255,255,0.04)",
-                  border: "1px solid rgba(255,255,255,0.08)",
-                  color: "#eef6ff",
-                  fontSize: 12,
-                  lineHeight: 1.5,
-                }}
-              >
-                {message}
-              </div>
-            ) : null}
+            {message && <p style={{ fontSize: 12 }}>{message}</p>}
           </div>
-        ) : null}
+        )}
       </div>
     </div>
   );
 }
 
 const primaryButton: React.CSSProperties = {
-  border: "1px solid rgba(126,231,184,0.35)",
-  background: "rgba(126,231,184,0.14)",
-  color: "#eefcf5",
-  borderRadius: 12,
-  padding: "12px 14px",
+  marginTop: 8,
+  padding: 10,
+  borderRadius: 10,
+  background: "#22c55e",
+  border: "none",
+  color: "#04110a",
   fontWeight: 800,
   cursor: "pointer",
 };
 
 const secondaryButton: React.CSSProperties = {
-  border: "1px solid rgba(255,255,255,0.12)",
+  marginTop: 8,
+  padding: 10,
+  borderRadius: 10,
   background: "rgba(255,255,255,0.05)",
-  color: "#f5fbff",
-  borderRadius: 12,
-  padding: "12px 14px",
+  border: "1px solid rgba(255,255,255,0.1)",
+  color: "#fff",
   fontWeight: 800,
   cursor: "pointer",
 };
