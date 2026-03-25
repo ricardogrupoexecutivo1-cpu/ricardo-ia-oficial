@@ -5,6 +5,7 @@ import AuroraClientBoot from "../components/AuroraClientBoot";
 import AuroraLanguageBoot from "../components/AuroraLanguageBoot";
 import LanguageSwitcher from "../components/LanguageSwitcher";
 import AuroraVoiceDock from "../components/AuroraVoiceDock";
+import AuroraReferenceUploadDock from "../components/AuroraReferenceUploadDock";
 
 export const metadata: Metadata = {
   title: "Aurora IA",
@@ -42,6 +43,7 @@ export default function RootLayout({
         <AuroraLanguageBoot />
         <LanguageSwitcher />
         <AuroraVoiceDock />
+        <AuroraReferenceUploadDock />
 
         <header
           style={{
