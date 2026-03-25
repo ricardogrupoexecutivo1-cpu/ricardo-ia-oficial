@@ -120,6 +120,7 @@ export default function AuroraVoiceDock() {
   const [supported, setSupported] = useState(false);
   const [speaking, setSpeaking] = useState(false);
   const [voicesReady, setVoicesReady] = useState(false);
+  const [expanded, setExpanded] = useState(false);
   const lastSpokenRef = useRef("");
   const observerRef = useRef<MutationObserver | null>(null);
 
@@ -265,142 +266,169 @@ export default function AuroraVoiceDock() {
     <div
       style={{
         position: "fixed",
-        left: 16,
-        bottom: 76,
-        zIndex: 9999,
+        right: 12,
+        top: 132,
+        zIndex: 120,
+        width: expanded ? "min(280px, calc(100vw - 24px))" : "auto",
         display: "grid",
-        gap: 10,
-        maxWidth: 320,
+        gap: 8,
       }}
     >
-      <div
+      <button
+        type="button"
+        onClick={() => setExpanded((prev) => !prev)}
         style={{
-          background: "rgba(5,10,16,0.88)",
+          justifySelf: "end",
           border: "1px solid rgba(255,255,255,0.10)",
-          borderRadius: 18,
-          padding: 14,
-          boxShadow: "0 18px 48px rgba(0,0,0,0.34)",
+          background: "rgba(5,10,16,0.88)",
+          color: "#eef6ff",
+          borderRadius: 999,
+          padding: "10px 14px",
+          fontWeight: 800,
+          fontSize: 13,
+          cursor: "pointer",
+          boxShadow: "0 12px 30px rgba(0,0,0,0.26)",
           backdropFilter: "blur(10px)",
         }}
       >
+        {speaking ? "🔊 Falando" : enabled ? "🎙 Voz ativa" : "🎙 Voz"}
+      </button>
+
+      {expanded ? (
         <div
           style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            gap: 10,
-            marginBottom: 10,
+            background: "rgba(5,10,16,0.92)",
+            border: "1px solid rgba(255,255,255,0.10)",
+            borderRadius: 16,
+            padding: 12,
+            boxShadow: "0 18px 48px rgba(0,0,0,0.34)",
+            backdropFilter: "blur(10px)",
           }}
         >
-          <div>
-            <div
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              gap: 10,
+              marginBottom: 10,
+            }}
+          >
+            <div>
+              <div
+                style={{
+                  fontSize: 11,
+                  fontWeight: 800,
+                  textTransform: "uppercase",
+                  letterSpacing: 1,
+                  color: "#7ee7b8",
+                }}
+              >
+                Aurora Voice
+              </div>
+
+              <div
+                style={{
+                  fontSize: 12,
+                  color: "rgba(235,242,250,0.82)",
+                  marginTop: 4,
+                }}
+              >
+                Voz no chat sem atrapalhar sua digitação
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setExpanded(false)}
               style={{
-                fontSize: 11,
+                border: "1px solid rgba(255,255,255,0.10)",
+                background: "rgba(255,255,255,0.04)",
+                color: "#eef6ff",
+                borderRadius: 10,
+                padding: "6px 8px",
                 fontWeight: 800,
-                textTransform: "uppercase",
-                letterSpacing: 1,
-                color: "#7ee7b8",
+                cursor: "pointer",
               }}
             >
-              Aurora Voice
-            </div>
+              Fechar
+            </button>
+          </div>
 
+          {!supported ? (
             <div
               style={{
-                fontSize: 13,
-                color: "rgba(235,242,250,0.86)",
-                marginTop: 4,
-              }}
-            >
-              Respostas faladas no chat
-            </div>
-          </div>
-
-          <div
-            style={{
-              fontSize: 12,
-              fontWeight: 700,
-              color: speaking ? "#7ee7b8" : "rgba(235,242,250,0.7)",
-            }}
-          >
-            {speaking ? "Falando..." : enabled ? "Ativo" : "Parado"}
-          </div>
-        </div>
-
-        {!supported ? (
-          <div
-            style={{
-              fontSize: 12,
-              lineHeight: 1.5,
-              color: "#ffd7d7",
-              background: "rgba(255,80,80,0.10)",
-              border: "1px solid rgba(255,120,120,0.28)",
-              borderRadius: 12,
-              padding: 10,
-            }}
-          >
-            Voz do navegador não disponível neste dispositivo.
-          </div>
-        ) : (
-          <>
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "1fr 1fr",
-                gap: 8,
-              }}
-            >
-              <button
-                type="button"
-                onClick={() => {
-                  const next = !enabled;
-                  setEnabled(next);
-
-                  try {
-                    window.localStorage.setItem(
-                      STORAGE_KEY_ENABLED,
-                      String(next)
-                    );
-                  } catch (error) {
-                    console.error("Aurora IA: erro salvando voz ativa.", error);
-                  }
-
-                  if (!next && "speechSynthesis" in window) {
-                    window.speechSynthesis.cancel();
-                    setSpeaking(false);
-                  }
-                }}
-                style={buttonPrimary}
-              >
-                {enabled ? "Desativar voz" : "Ativar voz"}
-              </button>
-
-              <button
-                type="button"
-                onClick={() => {
-                  const latest = findLatestAssistantMessage();
-                  if (latest) speak(latest);
-                }}
-                style={buttonSecondary}
-              >
-                Ler última
-              </button>
-            </div>
-
-            <p
-              style={{
-                margin: "10px 0 0",
                 fontSize: 12,
-                lineHeight: 1.45,
-                color: "rgba(235,242,250,0.75)",
+                lineHeight: 1.5,
+                color: "#ffd7d7",
+                background: "rgba(255,80,80,0.10)",
+                border: "1px solid rgba(255,120,120,0.28)",
+                borderRadius: 12,
+                padding: 10,
               }}
             >
-              A Aurora pode falar automaticamente a resposta mais recente.
-              Microfone entra no próximo passo.
-            </p>
-          </>
-        )}
-      </div>
+              Voz do navegador não disponível neste dispositivo.
+            </div>
+          ) : (
+            <>
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "1fr 1fr",
+                  gap: 8,
+                }}
+              >
+                <button
+                  type="button"
+                  onClick={() => {
+                    const next = !enabled;
+                    setEnabled(next);
+
+                    try {
+                      window.localStorage.setItem(
+                        STORAGE_KEY_ENABLED,
+                        String(next)
+                      );
+                    } catch (error) {
+                      console.error("Aurora IA: erro salvando voz ativa.", error);
+                    }
+
+                    if (!next && "speechSynthesis" in window) {
+                      window.speechSynthesis.cancel();
+                      setSpeaking(false);
+                    }
+                  }}
+                  style={buttonPrimary}
+                >
+                  {enabled ? "Desativar" : "Ativar"}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    const latest = findLatestAssistantMessage();
+                    if (latest) speak(latest);
+                  }}
+                  style={buttonSecondary}
+                >
+                  Ler última
+                </button>
+              </div>
+
+              <p
+                style={{
+                  margin: "10px 0 0",
+                  fontSize: 12,
+                  lineHeight: 1.45,
+                  color: "rgba(235,242,250,0.72)",
+                }}
+              >
+                O painel agora fica fora da área de digitação no celular.
+              </p>
+            </>
+          )}
+        </div>
+      ) : null}
     </div>
   );
 }
