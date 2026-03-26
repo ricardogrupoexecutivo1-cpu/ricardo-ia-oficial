@@ -1,225 +1,284 @@
-"use client";
-
 import Link from "next/link";
-
-type Veiculo = {
-  id: string;
-  slug: string;
-  nome: string;
-  preco: number;
-  cidade: string;
-  ano: string;
-  imagem: string;
-  cambio: string;
-  combustivel: string;
-};
-
-const veiculos: Veiculo[] = [
-  {
-    id: "1",
-    slug: "seminovos-raja",
-    nome: "Toyota Hilux",
-    preco: 180000,
-    cidade: "Belo Horizonte",
-    ano: "2022",
-    cambio: "Automático",
-    combustivel: "Diesel",
-    imagem:
-      "https://images.unsplash.com/photo-1511919884226-fd3cad34687c?auto=format&fit=crop&w=800&q=80",
-  },
-  {
-    id: "2",
-    slug: "aurora-motors",
-    nome: "Jeep Compass",
-    preco: 150000,
-    cidade: "Lagoa Santa",
-    ano: "2023",
-    cambio: "Automático",
-    combustivel: "Flex",
-    imagem:
-      "https://images.unsplash.com/photo-1494976688153-c85f95c5f258?auto=format&fit=crop&w=800&q=80",
-  },
-  {
-    id: "3",
-    slug: "seminovos-raja",
-    nome: "Chevrolet Onix",
-    preco: 78900,
-    cidade: "Contagem",
-    ano: "2021",
-    cambio: "Manual",
-    combustivel: "Flex",
-    imagem:
-      "https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&w=800&q=80",
-  },
-  {
-    id: "4",
-    slug: "aurora-motors",
-    nome: "Volkswagen T-Cross",
-    preco: 119900,
-    cidade: "Betim",
-    ano: "2022",
-    cambio: "Automático",
-    combustivel: "Flex",
-    imagem:
-      "https://images.unsplash.com/photo-1549399542-7e3f8b79c341?auto=format&fit=crop&w=800&q=80",
-  },
-  {
-    id: "5",
-    slug: "seminovos-raja",
-    nome: "Fiat Toro",
-    preco: 132900,
-    cidade: "Belo Horizonte",
-    ano: "2021",
-    cambio: "Automático",
-    combustivel: "Diesel",
-    imagem:
-      "https://images.unsplash.com/photo-1552519507-da3b142c6e3d?auto=format&fit=crop&w=800&q=80",
-  },
-  {
-    id: "6",
-    slug: "aurora-motors",
-    nome: "Hyundai Creta",
-    preco: 124900,
-    cidade: "Pedro Leopoldo",
-    ano: "2023",
-    cambio: "Automático",
-    combustivel: "Flex",
-    imagem:
-      "https://images.unsplash.com/photo-1502161254066-6c74afbf07aa?auto=format&fit=crop&w=800&q=80",
-  },
-  {
-    id: "7",
-    slug: "seminovos-raja",
-    nome: "Renault Kwid",
-    preco: 55900,
-    cidade: "Vespasiano",
-    ano: "2020",
-    cambio: "Manual",
-    combustivel: "Flex",
-    imagem:
-      "https://images.unsplash.com/photo-1489824904134-891ab64532f1?auto=format&fit=crop&w=800&q=80",
-  },
-  {
-    id: "8",
-    slug: "aurora-motors",
-    nome: "Toyota Corolla",
-    preco: 139900,
-    cidade: "Sete Lagoas",
-    ano: "2022",
-    cambio: "Automático",
-    combustivel: "Flex",
-    imagem:
-      "https://images.unsplash.com/photo-1492144534655-ae79c964c9d7?auto=format&fit=crop&w=800&q=80",
-  },
-  {
-    id: "9",
-    slug: "seminovos-raja",
-    nome: "Honda HR-V",
-    preco: 128900,
-    cidade: "Santa Luzia",
-    ano: "2022",
-    cambio: "Automático",
-    combustivel: "Flex",
-    imagem:
-      "https://images.unsplash.com/photo-1502877338535-766e1452684a?auto=format&fit=crop&w=800&q=80",
-  },
-  {
-    id: "10",
-    slug: "aurora-motors",
-    nome: "Nissan Kicks",
-    preco: 112900,
-    cidade: "Venda Nova",
-    ano: "2021",
-    cambio: "Automático",
-    combustivel: "Flex",
-    imagem:
-      "https://images.unsplash.com/photo-1503736334956-4c8f8e92946d?auto=format&fit=crop&w=800&q=80",
-  },
-  {
-    id: "11",
-    slug: "seminovos-raja",
-    nome: "Ford Ranger",
-    preco: 169900,
-    cidade: "BH",
-    ano: "2022",
-    cambio: "Automático",
-    combustivel: "Diesel",
-    imagem:
-      "https://images.unsplash.com/photo-1493238792000-8113da705763?auto=format&fit=crop&w=800&q=80",
-  },
-  {
-    id: "12",
-    slug: "aurora-motors",
-    nome: "Fiat Argo",
-    preco: 69900,
-    cidade: "Confins",
-    ano: "2021",
-    cambio: "Manual",
-    combustivel: "Flex",
-    imagem:
-      "https://images.unsplash.com/photo-1517524008697-84bbe3c3fd98?auto=format&fit=crop&w=800&q=80",
-  },
-];
 
 export default function LocadoraPage() {
   return (
-    <main className="min-h-screen bg-black text-white">
-      <section className="px-2 py-3 sm:px-3 lg:px-4">
-        <div className="mb-3 border-b border-zinc-800 pb-2">
-          <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-green-400">
-            Aurora Locadora
-          </p>
-
-          <h1 className="mt-1 text-lg font-bold sm:text-xl">
-            Vitrine de veículos
-          </h1>
-
-          <p className="mt-1 text-[11px] text-zinc-400 sm:text-xs">
-            Escolha um veículo para ver detalhes. Sistema em constante atualização e pode haver momentos de instabilidade.
-          </p>
+    <main
+      style={{
+        minHeight: "100vh",
+        background:
+          "radial-gradient(circle at top, #0f172a 0%, #020617 45%, #000000 100%)",
+        color: "#ffffff",
+      }}
+    >
+      <section
+        style={{
+          maxWidth: "1200px",
+          margin: "0 auto",
+          padding: "40px 20px 80px",
+        }}
+      >
+        <div
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 10,
+            padding: "8px 14px",
+            borderRadius: 999,
+            background: "rgba(15,23,42,0.7)",
+            border: "1px solid rgba(34,197,94,0.35)",
+            color: "#86efac",
+            fontWeight: 800,
+            fontSize: 14,
+            marginBottom: 20,
+          }}
+        >
+          Aurora Locadoras
         </div>
 
-        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6">
-          {veiculos.map((v) => (
-            <Link
-              key={v.id}
-              href={`/locadora/${v.slug}/veiculo/${v.id}`}
-              className="group overflow-hidden rounded-md border border-zinc-800 bg-zinc-950 transition hover:border-green-500/40 hover:bg-zinc-900"
-            >
-              <div className="h-[74px] w-full overflow-hidden bg-zinc-800 sm:h-[82px] md:h-[88px]">
-                <img
-                  src={v.imagem}
-                  alt={`${v.nome} ${v.ano}`}
-                  className="h-full w-full object-cover transition duration-300 group-hover:scale-105"
-                  loading="lazy"
-                />
-              </div>
+        <h1
+          style={{
+            margin: 0,
+            fontSize: "clamp(34px, 5vw, 58px)",
+            lineHeight: 1.05,
+            fontWeight: 900,
+            letterSpacing: "-0.03em",
+          }}
+        >
+          Gestão comercial e cadastros da
+          <span style={{ color: "#22c55e" }}> Aurora Locadoras</span>
+        </h1>
 
-              <div className="p-2">
-                <h2 className="line-clamp-1 text-[12px] font-semibold leading-4 text-white">
-                  {v.nome}
-                </h2>
+        <p
+          style={{
+            maxWidth: 900,
+            marginTop: 18,
+            color: "#cbd5e1",
+            fontSize: 18,
+            lineHeight: 1.7,
+          }}
+        >
+          Cadastre veículos, clientes, parceiros, bancos e acompanhe propostas
+          dentro de uma estrutura pronta para operação e conversão. Estamos em
+          constante atualização e pode haver momentos de instabilidade.
+        </p>
 
-                <div className="mt-1 text-[10px] leading-4 text-zinc-400">
-                  {v.ano} • {v.cambio}
-                </div>
+        <div
+          style={{
+            display: "flex",
+            flexWrap: "wrap",
+            gap: 14,
+            marginTop: 28,
+          }}
+        >
+          <Link href="/locadora/cadastros" style={primaryButton}>
+            Abrir central de cadastros
+          </Link>
 
-                <p className="mt-1 text-[14px] font-bold text-green-400">
-                  R$ {v.preco.toLocaleString("pt-BR")}
+          <Link href="/locadora/admin" style={secondaryButton}>
+            Painel da locadora
+          </Link>
+
+          <Link href="/" style={secondaryButton}>
+            Voltar para home
+          </Link>
+        </div>
+
+        <section style={{ marginTop: 42 }}>
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",
+              gap: 18,
+            }}
+          >
+            <Link href="/locadora/cadastros?tipo=veiculos" style={cardLink}>
+              <article style={card}>
+                <div style={emojiBox}>🚗</div>
+                <h2 style={title}>Cadastrar veículos</h2>
+                <p style={text}>
+                  Entradas de carros, utilitários, preços, disponibilidade e
+                  vitrine comercial.
                 </p>
-
-                <p className="mt-1 line-clamp-1 text-[10px] leading-4 text-zinc-400">
-                  {v.cidade} • {v.combustivel}
-                </p>
-
-                <div className="mt-2 inline-flex w-full items-center justify-center rounded-md bg-green-500 px-2 py-1.5 text-[10px] font-bold text-black transition group-hover:bg-green-400">
-                  Ver detalhes
-                </div>
-              </div>
+                <span style={actionGreen}>Abrir cadastro de veículos</span>
+              </article>
             </Link>
-          ))}
-        </div>
+
+            <Link href="/locadora/cadastros?tipo=clientes" style={cardLink}>
+              <article style={card}>
+                <div style={emojiBox}>👤</div>
+                <h2 style={title}>Cadastrar clientes</h2>
+                <p style={text}>
+                  Cadastro de clientes, contatos, documentos e histórico de
+                  atendimento.
+                </p>
+                <span style={actionGreen}>Abrir cadastro de clientes</span>
+              </article>
+            </Link>
+
+            <Link href="/locadora/cadastros?tipo=bancos" style={cardLink}>
+              <article style={card}>
+                <div style={emojiBox}>🏦</div>
+                <h2 style={title}>Cadastrar bancos</h2>
+                <p style={text}>
+                  Instituições financeiras parceiras para financiamento, retorno
+                  e aprovação de propostas.
+                </p>
+                <span style={actionGreen}>Abrir cadastro de bancos</span>
+              </article>
+            </Link>
+
+            <Link href="/locadora/cadastros?tipo=parceiros" style={cardLink}>
+              <article style={card}>
+                <div style={emojiBox}>🤝</div>
+                <h2 style={title}>Cadastrar parceiros</h2>
+                <p style={text}>
+                  Lojas, vendedores, parceiros comerciais e origens de negócio.
+                </p>
+                <span style={actionGreen}>Abrir cadastro de parceiros</span>
+              </article>
+            </Link>
+          </div>
+        </section>
+
+        <section
+          style={{
+            marginTop: 46,
+            padding: 22,
+            borderRadius: 22,
+            background: "rgba(15,23,42,0.72)",
+            border: "1px solid rgba(148,163,184,0.16)",
+          }}
+        >
+          <h3
+            style={{
+              margin: "0 0 12px",
+              fontSize: 22,
+              fontWeight: 800,
+            }}
+          >
+            Fluxo recomendado da locadora
+          </h3>
+
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+              gap: 14,
+            }}
+          >
+            <div style={stepBox}>
+              <strong>1. Cadastrar estoque</strong>
+              <p style={stepText}>Veículos e condições comerciais.</p>
+            </div>
+
+            <div style={stepBox}>
+              <strong>2. Cadastrar cliente</strong>
+              <p style={stepText}>Contato, perfil e documentos.</p>
+            </div>
+
+            <div style={stepBox}>
+              <strong>3. Enviar proposta</strong>
+              <p style={stepText}>Ligação com bancos e parceiros.</p>
+            </div>
+
+            <div style={stepBox}>
+              <strong>4. Fechar operação</strong>
+              <p style={stepText}>Comissão e acompanhamento comercial.</p>
+            </div>
+          </div>
+        </section>
       </section>
     </main>
   );
 }
+
+const primaryButton: React.CSSProperties = {
+  display: "inline-flex",
+  alignItems: "center",
+  justifyContent: "center",
+  minHeight: 48,
+  padding: "0 18px",
+  borderRadius: 14,
+  textDecoration: "none",
+  fontWeight: 800,
+  fontSize: 15,
+  color: "#02140a",
+  background: "linear-gradient(135deg, #22c55e, #4ade80)",
+  boxShadow: "0 10px 30px rgba(34,197,94,0.25)",
+};
+
+const secondaryButton: React.CSSProperties = {
+  display: "inline-flex",
+  alignItems: "center",
+  justifyContent: "center",
+  minHeight: 48,
+  padding: "0 18px",
+  borderRadius: 14,
+  textDecoration: "none",
+  fontWeight: 700,
+  fontSize: 15,
+  color: "#e5e7eb",
+  border: "1px solid rgba(148,163,184,0.28)",
+  background: "rgba(15,23,42,0.62)",
+};
+
+const cardLink: React.CSSProperties = {
+  textDecoration: "none",
+  color: "inherit",
+};
+
+const card: React.CSSProperties = {
+  height: "100%",
+  padding: 22,
+  borderRadius: 22,
+  background: "linear-gradient(180deg, rgba(15,23,42,0.92), rgba(2,6,23,0.96))",
+  border: "1px solid rgba(148,163,184,0.18)",
+  boxShadow: "0 14px 40px rgba(0,0,0,0.28)",
+};
+
+const emojiBox: React.CSSProperties = {
+  width: 58,
+  height: 58,
+  borderRadius: 16,
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  fontSize: 28,
+  background: "rgba(255,255,255,0.05)",
+  marginBottom: 16,
+};
+
+const title: React.CSSProperties = {
+  margin: "0 0 10px",
+  fontSize: 24,
+  fontWeight: 800,
+};
+
+const text: React.CSSProperties = {
+  margin: 0,
+  color: "#cbd5e1",
+  lineHeight: 1.65,
+  fontSize: 15,
+};
+
+const actionGreen: React.CSSProperties = {
+  display: "inline-block",
+  marginTop: 18,
+  color: "#86efac",
+  fontWeight: 800,
+  fontSize: 15,
+};
+
+const stepBox: React.CSSProperties = {
+  padding: 16,
+  borderRadius: 16,
+  background: "rgba(2,6,23,0.72)",
+  border: "1px solid rgba(148,163,184,0.14)",
+};
+
+const stepText: React.CSSProperties = {
+  margin: "8px 0 0",
+  color: "#cbd5e1",
+  lineHeight: 1.55,
+  fontSize: 14,
+};
