@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import Script from "next/script";
 import "./globals.css";
 
 import AuroraClientBoot from "../components/AuroraClientBoot";
@@ -26,6 +27,8 @@ const navLinkStyle: React.CSSProperties = {
   border: "1px solid rgba(255,255,255,0.08)",
 };
 
+const GA_ID = "G-2WZB09PH45";
+
 export default function RootLayout({
   children,
 }: {
@@ -41,6 +44,23 @@ export default function RootLayout({
           color: "#eef6ff",
         }}
       >
+        <Script
+          src={`https://www.googletagmanager.com/gtag/js?id=${GA_ID}`}
+          strategy="afterInteractive"
+        />
+
+        <Script id="google-analytics" strategy="afterInteractive">
+          {`
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            window.gtag = gtag;
+            gtag('js', new Date());
+            gtag('config', '${GA_ID}', {
+              page_path: window.location.pathname,
+            });
+          `}
+        </Script>
+
         {/* CORE SYSTEM */}
         <AuroraClientBoot />
         <AuroraLanguageBoot />
