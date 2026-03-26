@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { useSearchParams } from "next/navigation";
 
 type AdvertiserType =
   | "locadora"
@@ -277,8 +276,6 @@ const styles = {
 };
 
 export default function CadastroAnunciantePage() {
-  const searchParams = useSearchParams();
-
   const [form, setForm] = useState<FormState>(initialState);
   const [submitted, setSubmitted] = useState(false);
   const [submitStatus, setSubmitStatus] = useState<SubmitStatus>("idle");
@@ -286,7 +283,10 @@ export default function CadastroAnunciantePage() {
   const [createdId, setCreatedId] = useState("");
 
   useEffect(() => {
-    const tipo = searchParams.get("tipo")?.trim().toLowerCase() ?? "";
+    if (typeof window === "undefined") return;
+
+    const params = new URLSearchParams(window.location.search);
+    const tipo = params.get("tipo")?.trim().toLowerCase() ?? "";
 
     if (isAdvertiserType(tipo)) {
       setForm((current) => ({
@@ -294,7 +294,7 @@ export default function CadastroAnunciantePage() {
         advertiserType: tipo,
       }));
     }
-  }, [searchParams]);
+  }, []);
 
   const whatsappPreview = useMemo(
     () => buildWhatsAppLink(form.whatsapp, form.companyName),
