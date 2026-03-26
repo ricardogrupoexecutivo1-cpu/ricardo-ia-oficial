@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
+import { isLocadoraAdminAuthenticated } from "@/lib/locadora-admin-auth";
 import { getLocadoraServerClient } from "@/lib/supabase-locadora-server";
 
 type VehicleBody = {
   id?: string;
   sellerId?: string;
+  tenantSlug?: string;
   slug?: string;
   title?: string;
   brand?: string;
@@ -16,18 +18,20 @@ type VehicleBody = {
   priceSale?: number | string | null;
   priceRentDaily?: number | string | null;
   location?: string;
+  city?: string;
+  state?: string;
   image?: string;
   featured?: boolean;
   description?: string;
   badge?: string;
   active?: boolean;
+  platformCommissionPercent?: number | string | null;
 };
 
 function normalizeNumber(value: unknown) {
   if (value === null || value === undefined || value === "") {
     return null;
   }
-
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : null;
 }
@@ -41,13 +45,22 @@ function normalizeSlug(value: string) {
     .replace(/^-+|-+$/g, "");
 }
 
+async function ensureAdmin() {
+  return await isLocadoraAdminAuthenticated();
+}
+
 export async function GET() {
   try {
+    const auth = await ensureAdmin();
+    if (!auth) {
+      return NextResponse.json({ error: "Não autorizado." }, { status: 401 });
+    }
+
     const supabase = getLocadoraServerClient();
 
     if (!supabase) {
       return NextResponse.json(
-        { error: "Supabase não configurado no servidor." },
+        { error: "Supabase não configurado." },
         { status: 500 }
       );
     }
@@ -58,7 +71,9 @@ export async function GET() {
         *,
         seller:locadora_sellers (
           id,
-          name,
+          tenant_slug,
+          company_name,
+          trade_name,
           logo_text,
           tagline,
           phone,
@@ -68,7 +83,7 @@ export async function GET() {
       .order("created_at", { ascending: false });
 
     if (error) {
-      console.error("Erro ao listar veículos admin:", error);
+      console.error(error);
       return NextResponse.json(
         { error: "Erro ao listar veículos." },
         { status: 500 }
@@ -76,10 +91,9 @@ export async function GET() {
     }
 
     return NextResponse.json({ vehicles: data || [] });
-  } catch (error) {
-    console.error("Erro geral ao listar veículos admin:", error);
+  } catch (e) {
     return NextResponse.json(
-      { error: "Erro interno ao listar veículos." },
+      { error: "Erro interno." },
       { status: 500 }
     );
   }
@@ -87,119 +101,88 @@ export async function GET() {
 
 export async function POST(req: NextRequest) {
   try {
+    const auth = await ensureAdmin();
+    if (!auth) {
+      return NextResponse.json({ error: "Não autorizado." }, { status: 401 });
+    }
+
     const body = (await req.json()) as VehicleBody;
 
-    const sellerId = (body.sellerId || "").trim();
+    const sellerId = body.sellerId || "";
+    const tenantSlug = body.tenantSlug || "";
+
+    if (!sellerId || !tenantSlug) {
+      return NextResponse.json(
+        { error: "Locadora inválida." },
+        { status: 400 }
+      );
+    }
+
     const title = (body.title || "").trim();
     const brand = (body.brand || "").trim();
     const model = (body.model || "").trim();
-    const category = (body.category || "").trim();
-    const fuel = (body.fuel || "").trim();
-    const transmission = (body.transmission || "").trim();
-    const location = (body.location || "").trim();
-    const image = (body.image || "").trim();
-    const description = (body.description || "").trim();
-    const badge = (body.badge || "").trim();
-    const featured = Boolean(body.featured);
-
-    const year = normalizeNumber(body.year);
-    const priceSale = normalizeNumber(body.priceSale);
-    const priceRentDaily = normalizeNumber(body.priceRentDaily);
-
-    const mode = Array.isArray(body.mode)
-      ? body.mode
-          .map((item) => String(item).trim().toLowerCase())
-          .filter(Boolean)
-      : [];
-
-    if (!sellerId) {
-      return NextResponse.json(
-        { error: "Selecione a locadora." },
-        { status: 400 }
-      );
-    }
 
     if (!title || !brand || !model) {
       return NextResponse.json(
-        { error: "Informe título, marca e modelo." },
+        { error: "Título, marca e modelo obrigatórios." },
         { status: 400 }
       );
     }
 
+    const year = normalizeNumber(body.year);
     if (!year) {
       return NextResponse.json(
-        { error: "Informe o ano do veículo." },
+        { error: "Ano inválido." },
         { status: 400 }
       );
     }
 
-    if (!category || !fuel || !transmission || !location || !image || !description) {
-      return NextResponse.json(
-        { error: "Preencha categoria, combustível, câmbio, local, imagem e descrição." },
-        { status: 400 }
-      );
-    }
-
-    if (!mode.length) {
-      return NextResponse.json(
-        { error: "Selecione pelo menos uma modalidade: venda e/ou aluguel." },
-        { status: 400 }
-      );
-    }
-
-    const slugBase = (body.slug || "").trim() || `${title}-${year}`;
-    const slug = normalizeSlug(slugBase);
+    const slug = normalizeSlug(body.slug || `${title}-${year}`);
 
     const supabase = getLocadoraServerClient();
 
-    if (!supabase) {
-      return NextResponse.json(
-        { error: "Supabase não configurado no servidor." },
-        { status: 500 }
-      );
-    }
-
-    const { data, error } = await supabase
+    const { data, error } = await supabase!
       .from("locadora_vehicles")
       .insert({
+        tenant_slug: tenantSlug,
         seller_id: sellerId,
         slug,
         title,
         brand,
         model,
         year,
-        category,
-        fuel,
-        transmission,
-        mode,
-        price_sale: priceSale,
-        price_rent_daily: priceRentDaily,
-        location,
-        image,
-        featured,
-        description,
-        badge: badge || null,
-        active: true,
+        category: body.category || null,
+        fuel: body.fuel || null,
+        transmission: body.transmission || null,
+        mode: body.mode || ["venda"],
+        price_sale: normalizeNumber(body.priceSale),
+        price_rent_daily: normalizeNumber(body.priceRentDaily),
+        location: body.location || "",
+        city: body.city || null,
+        state: body.state || null,
+        image: body.image || "",
+        featured: Boolean(body.featured),
+        description: body.description || "",
+        badge: body.badge || null,
+        platform_commission_percent: normalizeNumber(
+          body.platformCommissionPercent
+        ),
       })
       .select()
       .single();
 
     if (error) {
-      console.error("Erro ao cadastrar veículo:", error);
+      console.error(error);
       return NextResponse.json(
-        { error: "Erro ao cadastrar veículo. Verifique se o slug não ficou repetido." },
+        { error: "Erro ao salvar veículo." },
         { status: 500 }
       );
     }
 
-    return NextResponse.json({
-      success: true,
-      vehicle: data,
-    });
-  } catch (error) {
-    console.error("Erro geral ao cadastrar veículo:", error);
+    return NextResponse.json({ success: true, vehicle: data });
+  } catch (e) {
     return NextResponse.json(
-      { error: "Erro interno ao cadastrar veículo." },
+      { error: "Erro interno." },
       { status: 500 }
     );
   }
@@ -207,129 +190,64 @@ export async function POST(req: NextRequest) {
 
 export async function PATCH(req: NextRequest) {
   try {
+    const auth = await ensureAdmin();
+    if (!auth) {
+      return NextResponse.json({ error: "Não autorizado." }, { status: 401 });
+    }
+
     const body = (await req.json()) as VehicleBody;
 
-    const id = (body.id || "").trim();
-    const sellerId = (body.sellerId || "").trim();
-    const title = (body.title || "").trim();
-    const brand = (body.brand || "").trim();
-    const model = (body.model || "").trim();
-    const category = (body.category || "").trim();
-    const fuel = (body.fuel || "").trim();
-    const transmission = (body.transmission || "").trim();
-    const location = (body.location || "").trim();
-    const image = (body.image || "").trim();
-    const description = (body.description || "").trim();
-    const badge = (body.badge || "").trim();
-    const featured = Boolean(body.featured);
-    const active = typeof body.active === "boolean" ? body.active : true;
-
-    const year = normalizeNumber(body.year);
-    const priceSale = normalizeNumber(body.priceSale);
-    const priceRentDaily = normalizeNumber(body.priceRentDaily);
-
-    const mode = Array.isArray(body.mode)
-      ? body.mode
-          .map((item) => String(item).trim().toLowerCase())
-          .filter(Boolean)
-      : [];
-
+    const id = body.id || "";
     if (!id) {
       return NextResponse.json(
-        { error: "ID do veículo não informado." },
+        { error: "ID obrigatório." },
         { status: 400 }
       );
     }
-
-    if (!sellerId) {
-      return NextResponse.json(
-        { error: "Selecione a locadora." },
-        { status: 400 }
-      );
-    }
-
-    if (!title || !brand || !model) {
-      return NextResponse.json(
-        { error: "Informe título, marca e modelo." },
-        { status: 400 }
-      );
-    }
-
-    if (!year) {
-      return NextResponse.json(
-        { error: "Informe o ano do veículo." },
-        { status: 400 }
-      );
-    }
-
-    if (!category || !fuel || !transmission || !location || !image || !description) {
-      return NextResponse.json(
-        { error: "Preencha categoria, combustível, câmbio, local, imagem e descrição." },
-        { status: 400 }
-      );
-    }
-
-    if (!mode.length) {
-      return NextResponse.json(
-        { error: "Selecione pelo menos uma modalidade: venda e/ou aluguel." },
-        { status: 400 }
-      );
-    }
-
-    const slugBase = (body.slug || "").trim() || `${title}-${year}`;
-    const slug = normalizeSlug(slugBase);
 
     const supabase = getLocadoraServerClient();
 
-    if (!supabase) {
-      return NextResponse.json(
-        { error: "Supabase não configurado no servidor." },
-        { status: 500 }
-      );
-    }
-
-    const { data, error } = await supabase
+    const { data, error } = await supabase!
       .from("locadora_vehicles")
       .update({
-        seller_id: sellerId,
-        slug,
-        title,
-        brand,
-        model,
-        year,
-        category,
-        fuel,
-        transmission,
-        mode,
-        price_sale: priceSale,
-        price_rent_daily: priceRentDaily,
-        location,
-        image,
-        featured,
-        description,
-        badge: badge || null,
-        active,
+        title: body.title,
+        brand: body.brand,
+        model: body.model,
+        year: normalizeNumber(body.year),
+        category: body.category,
+        fuel: body.fuel,
+        transmission: body.transmission,
+        mode: body.mode,
+        price_sale: normalizeNumber(body.priceSale),
+        price_rent_daily: normalizeNumber(body.priceRentDaily),
+        location: body.location,
+        city: body.city,
+        state: body.state,
+        image: body.image,
+        featured: Boolean(body.featured),
+        description: body.description,
+        badge: body.badge,
+        platform_commission_percent: normalizeNumber(
+          body.platformCommissionPercent
+        ),
+        active: body.active ?? true,
       })
       .eq("id", id)
       .select()
       .single();
 
     if (error) {
-      console.error("Erro ao editar veículo:", error);
+      console.error(error);
       return NextResponse.json(
-        { error: "Erro ao editar veículo. Verifique se o slug não ficou repetido." },
+        { error: "Erro ao atualizar veículo." },
         { status: 500 }
       );
     }
 
-    return NextResponse.json({
-      success: true,
-      vehicle: data,
-    });
-  } catch (error) {
-    console.error("Erro geral ao editar veículo:", error);
+    return NextResponse.json({ success: true, vehicle: data });
+  } catch (e) {
     return NextResponse.json(
-      { error: "Erro interno ao editar veículo." },
+      { error: "Erro interno." },
       { status: 500 }
     );
   }

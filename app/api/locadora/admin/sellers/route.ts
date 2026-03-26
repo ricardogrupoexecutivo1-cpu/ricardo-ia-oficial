@@ -1,9 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
+import { isLocadoraAdminAuthenticated } from "@/lib/locadora-admin-auth";
+import {
+  createSellerInDb,
+  listSellersFromDbOrMock,
+} from "@/lib/locadora-db";
 import { getLocadoraServerClient } from "@/lib/supabase-locadora-server";
 
 type SellerBody = {
   id?: string;
-  name?: string;
+  tenantSlug?: string;
+  companyName?: string;
+  tradeName?: string;
+  type?: "locadora" | "revenda" | "parceiro";
   logoText?: string;
   tagline?: string;
   phone?: string;
@@ -11,33 +19,71 @@ type SellerBody = {
   city?: string;
   state?: string;
   active?: boolean;
+  featured?: boolean;
+
+  // compatibilidade com o admin atual
+  name?: string;
 };
+
+function slugify(value: string) {
+  return value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .replace(/-{2,}/g, "-");
+}
+
+function normalizeSellerInput(body: SellerBody) {
+  const tradeName = (body.tradeName || body.name || "").trim();
+  const companyName = (body.companyName || tradeName).trim();
+  const tenantSlug = (body.tenantSlug || slugify(tradeName)).trim();
+  const type = body.type || "locadora";
+  const logoText = (body.logoText || "").trim().toUpperCase().slice(0, 6);
+  const tagline = (body.tagline || "").trim();
+  const phone = (body.phone || "").trim();
+  const whatsapp = (body.whatsapp || "").trim();
+  const city = (body.city || "").trim();
+  const state = (body.state || "").trim().toUpperCase();
+  const active = typeof body.active === "boolean" ? body.active : true;
+  const featured = typeof body.featured === "boolean" ? body.featured : false;
+
+  return {
+    tradeName,
+    companyName,
+    tenantSlug,
+    type,
+    logoText,
+    tagline,
+    phone,
+    whatsapp,
+    city,
+    state,
+    active,
+    featured,
+  };
+}
+
+async function ensureAdmin() {
+  const authenticated = await isLocadoraAdminAuthenticated();
+  return authenticated;
+}
 
 export async function GET() {
   try {
-    const supabase = getLocadoraServerClient();
+    const authenticated = await ensureAdmin();
 
-    if (!supabase) {
-      return NextResponse.json(
-        { error: "Supabase não configurado no servidor." },
-        { status: 500 }
-      );
+    if (!authenticated) {
+      return NextResponse.json({ error: "Não autorizado." }, { status: 401 });
     }
 
-    const { data, error } = await supabase
-      .from("locadora_sellers")
-      .select("*")
-      .order("created_at", { ascending: false });
+    const result = await listSellersFromDbOrMock();
 
-    if (error) {
-      console.error("Erro ao listar locadoras:", error);
-      return NextResponse.json(
-        { error: "Erro ao listar locadoras." },
-        { status: 500 }
-      );
-    }
-
-    return NextResponse.json({ sellers: data || [] });
+    return NextResponse.json({
+      sellers: result.sellers || [],
+      mode: result.mode,
+    });
   } catch (error) {
     console.error("Erro geral ao listar locadoras:", error);
     return NextResponse.json(
@@ -49,70 +95,72 @@ export async function GET() {
 
 export async function POST(req: NextRequest) {
   try {
+    const authenticated = await ensureAdmin();
+
+    if (!authenticated) {
+      return NextResponse.json({ error: "Não autorizado." }, { status: 401 });
+    }
+
     const body = (await req.json()) as SellerBody;
+    const payload = normalizeSellerInput(body);
 
-    const name = (body.name || "").trim();
-    const logoText = (body.logoText || "").trim().toUpperCase();
-    const tagline = (body.tagline || "").trim();
-    const phone = (body.phone || "").trim();
-    const whatsapp = (body.whatsapp || "").trim();
-    const city = (body.city || "").trim();
-    const state = (body.state || "").trim().toUpperCase();
-
-    if (!name) {
+    if (!payload.tradeName) {
       return NextResponse.json(
         { error: "Informe o nome da locadora." },
         { status: 400 }
       );
     }
 
-    if (!logoText) {
+    if (!payload.companyName) {
+      return NextResponse.json(
+        { error: "Informe a razão social ou nome da empresa." },
+        { status: 400 }
+      );
+    }
+
+    if (!payload.tenantSlug) {
+      return NextResponse.json(
+        { error: "Não foi possível gerar o slug da locadora." },
+        { status: 400 }
+      );
+    }
+
+    if (!payload.logoText) {
       return NextResponse.json(
         { error: "Informe a sigla/logo da locadora." },
         { status: 400 }
       );
     }
 
-    const supabase = getLocadoraServerClient();
-
-    if (!supabase) {
-      return NextResponse.json(
-        { error: "Supabase não configurado no servidor." },
-        { status: 500 }
-      );
-    }
-
-    const { data, error } = await supabase
-      .from("locadora_sellers")
-      .insert({
-        name,
-        logo_text: logoText,
-        tagline: tagline || null,
-        phone: phone || null,
-        whatsapp: whatsapp || null,
-        city: city || null,
-        state: state || null,
-        active: true,
-      })
-      .select()
-      .single();
-
-    if (error) {
-      console.error("Erro ao cadastrar locadora:", error);
-      return NextResponse.json(
-        { error: "Erro ao cadastrar locadora." },
-        { status: 500 }
-      );
-    }
+    const result = await createSellerInDb({
+      tenantSlug: payload.tenantSlug,
+      companyName: payload.companyName,
+      tradeName: payload.tradeName,
+      type: payload.type,
+      tagline: payload.tagline || undefined,
+      phone: payload.phone || undefined,
+      whatsapp: payload.whatsapp || undefined,
+      logoText: payload.logoText,
+      city: payload.city || undefined,
+      state: payload.state || undefined,
+      active: payload.active,
+      featured: payload.featured,
+    });
 
     return NextResponse.json({
       success: true,
-      seller: data,
+      seller: result.seller,
+      mode: result.mode,
     });
   } catch (error) {
     console.error("Erro geral ao cadastrar locadora:", error);
     return NextResponse.json(
-      { error: "Erro interno ao cadastrar locadora." },
+      {
+        error:
+          error instanceof Error
+            ? error.message
+            : "Erro interno ao cadastrar locadora.",
+      },
       { status: 500 }
     );
   }
@@ -120,8 +168,13 @@ export async function POST(req: NextRequest) {
 
 export async function PATCH(req: NextRequest) {
   try {
-    const body = (await req.json()) as SellerBody;
+    const authenticated = await ensureAdmin();
 
+    if (!authenticated) {
+      return NextResponse.json({ error: "Não autorizado." }, { status: 401 });
+    }
+
+    const body = (await req.json()) as SellerBody;
     const id = (body.id || "").trim();
 
     if (!id) {
@@ -131,6 +184,36 @@ export async function PATCH(req: NextRequest) {
       );
     }
 
+    const payload = normalizeSellerInput(body);
+
+    if (!payload.tradeName) {
+      return NextResponse.json(
+        { error: "Informe o nome da locadora." },
+        { status: 400 }
+      );
+    }
+
+    if (!payload.companyName) {
+      return NextResponse.json(
+        { error: "Informe a razão social ou nome da empresa." },
+        { status: 400 }
+      );
+    }
+
+    if (!payload.tenantSlug) {
+      return NextResponse.json(
+        { error: "Informe o slug da locadora." },
+        { status: 400 }
+      );
+    }
+
+    if (!payload.logoText) {
+      return NextResponse.json(
+        { error: "Informe a sigla/logo da locadora." },
+        { status: 400 }
+      );
+    }
+
     const supabase = getLocadoraServerClient();
 
     if (!supabase) {
@@ -140,42 +223,30 @@ export async function PATCH(req: NextRequest) {
       );
     }
 
-    const payload = {
-      name: (body.name || "").trim(),
-      logo_text: (body.logoText || "").trim().toUpperCase(),
-      tagline: ((body.tagline || "").trim() || null),
-      phone: ((body.phone || "").trim() || null),
-      whatsapp: ((body.whatsapp || "").trim() || null),
-      city: ((body.city || "").trim() || null),
-      state: ((body.state || "").trim().toUpperCase() || null),
-      active: typeof body.active === "boolean" ? body.active : true,
-    };
-
-    if (!payload.name) {
-      return NextResponse.json(
-        { error: "Informe o nome da locadora." },
-        { status: 400 }
-      );
-    }
-
-    if (!payload.logo_text) {
-      return NextResponse.json(
-        { error: "Informe a sigla/logo da locadora." },
-        { status: 400 }
-      );
-    }
-
     const { data, error } = await supabase
       .from("locadora_sellers")
-      .update(payload)
+      .update({
+        tenant_slug: payload.tenantSlug,
+        company_name: payload.companyName,
+        trade_name: payload.tradeName,
+        type: payload.type,
+        tagline: payload.tagline || null,
+        phone: payload.phone || null,
+        whatsapp: payload.whatsapp || null,
+        logo_text: payload.logoText,
+        city: payload.city || null,
+        state: payload.state || null,
+        active: payload.active,
+        featured: payload.featured,
+      })
       .eq("id", id)
-      .select()
+      .select("*")
       .single();
 
     if (error) {
       console.error("Erro ao editar locadora:", error);
       return NextResponse.json(
-        { error: "Erro ao editar locadora." },
+        { error: error.message || "Erro ao editar locadora." },
         { status: 500 }
       );
     }
@@ -183,11 +254,17 @@ export async function PATCH(req: NextRequest) {
     return NextResponse.json({
       success: true,
       seller: data,
+      mode: "database",
     });
   } catch (error) {
     console.error("Erro geral ao editar locadora:", error);
     return NextResponse.json(
-      { error: "Erro interno ao editar locadora." },
+      {
+        error:
+          error instanceof Error
+            ? error.message
+            : "Erro interno ao editar locadora.",
+      },
       { status: 500 }
     );
   }
