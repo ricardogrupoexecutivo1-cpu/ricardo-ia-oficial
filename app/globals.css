@@ -1866,4 +1866,42 @@ img {
 /* estado normal */
 [style*="position: fixed"] {
   transition: all 0.25s ease;
+}/* ===== FIX MOBILE GLOBAL ===== */
+
+html, body {
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+/* evita qualquer elemento estourar tela */
+* {
+  box-sizing: border-box;
+}
+
+/* imagens e containers nunca passam da tela */
+img, video, canvas {
+  max-width: 100%;
+  height: auto;
+}
+
+/* containers principais */
+main {
+  width: 100%;
+  max-width: 100vw;
+  overflow-x: hidden;
+}
+
+/* cards e blocos */
+div, section, article {
+  max-width: 100%;
+}
+
+/* FIX BOTÃO LIVRO (mobile) */
+@media (max-width: 768px) {
+  a[href="/livro"] {
+    right: 12px !important;
+    bottom: 12px !important;
+    padding: 10px 12px !important;
+    font-size: 12px !important;
+  }
 }
