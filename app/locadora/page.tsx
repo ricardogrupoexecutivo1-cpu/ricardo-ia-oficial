@@ -68,42 +68,7 @@ export default function LocadoraPage() {
             flexWrap: "wrap",
             gap: 14,
             marginTop: 28,
-          }}<div
-  style={{
-    display: "flex",
-    flexWrap: "wrap",
-    gap: 14,
-    marginTop: 16,
-  }}
->
-  {/* SEMINOVOS */}
-  <Link href="/locadora/seminovos" style={primaryButton}>
-    🚗 Ver Seminovos
-  </Link>
-
-  {/* WHATSAPP COMERCIAL */}
-  <a
-    href="https://wa.me/5531997490074"
-    target="_blank"
-    rel="noreferrer"
-    style={{
-      display: "inline-flex",
-      alignItems: "center",
-      justifyContent: "center",
-      minHeight: 48,
-      padding: "0 18px",
-      borderRadius: 14,
-      textDecoration: "none",
-      fontWeight: 800,
-      fontSize: 15,
-      color: "#04110a",
-      background: "#25D366",
-      boxShadow: "0 10px 30px rgba(37,211,102,0.25)",
-    }}
-  >
-    📲 Locação / Comercial
-  </a>
-</div>
+          }}
         >
           <Link href="/locadora/cadastros" style={primaryButton}>
             Abrir central de cadastros
@@ -115,6 +80,32 @@ export default function LocadoraPage() {
 
           <Link href="/" style={secondaryButton}>
             Voltar para home
+          </Link>
+        </div>
+
+        <div
+          style={{
+            display: "flex",
+            flexWrap: "wrap",
+            gap: 14,
+            marginTop: 16,
+          }}
+        >
+          <Link href="/locadora/seminovos" style={primaryButton}>
+            🚗 Ver Seminovos
+          </Link>
+
+          <a
+            href="https://wa.me/5531997490074"
+            target="_blank"
+            rel="noreferrer"
+            style={whatsButton}
+          >
+            📲 Locação / Comercial
+          </a>
+
+          <Link href="/locadora/transporte" style={secondaryButton}>
+            🚛 Transporte
           </Link>
         </div>
 
@@ -255,6 +246,21 @@ const secondaryButton: React.CSSProperties = {
   color: "#e5e7eb",
   border: "1px solid rgba(148,163,184,0.28)",
   background: "rgba(15,23,42,0.62)",
+};
+
+const whatsButton: React.CSSProperties = {
+  display: "inline-flex",
+  alignItems: "center",
+  justifyContent: "center",
+  minHeight: 48,
+  padding: "0 18px",
+  borderRadius: 14,
+  textDecoration: "none",
+  fontWeight: 800,
+  fontSize: 15,
+  color: "#04110a",
+  background: "#25D366",
+  boxShadow: "0 10px 30px rgba(37,211,102,0.25)",
 };
 
 const cardLink: React.CSSProperties = {
