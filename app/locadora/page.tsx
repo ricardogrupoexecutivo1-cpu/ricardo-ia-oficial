@@ -68,7 +68,42 @@ export default function LocadoraPage() {
             flexWrap: "wrap",
             gap: 14,
             marginTop: 28,
-          }}
+          }}<div
+  style={{
+    display: "flex",
+    flexWrap: "wrap",
+    gap: 14,
+    marginTop: 16,
+  }}
+>
+  {/* SEMINOVOS */}
+  <Link href="/locadora/seminovos" style={primaryButton}>
+    🚗 Ver Seminovos
+  </Link>
+
+  {/* WHATSAPP COMERCIAL */}
+  <a
+    href="https://wa.me/5531997490074"
+    target="_blank"
+    rel="noreferrer"
+    style={{
+      display: "inline-flex",
+      alignItems: "center",
+      justifyContent: "center",
+      minHeight: 48,
+      padding: "0 18px",
+      borderRadius: 14,
+      textDecoration: "none",
+      fontWeight: 800,
+      fontSize: 15,
+      color: "#04110a",
+      background: "#25D366",
+      boxShadow: "0 10px 30px rgba(37,211,102,0.25)",
+    }}
+  >
+    📲 Locação / Comercial
+  </a>
+</div>
         >
           <Link href="/locadora/cadastros" style={primaryButton}>
             Abrir central de cadastros
