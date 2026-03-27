@@ -2,11 +2,11 @@ import Link from "next/link";
 
 const quickLinks = [
   {
-    title: "Cadastrar Imóvel",
+    title: "Cadastrar Imobiliária",
     description:
-      "Entrada para imóveis, corretores, proprietários e oportunidades de venda ou locação.",
-    href: "/imoveis/cadastros",
-    cta: "Abrir cadastro de imóvel",
+      "Entrada para imobiliárias, corretores, captação comercial e presença dentro da Aurora.",
+    href: "/imobiliarias/cadastrar",
+    cta: "Abrir cadastro de imobiliária",
   },
   {
     title: "Buscar Imóveis",
@@ -29,7 +29,7 @@ const pillars = [
   "Locação",
   "Captação",
   "Corretores",
-  "Proprietários",
+  "Imobiliárias",
   "Expansão comercial",
 ];
 
@@ -121,7 +121,7 @@ export default function ImoveisPage() {
                 }}
               >
                 <Link
-                  href="/imoveis/cadastros"
+                  href="/imobiliarias/cadastrar"
                   style={{
                     display: "inline-flex",
                     alignItems: "center",
@@ -135,7 +135,7 @@ export default function ImoveisPage() {
                     textDecoration: "none",
                   }}
                 >
-                  Cadastrar imóvel
+                  Cadastrar imobiliária
                 </Link>
 
                 <Link
