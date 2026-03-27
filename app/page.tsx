@@ -1,283 +1,670 @@
 import Link from "next/link";
 
+type ModuleCard = {
+  icon: string;
+  title: string;
+  description: string;
+  href: string;
+  cta: string;
+  highlight: string;
+  accent: string;
+  accentSoft: string;
+  accentText: string;
+  border: string;
+};
+
+const modules: ModuleCard[] = [
+  {
+    icon: "🚗",
+    title: "Aurora Locadora",
+    description:
+      "Área para locadoras, veículos, propostas, atendimento, cadastros e gestão comercial.",
+    href: "/locadora",
+    cta: "Entrar em Locadora",
+    highlight: "Venda, frota e seminovos",
+    accent: "linear-gradient(135deg, rgba(16,185,129,0.24), rgba(6,182,212,0.20))",
+    accentSoft: "rgba(16,185,129,0.12)",
+    accentText: "#34d399",
+    border: "1px solid rgba(16,185,129,0.26)",
+  },
+  {
+    icon: "🌾",
+    title: "Aurora AGRO",
+    description:
+      "Espaço para negócios do agro, produtores, fornecedores, insumos, oportunidades e conexão comercial real.",
+    href: "/agro",
+    cta: "Entrar em AGRO",
+    highlight: "Produtores e fornecedores",
+    accent: "linear-gradient(135deg, rgba(34,197,94,0.24), rgba(16,185,129,0.20))",
+    accentSoft: "rgba(34,197,94,0.12)",
+    accentText: "#22c55e",
+    border: "1px solid rgba(34,197,94,0.26)",
+  },
+  {
+    icon: "🏠",
+    title: "Aurora Imóveis",
+    description:
+      "Espaço para imóveis, captação, vitrine comercial, cadastros e fluxo de atendimento.",
+    href: "/imoveis",
+    cta: "Entrar em Imóveis",
+    highlight: "Venda, locação e captação",
+    accent: "linear-gradient(135deg, rgba(59,130,246,0.24), rgba(37,99,235,0.20))",
+    accentSoft: "rgba(59,130,246,0.12)",
+    accentText: "#60a5fa",
+    border: "1px solid rgba(59,130,246,0.26)",
+  },
+  {
+    icon: "🏦",
+    title: "Aurora Bancos",
+    description:
+      "Integração com parceiros financeiros para financiamento, análise, resposta de propostas e geração de comissão.",
+    href: "/bancos",
+    cta: "Entrar em Bancos",
+    highlight: "Financiamento e resposta comercial",
+    accent: "linear-gradient(135deg, rgba(245,158,11,0.24), rgba(234,179,8,0.20))",
+    accentSoft: "rgba(245,158,11,0.12)",
+    accentText: "#fbbf24",
+    border: "1px solid rgba(245,158,11,0.26)",
+  },
+];
+
+const highlights = [
+  {
+    title: "Entrada comercial mais forte",
+    description:
+      "Os módulos principais ficam logo na Home para reduzir perda de tráfego e aumentar ação do visitante.",
+  },
+  {
+    title: "Estrutura pronta para expansão",
+    description:
+      "A Aurora já consegue crescer por módulos sem bagunçar a navegação principal da plataforma.",
+  },
+  {
+    title: "Operação com cara de plataforma real",
+    description:
+      "Home, módulos e caminhos comerciais já aparecem de forma mais profissional para usuário e parceiro.",
+  },
+  {
+    title: "Atualização contínua",
+    description:
+      "Sistema em constante atualização. Pode haver momentos de instabilidade durante melhorias, segurança e novos lançamentos.",
+  },
+];
+
+const metrics = [
+  { value: "4", label: "módulos centrais" },
+  { value: "100%", label: "entrada visível" },
+  { value: "24h", label: "plataforma ativa" },
+];
+
+function primaryButtonStyle() {
+  return {
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    minHeight: 50,
+    padding: "0 20px",
+    borderRadius: 14,
+    textDecoration: "none",
+    fontWeight: 900,
+    border: "1px solid rgba(52,211,153,0.45)",
+    background:
+      "linear-gradient(135deg, rgba(16,185,129,0.95), rgba(6,182,212,0.95))",
+    color: "#04121d",
+  } as const;
+}
+
+function secondaryButtonStyle() {
+  return {
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    minHeight: 50,
+    padding: "0 20px",
+    borderRadius: 14,
+    textDecoration: "none",
+    fontWeight: 800,
+    border: "1px solid rgba(255,255,255,0.12)",
+    background: "rgba(255,255,255,0.04)",
+    color: "#e5eef8",
+  } as const;
+}
+
 export default function HomePage() {
   return (
     <main
       style={{
         minHeight: "100vh",
         background:
-          "radial-gradient(circle at top, #0f172a 0%, #020617 45%, #000000 100%)",
-        color: "#ffffff",
+          "radial-gradient(circle at top, rgba(16,185,129,0.16), transparent 24%), #050816",
+        color: "#e5eef8",
+        padding: "28px 16px 80px",
       }}
     >
-      <section
+      <div
         style={{
-          maxWidth: "1200px",
+          width: "100%",
+          maxWidth: 1240,
           margin: "0 auto",
-          padding: "48px 20px 80px",
         }}
       >
-        <div
+        <section
           style={{
-            display: "inline-flex",
-            alignItems: "center",
-            gap: "8px",
-            padding: "8px 14px",
-            border: "1px solid rgba(34,197,94,0.35)",
-            borderRadius: "999px",
-            background: "rgba(15,23,42,0.65)",
-            color: "#86efac",
-            fontSize: "14px",
-            fontWeight: 700,
-            marginBottom: "20px",
+            borderRadius: 28,
+            border: "1px solid rgba(255,255,255,0.08)",
+            background: "rgba(7,12,28,0.88)",
+            boxShadow: "0 18px 60px rgba(0,0,0,0.35)",
+            padding: "34px 24px",
           }}
         >
-          Aurora IA
-          <span style={{ color: "#cbd5e1", fontWeight: 500 }}>
-            Plataforma em expansão
-          </span>
-        </div>
-
-        <h1
-          style={{
-            fontSize: "clamp(32px, 5vw, 64px)",
-            lineHeight: 1.05,
-            fontWeight: 900,
-            margin: 0,
-            letterSpacing: "-0.03em",
-            maxWidth: "900px",
-          }}
-        >
-          Aurora IA com acesso direto para
-          <span style={{ color: "#22c55e" }}> Locadora</span>,
-          <span style={{ color: "#38bdf8" }}> Imóveis</span> e
-          <span style={{ color: "#f59e0b" }}> Bancos</span>
-        </h1>
-
-        <p
-          style={{
-            marginTop: "18px",
-            maxWidth: "860px",
-            fontSize: "18px",
-            lineHeight: 1.7,
-            color: "#cbd5e1",
-          }}
-        >
-          Converse, gere campanhas, cadastre oportunidades e acesse módulos
-          comerciais da Aurora em um só ambiente. Estamos em constante
-          atualização e pode haver momentos de instabilidade.
-        </p>
-
-        <div
-          style={{
-            display: "flex",
-            flexWrap: "wrap",
-            gap: "14px",
-            marginTop: "28px",
-          }}
-        >
-          <Link href="/chat" style={primaryButton}>
-            Abrir chat
-          </Link>
-
-          <Link href="/planos" style={secondaryButton}>
-            Ver planos
-          </Link>
-
-          <Link href="/explorar" style={secondaryButton}>
-            Explorar
-          </Link>
-        </div>
-
-        <section style={{ marginTop: "44px" }}>
           <div
             style={{
               display: "grid",
-              gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
-              gap: "18px",
+              gridTemplateColumns: "repeat(12, minmax(0, 1fr))",
+              gap: 22,
+              alignItems: "center",
             }}
           >
-            <Link href="/locadora" style={cardLink}>
-              <article style={cardBase}>
-                <div style={iconWrap}>🚗</div>
-                <h2 style={cardTitle}>Aurora Locadoras</h2>
-                <p style={cardText}>
-                  Área para locadoras, veículos, propostas, atendimento,
-                  cadastros e gestão comercial.
-                </p>
-                <span style={cardActionGreen}>Entrar em Locadoras</span>
-              </article>
-            </Link>
+            <div
+              style={{
+                gridColumn: "span 8",
+              }}
+            >
+              <div
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 8,
+                  padding: "8px 12px",
+                  borderRadius: 999,
+                  background: "rgba(16,185,129,0.12)",
+                  border: "1px solid rgba(16,185,129,0.26)",
+                  fontSize: 12,
+                  fontWeight: 800,
+                  letterSpacing: 0.5,
+                  textTransform: "uppercase",
+                  color: "#86efac",
+                  marginBottom: 16,
+                }}
+              >
+                Aurora IA
+              </div>
 
-            <Link href="/imoveis" style={cardLink}>
-              <article style={cardBase}>
-                <div style={iconWrap}>🏠</div>
-                <h2 style={cardTitle}>Aurora Imóveis</h2>
-                <p style={cardText}>
-                  Espaço para imóveis, captação, vitrine comercial, cadastros e
-                  fluxo de atendimento.
-                </p>
-                <span style={cardActionBlue}>Entrar em Imóveis</span>
-              </article>
-            </Link>
+              <div
+                style={{
+                  color: "#8fb7ff",
+                  fontWeight: 800,
+                  fontSize: 14,
+                  textTransform: "uppercase",
+                  letterSpacing: 0.5,
+                  marginBottom: 10,
+                }}
+              >
+                Plataforma em expansão comercial
+              </div>
 
-            <Link href="/bancos" style={cardLink}>
-              <article style={cardBase}>
-                <div style={iconWrap}>🏦</div>
-                <h2 style={cardTitle}>Aurora Bancos</h2>
-                <p style={cardText}>
-                  Integração com parceiros financeiros para financiamento,
-                  análise, resposta de propostas e geração de comissão.
-                </p>
-                <span style={cardActionGold}>Entrar em Bancos</span>
-              </article>
-            </Link>
+              <h1
+                style={{
+                  margin: 0,
+                  fontSize: "clamp(34px, 6vw, 58px)",
+                  lineHeight: 1.08,
+                  maxWidth: 940,
+                }}
+              >
+                Aurora IA com acesso direto para{" "}
+                <span
+                  style={{
+                    color: "#34d399",
+                    fontWeight: 900,
+                    textShadow: "0 0 18px rgba(52,211,153,0.22)",
+                  }}
+                >
+                  Locadora
+                </span>
+                ,{" "}
+                <span
+                  style={{
+                    color: "#22c55e",
+                    fontWeight: 900,
+                    textShadow: "0 0 18px rgba(34,197,94,0.22)",
+                  }}
+                >
+                  AGRO
+                </span>
+                ,{" "}
+                <span
+                  style={{
+                    color: "#60a5fa",
+                    fontWeight: 900,
+                    textShadow: "0 0 18px rgba(96,165,250,0.22)",
+                  }}
+                >
+                  Imóveis
+                </span>{" "}
+                e{" "}
+                <span
+                  style={{
+                    color: "#fbbf24",
+                    fontWeight: 900,
+                    textShadow: "0 0 18px rgba(251,191,36,0.22)",
+                  }}
+                >
+                  Bancos
+                </span>
+              </h1>
+
+              <p
+                style={{
+                  marginTop: 16,
+                  marginBottom: 0,
+                  color: "#9fb0c7",
+                  fontSize: 18,
+                  lineHeight: 1.8,
+                  maxWidth: 930,
+                }}
+              >
+                Converse, gere campanhas, cadastre oportunidades e acesse módulos
+                comerciais da Aurora em um só ambiente. A estrutura principal já
+                está pronta para atrair tráfego, distribuir interesse e acelerar
+                entrada comercial.
+              </p>
+
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
+                  gap: 12,
+                  marginTop: 24,
+                  maxWidth: 930,
+                }}
+              >
+                {modules.map((module) => (
+                  <div
+                    key={`top-${module.title}`}
+                    style={{
+                      borderRadius: 18,
+                      padding: 14,
+                      background: module.accent,
+                      border: module.border,
+                    }}
+                  >
+                    <div
+                      style={{
+                        fontSize: 12,
+                        fontWeight: 900,
+                        color: module.accentText,
+                        textTransform: "uppercase",
+                        letterSpacing: 0.5,
+                        marginBottom: 6,
+                      }}
+                    >
+                      {module.title}
+                    </div>
+                    <div
+                      style={{
+                        color: "#dbe7f5",
+                        fontSize: 13,
+                        lineHeight: 1.55,
+                        fontWeight: 700,
+                      }}
+                    >
+                      {module.highlight}
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div
+                style={{
+                  display: "flex",
+                  gap: 12,
+                  flexWrap: "wrap",
+                  marginTop: 24,
+                }}
+              >
+                <Link href="/chat" style={primaryButtonStyle()}>
+                  Abrir chat da Aurora
+                </Link>
+
+                <Link href="/locadora" style={secondaryButtonStyle()}>
+                  Entrar na Locadora
+                </Link>
+
+                <Link href="/planos" style={secondaryButtonStyle()}>
+                  Ver planos
+                </Link>
+
+                <Link href="/explorar" style={secondaryButtonStyle()}>
+                  Explorar plataforma
+                </Link>
+              </div>
+            </div>
+
+            <div
+              style={{
+                gridColumn: "span 4",
+              }}
+            >
+              <div
+                style={{
+                  borderRadius: 24,
+                  border: "1px solid rgba(255,255,255,0.08)",
+                  background:
+                    "linear-gradient(180deg, rgba(12,18,40,0.95), rgba(7,12,28,0.92))",
+                  padding: 22,
+                }}
+              >
+                <div
+                  style={{
+                    fontSize: 13,
+                    color: "#8fb7ff",
+                    fontWeight: 800,
+                    textTransform: "uppercase",
+                    letterSpacing: 0.4,
+                    marginBottom: 10,
+                  }}
+                >
+                  Entrada estratégica
+                </div>
+
+                <div
+                  style={{
+                    fontSize: 24,
+                    fontWeight: 900,
+                    lineHeight: 1.12,
+                    marginBottom: 12,
+                  }}
+                >
+                  Uma Home pronta para venda, navegação e expansão
+                </div>
+
+                <div
+                  style={{
+                    color: "#9fb0c7",
+                    lineHeight: 1.7,
+                    fontSize: 15,
+                  }}
+                >
+                  Os módulos principais ficam visíveis logo de cara para reduzir
+                  perda de tráfego e aumentar acesso comercial.
+                </div>
+
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
+                    gap: 10,
+                    marginTop: 18,
+                  }}
+                >
+                  {metrics.map((metric) => (
+                    <div
+                      key={metric.label}
+                      style={{
+                        borderRadius: 16,
+                        padding: "14px 10px",
+                        background: "rgba(255,255,255,0.04)",
+                        border: "1px solid rgba(255,255,255,0.08)",
+                        textAlign: "center",
+                      }}
+                    >
+                      <div
+                        style={{
+                          fontSize: 24,
+                          fontWeight: 900,
+                        }}
+                      >
+                        {metric.value}
+                      </div>
+                      <div
+                        style={{
+                          marginTop: 6,
+                          fontSize: 12,
+                          color: "#9fb0c7",
+                          lineHeight: 1.4,
+                        }}
+                      >
+                        {metric.label}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <div
+                  style={{
+                    display: "grid",
+                    gap: 10,
+                    marginTop: 18,
+                  }}
+                >
+                  {modules.map((module) => (
+                    <div
+                      key={`side-${module.title}`}
+                      style={{
+                        borderRadius: 14,
+                        padding: "10px 12px",
+                        background: module.accentSoft,
+                        border: module.border,
+                        color: module.accentText,
+                        fontWeight: 900,
+                      }}
+                    >
+                      {module.title.replace("Aurora ", "")}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
           </div>
         </section>
 
         <section
           style={{
-            marginTop: "52px",
+            marginTop: 24,
             display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
-            gap: "16px",
+            gridTemplateColumns: "repeat(auto-fit, minmax(270px, 1fr))",
+            gap: 18,
           }}
         >
-          <div style={infoBox}>
-            <div style={infoTitle}>Acesso mais claro</div>
-            <div style={infoText}>
-              O cliente passa a ver os módulos principais já na entrada do site.
+          {modules.map((module) => (
+            <article
+              key={module.title}
+              style={{
+                borderRadius: 24,
+                border: module.border,
+                background:
+                  "linear-gradient(180deg, rgba(10,15,34,0.95), rgba(6,10,24,0.92))",
+                boxShadow: "0 16px 40px rgba(0,0,0,0.26)",
+                padding: 22,
+                display: "flex",
+                flexDirection: "column",
+              }}
+            >
+              <div
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  width: 56,
+                  height: 56,
+                  borderRadius: 18,
+                  background: module.accent,
+                  border: module.border,
+                  fontSize: 28,
+                  marginBottom: 16,
+                }}
+              >
+                {module.icon}
+              </div>
+
+              <div
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  padding: "6px 10px",
+                  borderRadius: 999,
+                  background: module.accentSoft,
+                  border: module.border,
+                  color: module.accentText,
+                  fontSize: 12,
+                  fontWeight: 800,
+                  marginBottom: 12,
+                  width: "fit-content",
+                }}
+              >
+                {module.highlight}
+              </div>
+
+              <h2
+                style={{
+                  margin: 0,
+                  fontSize: 25,
+                  lineHeight: 1.1,
+                }}
+              >
+                {module.title}
+              </h2>
+
+              <p
+                style={{
+                  marginTop: 12,
+                  marginBottom: 0,
+                  color: "#9fb0c7",
+                  fontSize: 15,
+                  lineHeight: 1.75,
+                  flex: 1,
+                  minHeight: 105,
+                }}
+              >
+                {module.description}
+              </p>
+
+              <div style={{ marginTop: 18 }}>
+                <Link
+                  href={module.href}
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    minHeight: 48,
+                    padding: "0 16px",
+                    borderRadius: 14,
+                    textDecoration: "none",
+                    border: module.border,
+                    background: module.accentSoft,
+                    color: module.accentText,
+                    fontWeight: 900,
+                    width: "100%",
+                  }}
+                >
+                  {module.cta}
+                </Link>
+              </div>
+            </article>
+          ))}
+        </section>
+
+        <section
+          style={{
+            marginTop: 24,
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
+            gap: 16,
+          }}
+        >
+          {highlights.map((item) => (
+            <article
+              key={item.title}
+              style={{
+                borderRadius: 22,
+                border: "1px solid rgba(255,255,255,0.08)",
+                background: "rgba(255,255,255,0.03)",
+                padding: 20,
+              }}
+            >
+              <div
+                style={{
+                  fontSize: 18,
+                  fontWeight: 900,
+                  marginBottom: 10,
+                }}
+              >
+                {item.title}
+              </div>
+
+              <div
+                style={{
+                  color: "#9fb0c7",
+                  lineHeight: 1.75,
+                  fontSize: 15,
+                }}
+              >
+                {item.description}
+              </div>
+            </article>
+          ))}
+        </section>
+
+        <section
+          style={{
+            marginTop: 24,
+            borderRadius: 24,
+            border: "1px solid rgba(255,255,255,0.08)",
+            background: "rgba(255,255,255,0.03)",
+            padding: 22,
+            display: "flex",
+            gap: 16,
+            justifyContent: "space-between",
+            alignItems: "center",
+            flexWrap: "wrap",
+          }}
+        >
+          <div style={{ maxWidth: 760 }}>
+            <div
+              style={{
+                fontSize: 22,
+                fontWeight: 900,
+                marginBottom: 8,
+              }}
+            >
+              A Aurora já está distribuindo tráfego para os módulos
+            </div>
+
+            <div
+              style={{
+                color: "#9fb0c7",
+                lineHeight: 1.75,
+                fontSize: 15,
+              }}
+            >
+              O Analytics já mostra acessos na Home, AGRO, Bancos, Imóveis e
+              Locadora. O momento agora é fortalecer a entrada e continuar a
+              divulgação com a plataforma mais organizada.
             </div>
           </div>
 
-          <div style={infoBox}>
-            <div style={infoTitle}>Fluxo comercial mais forte</div>
-            <div style={infoText}>
-              Menos perda de tráfego por falta de botão ou rota escondida.
-            </div>
-          </div>
-
-          <div style={infoBox}>
-            <div style={infoTitle}>Preparado para expansão</div>
-            <div style={infoText}>
-              Estrutura pronta para receber novos módulos na Home sem bagunça.
-            </div>
+          <div
+            style={{
+              display: "flex",
+              gap: 12,
+              flexWrap: "wrap",
+            }}
+          >
+            <Link href="/agro" style={secondaryButtonStyle()}>
+              Ir para AGRO
+            </Link>
+            <Link href="/imoveis" style={secondaryButtonStyle()}>
+              Ir para Imóveis
+            </Link>
+            <Link href="/bancos" style={secondaryButtonStyle()}>
+              Ir para Bancos
+            </Link>
+            <Link href="/locadora" style={primaryButtonStyle()}>
+              Ir para Locadora
+            </Link>
           </div>
         </section>
-      </section>
+      </div>
     </main>
   );
 }
-
-const primaryButton: React.CSSProperties = {
-  display: "inline-flex",
-  alignItems: "center",
-  justifyContent: "center",
-  minHeight: "48px",
-  padding: "0 18px",
-  borderRadius: "14px",
-  textDecoration: "none",
-  fontWeight: 800,
-  fontSize: "15px",
-  color: "#02140a",
-  background: "linear-gradient(135deg, #22c55e, #4ade80)",
-  boxShadow: "0 10px 30px rgba(34,197,94,0.25)",
-};
-
-const secondaryButton: React.CSSProperties = {
-  display: "inline-flex",
-  alignItems: "center",
-  justifyContent: "center",
-  minHeight: "48px",
-  padding: "0 18px",
-  borderRadius: "14px",
-  textDecoration: "none",
-  fontWeight: 700,
-  fontSize: "15px",
-  color: "#e5e7eb",
-  border: "1px solid rgba(148,163,184,0.28)",
-  background: "rgba(15,23,42,0.62)",
-};
-
-const cardLink: React.CSSProperties = {
-  textDecoration: "none",
-  color: "inherit",
-};
-
-const cardBase: React.CSSProperties = {
-  height: "100%",
-  borderRadius: "22px",
-  padding: "22px",
-  background: "linear-gradient(180deg, rgba(15,23,42,0.92), rgba(2,6,23,0.96))",
-  border: "1px solid rgba(148,163,184,0.18)",
-  boxShadow: "0 14px 40px rgba(0,0,0,0.28)",
-};
-
-const iconWrap: React.CSSProperties = {
-  width: "58px",
-  height: "58px",
-  borderRadius: "16px",
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "center",
-  fontSize: "28px",
-  background: "rgba(255,255,255,0.05)",
-  marginBottom: "16px",
-};
-
-const cardTitle: React.CSSProperties = {
-  fontSize: "24px",
-  fontWeight: 800,
-  margin: "0 0 10px",
-};
-
-const cardText: React.CSSProperties = {
-  margin: 0,
-  color: "#cbd5e1",
-  lineHeight: 1.65,
-  fontSize: "15px",
-};
-
-const cardActionGreen: React.CSSProperties = {
-  display: "inline-block",
-  marginTop: "18px",
-  color: "#86efac",
-  fontWeight: 800,
-  fontSize: "15px",
-};
-
-const cardActionBlue: React.CSSProperties = {
-  display: "inline-block",
-  marginTop: "18px",
-  color: "#7dd3fc",
-  fontWeight: 800,
-  fontSize: "15px",
-};
-
-const cardActionGold: React.CSSProperties = {
-  display: "inline-block",
-  marginTop: "18px",
-  color: "#fcd34d",
-  fontWeight: 800,
-  fontSize: "15px",
-};
-
-const infoBox: React.CSSProperties = {
-  borderRadius: "18px",
-  padding: "18px",
-  background: "rgba(15,23,42,0.72)",
-  border: "1px solid rgba(148,163,184,0.16)",
-};
-
-const infoTitle: React.CSSProperties = {
-  fontWeight: 800,
-  fontSize: "16px",
-  marginBottom: "8px",
-  color: "#ffffff",
-};
-
-const infoText: React.CSSProperties = {
-  color: "#cbd5e1",
-  fontSize: "14px",
-  lineHeight: 1.6,
-};

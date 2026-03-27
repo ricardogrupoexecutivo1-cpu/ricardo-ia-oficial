@@ -2,44 +2,44 @@ import Link from "next/link";
 
 const quickLinks = [
   {
-    title: "Cadastrar Imóvel",
+    title: "Cadastrar no AGRO",
     description:
-      "Entrada para imóveis, corretores, proprietários e oportunidades de venda ou locação.",
-    href: "/imoveis/cadastros",
-    cta: "Abrir cadastro de imóvel",
+      "Entrada real para produtores, fornecedores, compradores e oportunidades do agro.",
+    href: "/agro/cadastrar",
+    cta: "Abrir cadastro AGRO",
   },
   {
-    title: "Buscar Imóveis",
+    title: "Buscar no AGRO",
     description:
-      "Busca comercial por imóveis disponíveis, oportunidades e regiões.",
-    href: "/imoveis",
-    cta: "Abrir busca de imóveis",
+      "Busca comercial para localizar anúncios, negócios e parceiros do setor.",
+    href: "/agro/buscar",
+    cta: "Abrir busca AGRO",
   },
   {
-    title: "Admin Imóveis",
+    title: "Admin AGRO",
     description:
-      "Diagnóstico, validação e controle da base de imóveis cadastrados.",
-    href: "/imoveis/admin",
-    cta: "Abrir admin imóveis",
+      "Área de diagnóstico e controle para acompanhar registros e validar a operação.",
+    href: "/agro/admin",
+    cta: "Abrir admin AGRO",
   },
 ];
 
 const pillars = [
-  "Venda",
-  "Locação",
-  "Captação",
-  "Corretores",
-  "Proprietários",
+  "Produtores",
+  "Fornecedores",
+  "Compradores",
+  "Insumos",
+  "Oportunidades",
   "Expansão comercial",
 ];
 
-export default function ImoveisPage() {
+export default function AgroPage() {
   return (
     <main
       style={{
         minHeight: "100vh",
         background:
-          "radial-gradient(circle at top, rgba(59,130,246,0.16), transparent 24%), #050816",
+          "radial-gradient(circle at top, rgba(34,197,94,0.16), transparent 24%), #050816",
         color: "#e5eef8",
         padding: "28px 16px 80px",
       }}
@@ -76,40 +76,57 @@ export default function ImoveisPage() {
                   gap: 8,
                   padding: "8px 12px",
                   borderRadius: 999,
-                  background: "rgba(59,130,246,0.12)",
-                  border: "1px solid rgba(59,130,246,0.26)",
+                  background: "rgba(34,197,94,0.12)",
+                  border: "1px solid rgba(34,197,94,0.26)",
                   fontSize: 12,
                   fontWeight: 800,
+                  letterSpacing: 0.5,
                   textTransform: "uppercase",
-                  color: "#93c5fd",
+                  color: "#86efac",
                   marginBottom: 16,
                 }}
               >
-                Aurora Imóveis
+                Aurora AGRO
+              </div>
+
+              <div
+                style={{
+                  color: "#86efac",
+                  fontWeight: 800,
+                  fontSize: 14,
+                  textTransform: "uppercase",
+                  letterSpacing: 0.5,
+                  marginBottom: 10,
+                }}
+              >
+                Plataforma em expansão
               </div>
 
               <h1
                 style={{
                   margin: 0,
                   fontSize: "clamp(32px, 6vw, 52px)",
-                  lineHeight: 1.04,
+                  lineHeight: 1.02,
+                  maxWidth: 920,
                 }}
               >
-                Plataforma de imóveis para venda, locação e captação
+                Aurora AGRO para negócios, conexão comercial e escala real
               </h1>
 
               <p
                 style={{
                   marginTop: 16,
+                  marginBottom: 0,
                   color: "#9fb0c7",
                   fontSize: 17,
-                  lineHeight: 1.7,
-                  maxWidth: 850,
+                  lineHeight: 1.75,
+                  maxWidth: 920,
                 }}
               >
-                Estrutura para imóveis, corretores, proprietários e negócios
-                imobiliários dentro da Aurora IA. Estamos em constante
-                atualização e pode haver momentos de instabilidade.
+                Estrutura para produtores, fornecedores, compradores, insumos,
+                oportunidades e relacionamento comercial do agro dentro da
+                Aurora. Estamos em constante atualização e pode haver momentos
+                de instabilidade.
               </p>
 
               <div
@@ -121,7 +138,7 @@ export default function ImoveisPage() {
                 }}
               >
                 <Link
-                  href="/imoveis/cadastros"
+                  href="/agro/cadastrar"
                   style={{
                     display: "inline-flex",
                     alignItems: "center",
@@ -129,17 +146,19 @@ export default function ImoveisPage() {
                     minHeight: 48,
                     padding: "0 18px",
                     borderRadius: 14,
-                    background: "#3b82f6",
-                    color: "#fff",
-                    fontWeight: 900,
                     textDecoration: "none",
+                    fontWeight: 900,
+                    border: "1px solid rgba(34,197,94,0.45)",
+                    background:
+                      "linear-gradient(135deg, rgba(34,197,94,0.95), rgba(16,185,129,0.95))",
+                    color: "#04121d",
                   }}
                 >
-                  Cadastrar imóvel
+                  Cadastrar no AGRO
                 </Link>
 
                 <Link
-                  href="/imoveis"
+                  href="/agro/buscar"
                   style={{
                     display: "inline-flex",
                     alignItems: "center",
@@ -147,14 +166,14 @@ export default function ImoveisPage() {
                     minHeight: 48,
                     padding: "0 18px",
                     borderRadius: 14,
-                    border: "1px solid rgba(255,255,255,0.12)",
-                    background: "rgba(255,255,255,0.04)",
-                    color: "#fff",
                     textDecoration: "none",
                     fontWeight: 800,
+                    border: "1px solid rgba(255,255,255,0.12)",
+                    background: "rgba(255,255,255,0.04)",
+                    color: "#e5eef8",
                   }}
                 >
-                  Buscar imóveis
+                  Buscar no AGRO
                 </Link>
 
                 <Link
@@ -166,11 +185,11 @@ export default function ImoveisPage() {
                     minHeight: 48,
                     padding: "0 18px",
                     borderRadius: 14,
-                    border: "1px solid rgba(255,255,255,0.12)",
-                    background: "rgba(255,255,255,0.04)",
-                    color: "#fff",
                     textDecoration: "none",
                     fontWeight: 800,
+                    border: "1px solid rgba(255,255,255,0.12)",
+                    background: "rgba(255,255,255,0.04)",
+                    color: "#e5eef8",
                   }}
                 >
                   Voltar à Home
@@ -185,36 +204,43 @@ export default function ImoveisPage() {
                   border: "1px solid rgba(255,255,255,0.08)",
                   background:
                     "linear-gradient(180deg, rgba(12,18,40,0.95), rgba(7,12,28,0.92))",
-                  padding: 20,
+                  padding: 22,
                 }}
               >
                 <div
                   style={{
                     fontSize: 13,
-                    color: "#93c5fd",
+                    color: "#86efac",
                     fontWeight: 800,
                     textTransform: "uppercase",
-                    marginBottom: 12,
+                    letterSpacing: 0.4,
+                    marginBottom: 10,
                   }}
                 >
                   Pilares do módulo
                 </div>
 
-                {pillars.map((item) => (
-                  <div
-                    key={item}
-                    style={{
-                      marginBottom: 8,
-                      borderRadius: 12,
-                      padding: "10px 12px",
-                      background: "rgba(255,255,255,0.04)",
-                      border: "1px solid rgba(255,255,255,0.08)",
-                      fontWeight: 800,
-                    }}
-                  >
-                    {item}
-                  </div>
-                ))}
+                <div
+                  style={{
+                    display: "grid",
+                    gap: 10,
+                  }}
+                >
+                  {pillars.map((item) => (
+                    <div
+                      key={item}
+                      style={{
+                        borderRadius: 14,
+                        padding: "10px 12px",
+                        background: "rgba(255,255,255,0.04)",
+                        border: "1px solid rgba(255,255,255,0.08)",
+                        fontWeight: 800,
+                      }}
+                    >
+                      {item}
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
           </div>
@@ -233,36 +259,57 @@ export default function ImoveisPage() {
               key={item.title}
               style={{
                 borderRadius: 24,
-                padding: 20,
                 border: "1px solid rgba(255,255,255,0.08)",
                 background:
                   "linear-gradient(180deg, rgba(10,15,34,0.95), rgba(6,10,24,0.92))",
+                boxShadow: "0 16px 40px rgba(0,0,0,0.26)",
+                padding: 22,
               }}
             >
-              <h2 style={{ marginTop: 0 }}>{item.title}</h2>
-              <p style={{ color: "#9fb0c7", lineHeight: 1.7 }}>
+              <h2
+                style={{
+                  margin: 0,
+                  fontSize: 24,
+                  lineHeight: 1.1,
+                }}
+              >
+                {item.title}
+              </h2>
+
+              <p
+                style={{
+                  marginTop: 12,
+                  marginBottom: 0,
+                  color: "#9fb0c7",
+                  fontSize: 15,
+                  lineHeight: 1.7,
+                  minHeight: 96,
+                }}
+              >
                 {item.description}
               </p>
 
-              <Link
-                href={item.href}
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  minHeight: 44,
-                  padding: "0 16px",
-                  borderRadius: 12,
-                  textDecoration: "none",
-                  border: "1px solid rgba(255,255,255,0.12)",
-                  background: "rgba(255,255,255,0.04)",
-                  color: "#fff",
-                  fontWeight: 900,
-                  width: "100%",
-                }}
-              >
-                {item.cta}
-              </Link>
+              <div style={{ marginTop: 18 }}>
+                <Link
+                  href={item.href}
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    minHeight: 46,
+                    padding: "0 16px",
+                    borderRadius: 14,
+                    textDecoration: "none",
+                    border: "1px solid rgba(255,255,255,0.12)",
+                    background: "rgba(255,255,255,0.04)",
+                    color: "#e5eef8",
+                    fontWeight: 900,
+                    width: "100%",
+                  }}
+                >
+                  {item.cta}
+                </Link>
+              </div>
             </article>
           ))}
         </section>
