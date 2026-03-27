@@ -1,108 +1,396 @@
 "use client";
 
-import { FormEvent, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useMemo, useState } from "react";
 
 export default function LocadoraAdminLoginPage() {
-  const router = useRouter();
   const [password, setPassword] = useState("");
-  const [sending, setSending] = useState(false);
-  const [feedback, setFeedback] = useState<string | null>(null);
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  const canSubmit = useMemo(() => password.trim().length > 0, [password]);
+
+  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    setSending(true);
-    setFeedback(null);
+    setError("");
+
+    if (!password.trim()) {
+      setError("Digite a senha para continuar.");
+      return;
+    }
 
     try {
-      const response = await fetch("/api/locadora/admin/auth", {
+      setLoading(true);
+
+      const response = await fetch("/api/locadora/admin-login", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ password }),
+        body: JSON.stringify({
+          password: password.trim(),
+        }),
       });
 
-      const data = await response.json();
+      const data = await response.json().catch(() => null);
 
       if (!response.ok) {
-        setFeedback(data?.error || "Não foi possível entrar no admin.");
-        setSending(false);
+        setError(
+          data?.error || "Não foi possível validar a senha agora."
+        );
         return;
       }
 
-      router.push("/locadora/admin");
-      router.refresh();
+      window.location.href = "/locadora/admin/painel";
     } catch {
-      setFeedback("Erro inesperado ao entrar.");
+      setError("Falha de conexão ao validar a senha.");
     } finally {
-      setSending(false);
+      setLoading(false);
     }
   }
 
   return (
-    <main className="min-h-screen bg-[#02030a] text-white">
-      <section className="relative overflow-hidden">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(16,185,129,0.12),transparent_24%),radial-gradient(circle_at_right,rgba(34,211,238,0.12),transparent_28%)]" />
-        <div className="mx-auto flex min-h-screen max-w-7xl items-center justify-center px-6 py-16 md:px-8">
-          <div className="w-full max-w-xl rounded-[2.2rem] border border-white/10 bg-[#07101f]/92 p-8 shadow-2xl">
-            <div className="mb-6 flex flex-wrap gap-3">
-              <Link
-                href="/locadora"
-                className="rounded-full border border-white/15 bg-white/5 px-4 py-2 text-sm text-white/90 transition hover:bg-white/10"
-              >
-                ← Voltar para Locadora
-              </Link>
+    <main
+      style={{
+        minHeight: "100vh",
+        background:
+          "radial-gradient(circle at top, rgba(34,197,94,0.16), transparent 0%, transparent 28%), radial-gradient(circle at right top, rgba(20,184,166,0.12), transparent 0%, transparent 22%), linear-gradient(180deg, #041018 0%, #02060d 100%)",
+        color: "#eef6ff",
+        overflowX: "hidden",
+      }}
+    >
+      <section
+        style={{
+          maxWidth: 1200,
+          margin: "0 auto",
+          padding: "20px 16px 88px",
+        }}
+      >
+        <div
+          style={{
+            display: "flex",
+            flexWrap: "wrap",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: 12,
+            marginBottom: 20,
+          }}
+        >
+          <Link
+            href="/locadora"
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 8,
+              textDecoration: "none",
+              color: "#cfe8ff",
+              fontWeight: 700,
+              fontSize: 14,
+              padding: "10px 14px",
+              borderRadius: 999,
+              background: "rgba(255,255,255,0.05)",
+              border: "1px solid rgba(255,255,255,0.08)",
+              boxShadow: "0 10px 30px rgba(0,0,0,0.22)",
+            }}
+          >
+            <span aria-hidden="true">←</span>
+            <span>Voltar para Locadora</span>
+          </Link>
 
-              <span className="rounded-full border border-amber-400/25 bg-amber-400/10 px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.24em] text-amber-300">
-                Login admin
-              </span>
+          <div
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 10,
+              padding: "10px 14px",
+              borderRadius: 999,
+              background: "rgba(34,197,94,0.10)",
+              border: "1px solid rgba(34,197,94,0.24)",
+              color: "#9ff3c4",
+              fontWeight: 800,
+              fontSize: 13,
+              letterSpacing: 0.3,
+            }}
+          >
+            <span aria-hidden="true">🔒</span>
+            <span>ÁREA PROTEGIDA</span>
+          </div>
+        </div>
+
+        <div
+          className="aurora-locadora-admin-login-grid"
+          style={{
+            display: "grid",
+            gridTemplateColumns: "minmax(0, 1.15fr) minmax(320px, 0.85fr)",
+            gap: 22,
+          }}
+        >
+          <article
+            style={{
+              position: "relative",
+              overflow: "hidden",
+              borderRadius: 30,
+              border: "1px solid rgba(255,255,255,0.08)",
+              background:
+                "linear-gradient(180deg, rgba(10,24,36,0.92) 0%, rgba(5,11,18,0.98) 100%)",
+              boxShadow: "0 30px 80px rgba(0,0,0,0.38)",
+              minWidth: 0,
+            }}
+          >
+            <div
+              style={{
+                position: "absolute",
+                inset: 0,
+                background:
+                  "linear-gradient(90deg, rgba(34,197,94,0.08), transparent 28%, transparent 72%, rgba(20,184,166,0.08))",
+                pointerEvents: "none",
+              }}
+            />
+
+            <div
+              style={{
+                position: "relative",
+                padding: "28px 22px 24px",
+                minWidth: 0,
+              }}
+            >
+              <div
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 8,
+                  padding: "8px 12px",
+                  borderRadius: 999,
+                  background: "rgba(255,255,255,0.05)",
+                  border: "1px solid rgba(255,255,255,0.07)",
+                  color: "#b8d7ff",
+                  fontWeight: 800,
+                  fontSize: 12,
+                  marginBottom: 18,
+                }}
+              >
+                <span aria-hidden="true">🚗</span>
+                <span>Aurora Locadoras</span>
+              </div>
+
+              <h1
+                style={{
+                  margin: 0,
+                  fontSize: "clamp(34px, 7vw, 68px)",
+                  lineHeight: 1.02,
+                  letterSpacing: "-0.04em",
+                  fontWeight: 900,
+                  maxWidth: 760,
+                  wordBreak: "break-word",
+                }}
+              >
+                Login admin da locadora
+              </h1>
+
+              <p
+                style={{
+                  marginTop: 18,
+                  marginBottom: 0,
+                  maxWidth: 720,
+                  color: "#d5e5f7",
+                  fontSize: "clamp(17px, 3.7vw, 22px)",
+                  lineHeight: 1.72,
+                }}
+              >
+                Área protegida para gestão real de locadoras, veículos,
+                motoristas, parceiros, bancos e fluxo comercial em todo o
+                Brasil.
+              </p>
+
+              <div
+                style={{
+                  display: "flex",
+                  flexWrap: "wrap",
+                  gap: 12,
+                  marginTop: 26,
+                }}
+              >
+                <div style={pillStyle}>Cadastro real</div>
+                <div style={pillStyle}>Acesso protegido</div>
+                <div style={pillStyle}>Operação nacional</div>
+                <div style={pillStyle}>Filiais em todo Brasil</div>
+              </div>
+            </div>
+          </article>
+
+          <aside
+            style={{
+              borderRadius: 30,
+              border: "1px solid rgba(255,255,255,0.08)",
+              background:
+                "linear-gradient(180deg, rgba(10,18,30,0.96) 0%, rgba(4,8,14,0.99) 100%)",
+              boxShadow: "0 26px 70px rgba(0,0,0,0.34)",
+              padding: 22,
+              minWidth: 0,
+              alignSelf: "start",
+            }}
+          >
+            <div
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 8,
+                padding: "8px 12px",
+                borderRadius: 999,
+                background: "rgba(34,197,94,0.10)",
+                border: "1px solid rgba(34,197,94,0.24)",
+                color: "#9ff3c4",
+                fontWeight: 800,
+                fontSize: 12,
+                marginBottom: 14,
+              }}
+            >
+              <span aria-hidden="true">🛡️</span>
+              <span>Login seguro</span>
             </div>
 
-            <h1 className="text-4xl font-black md:text-5xl">
-              Entrar no admin da locadora
-            </h1>
+            <h2
+              style={{
+                margin: "0 0 10px",
+                fontSize: 28,
+                lineHeight: 1.1,
+                fontWeight: 900,
+                letterSpacing: "-0.03em",
+              }}
+            >
+              Entrar no painel
+            </h2>
 
-            <p className="mt-4 text-white/70">
-              Área protegida para cadastro real de locadoras e veículos.
+            <p
+              style={{
+                margin: "0 0 20px",
+                color: "#bcd3ea",
+                fontSize: 15,
+                lineHeight: 1.65,
+              }}
+            >
+              Use a senha administrativa para liberar o acesso ao painel da locadora.
             </p>
 
-            <form onSubmit={handleSubmit} className="mt-8">
-              <label className="mb-2 block text-sm font-medium text-white/75">
+            <form onSubmit={handleSubmit}>
+              <label
+                htmlFor="locadora-admin-login-password"
+                style={{
+                  display: "block",
+                  marginBottom: 10,
+                  color: "#dcecff",
+                  fontWeight: 800,
+                  fontSize: 14,
+                }}
+              >
                 Senha do admin
               </label>
 
               <input
+                id="locadora-admin-login-password"
                 type="password"
                 value={password}
                 onChange={(event) => setPassword(event.target.value)}
-                className="w-full rounded-2xl border border-white/10 bg-[#050914] px-4 py-3 text-white outline-none transition focus:border-emerald-400/45 focus:shadow-[0_0_0_4px_rgba(16,185,129,0.10)]"
                 placeholder="Digite a senha"
+                autoComplete="current-password"
+                style={{
+                  width: "100%",
+                  height: 54,
+                  borderRadius: 16,
+                  border: "1px solid rgba(255,255,255,0.12)",
+                  background: "rgba(255,255,255,0.06)",
+                  color: "#ffffff",
+                  outline: "none",
+                  padding: "0 16px",
+                  fontSize: 16,
+                  boxSizing: "border-box",
+                }}
               />
 
-              <div className="mt-6 flex flex-wrap items-center gap-4">
-                <button
-                  type="submit"
-                  disabled={sending}
-                  className="rounded-2xl bg-gradient-to-r from-emerald-400 to-cyan-300 px-6 py-3 font-bold text-slate-950 transition hover:scale-[1.02] disabled:opacity-60"
+              {error ? (
+                <div
+                  style={{
+                    marginTop: 12,
+                    padding: "12px 14px",
+                    borderRadius: 14,
+                    background: "rgba(239,68,68,0.10)",
+                    border: "1px solid rgba(239,68,68,0.24)",
+                    color: "#ffd1d1",
+                    fontSize: 14,
+                    lineHeight: 1.5,
+                  }}
                 >
-                  {sending ? "Entrando..." : "Entrar no admin"}
-                </button>
+                  {error}
+                </div>
+              ) : null}
 
-                {feedback ? (
-                  <p className="text-sm text-white/75">{feedback}</p>
-                ) : null}
-              </div>
+              <button
+                type="submit"
+                disabled={!canSubmit || loading}
+                style={{
+                  width: "100%",
+                  height: 54,
+                  border: 0,
+                  borderRadius: 16,
+                  marginTop: 16,
+                  cursor: canSubmit && !loading ? "pointer" : "not-allowed",
+                  fontWeight: 900,
+                  fontSize: 17,
+                  color: "#04110a",
+                  background:
+                    canSubmit && !loading
+                      ? "linear-gradient(135deg, #22c55e, #86efac)"
+                      : "linear-gradient(135deg, #6b7280, #9ca3af)",
+                  boxShadow:
+                    canSubmit && !loading
+                      ? "0 18px 40px rgba(34,197,94,0.25)"
+                      : "none",
+                }}
+              >
+                {loading ? "Validando..." : "Entrar no admin"}
+              </button>
             </form>
 
-            <div className="mt-8 rounded-[1.6rem] border border-white/10 bg-black/20 p-4 text-sm text-white/65">
-              Defina a senha em <strong>`.env.local`</strong> usando a variável{" "}
-              <strong>`LOCADORA_ADMIN_PASSWORD`</strong>.
+            <div
+              style={{
+                marginTop: 18,
+                padding: 16,
+                borderRadius: 18,
+                background: "rgba(255,255,255,0.03)",
+                border: "1px solid rgba(255,255,255,0.07)",
+                color: "#b9cde3",
+                fontSize: 14,
+                lineHeight: 1.7,
+              }}
+            >
+              Defina a senha em <strong>.env.local</strong> usando a variável{" "}
+              <strong>LOCADORA_ADMIN_PASSWORD</strong>.
             </div>
-          </div>
+          </aside>
         </div>
       </section>
+
+      <style jsx global>{`
+        @media (max-width: 980px) {
+          .aurora-locadora-admin-login-grid {
+            grid-template-columns: 1fr !important;
+          }
+        }
+      `}</style>
     </main>
   );
 }
+
+const pillStyle: React.CSSProperties = {
+  display: "inline-flex",
+  alignItems: "center",
+  justifyContent: "center",
+  minHeight: 42,
+  padding: "0 16px",
+  borderRadius: 999,
+  background: "rgba(255,255,255,0.04)",
+  border: "1px solid rgba(255,255,255,0.08)",
+  color: "#e5f0fb",
+  fontWeight: 700,
+  fontSize: 14,
+};
