@@ -89,30 +89,30 @@ export default function LocadoraCadastrosPage() {
             marginTop: 32,
           }}
         >
-          <Link href="/locadora/admin" style={cardLink}>
+          <Link href="/locadora/cadastros/veiculos" style={cardLink}>
             <article style={card}>
               <div style={iconWrap}>🚘</div>
               <h2 style={cardTitle}>Veículos</h2>
               <p style={cardText}>
                 Cadastro e gestão do estoque de veículos da operação.
               </p>
-              <span style={cardAction}>Abrir gestão de veículos</span>
+              <span style={cardAction}>Abrir cadastro de veículos</span>
             </article>
           </Link>
 
-          <Link href="/locadora/admin" style={cardLink}>
-            <article style={card}>
+          <Link href="/locadora/cadastros/clientes" style={cardLink}>
+            <article style={cardFeatured}>
               <div style={iconWrap}>👤</div>
               <h2 style={cardTitle}>Clientes</h2>
               <p style={cardText}>
                 Cadastro de clientes, contato e dados comerciais.
               </p>
-              <span style={cardAction}>Abrir gestão de clientes</span>
+              <span style={cardAction}>Abrir cadastro de clientes</span>
             </article>
           </Link>
 
           <Link href="/locadora/cadastros/motoristas" style={cardLink}>
-            <article style={cardFeatured}>
+            <article style={card}>
               <div style={iconWrap}>🪪</div>
               <h2 style={cardTitle}>Motoristas</h2>
               <p style={cardText}>
@@ -133,14 +133,14 @@ export default function LocadoraCadastrosPage() {
             </article>
           </Link>
 
-          <Link href="/locadora/admin" style={cardLink}>
+          <Link href="/locadora/cadastros/parceiros" style={cardLink}>
             <article style={card}>
               <div style={iconWrap}>🤝</div>
               <h2 style={cardTitle}>Parceiros</h2>
               <p style={cardText}>
                 Cadastro de parceiros e origens de negócio.
               </p>
-              <span style={cardAction}>Abrir gestão de parceiros</span>
+              <span style={cardAction}>Abrir cadastro de parceiros</span>
             </article>
           </Link>
         </div>
@@ -186,21 +186,6 @@ export default function LocadoraCadastrosPage() {
 const cardLink: React.CSSProperties = {
   textDecoration: "none",
   color: "inherit",
-};
-
-const primaryButton: React.CSSProperties = {
-  display: "inline-flex",
-  alignItems: "center",
-  justifyContent: "center",
-  minHeight: 48,
-  padding: "0 18px",
-  borderRadius: 14,
-  textDecoration: "none",
-  fontWeight: 800,
-  fontSize: 15,
-  color: "#04110a",
-  background: "linear-gradient(135deg, #22c55e, #86efac)",
-  boxShadow: "0 18px 40px rgba(34,197,94,0.25)",
 };
 
 const secondaryButton: React.CSSProperties = {
