@@ -1,134 +1,70 @@
 import Link from "next/link";
 
-type ModuleCard = {
-  icon: string;
-  title: string;
-  description: string;
-  href: string;
-  cta: string;
-  highlight: string;
-  accent: string;
-  accentSoft: string;
-  accentText: string;
-  border: string;
-};
-
-const modules: ModuleCard[] = [
+const products = [
   {
+    title: "Chat",
+    icon: "💬",
+    href: "/chat",
+    description: "Converse, peça campanhas, ideias, imagens e respostas rápidas.",
+    badge: "Aurora IA",
+  },
+  {
+    title: "Locadora",
     icon: "🚗",
-    title: "Aurora Locadora",
-    description:
-      "Área para locadoras, veículos, propostas, atendimento, cadastros e gestão comercial.",
     href: "/locadora",
-    cta: "Entrar em Locadora",
-    highlight: "Venda, frota e seminovos",
-    accent: "linear-gradient(135deg, rgba(16,185,129,0.24), rgba(6,182,212,0.20))",
-    accentSoft: "rgba(16,185,129,0.12)",
-    accentText: "#34d399",
-    border: "1px solid rgba(16,185,129,0.26)",
+    description: "Cadastros, clientes, veículos e operação comercial da locadora.",
+    badge: "Operação real",
   },
   {
+    title: "Agro",
     icon: "🌾",
-    title: "Aurora AGRO",
-    description:
-      "Espaço para negócios do agro, produtores, fornecedores, insumos, oportunidades e conexão comercial real.",
     href: "/agro",
-    cta: "Entrar em AGRO",
-    highlight: "Produtores e fornecedores",
-    accent: "linear-gradient(135deg, rgba(34,197,94,0.24), rgba(16,185,129,0.20))",
-    accentSoft: "rgba(34,197,94,0.12)",
-    accentText: "#22c55e",
-    border: "1px solid rgba(34,197,94,0.26)",
+    description: "Entrada para produtores, fornecedores e negócios do agro.",
+    badge: "Expansão",
   },
   {
+    title: "Imóveis",
     icon: "🏠",
-    title: "Aurora Imóveis",
-    description:
-      "Espaço para imóveis, captação, vitrine comercial, cadastros e fluxo de atendimento.",
     href: "/imoveis",
-    cta: "Entrar em Imóveis",
-    highlight: "Venda, locação e captação",
-    accent: "linear-gradient(135deg, rgba(59,130,246,0.24), rgba(37,99,235,0.20))",
-    accentSoft: "rgba(59,130,246,0.12)",
-    accentText: "#60a5fa",
-    border: "1px solid rgba(59,130,246,0.26)",
+    description: "Imobiliárias, imóveis e operação de captação e venda.",
+    badge: "Mercado imobiliário",
   },
   {
+    title: "Bancos",
     icon: "🏦",
-    title: "Aurora Bancos",
-    description:
-      "Integração com parceiros financeiros para financiamento, análise, resposta de propostas e geração de comissão.",
     href: "/bancos",
-    cta: "Entrar em Bancos",
-    highlight: "Financiamento e resposta comercial",
-    accent: "linear-gradient(135deg, rgba(245,158,11,0.24), rgba(234,179,8,0.20))",
-    accentSoft: "rgba(245,158,11,0.12)",
-    accentText: "#fbbf24",
-    border: "1px solid rgba(245,158,11,0.26)",
+    description: "Fluxo com bancos e parceiros financeiros dentro da plataforma.",
+    badge: "Financeiro",
+  },
+  {
+    title: "Livro",
+    icon: "📘",
+    href: "/livro",
+    description: "Área do livro com acesso rápido para leitura, divulgação e conversão.",
+    badge: "Conteúdo",
   },
 ];
 
-const highlights = [
+const cadastros = [
   {
-    title: "Entrada comercial mais forte",
-    description:
-      "Os módulos principais ficam logo na Home para reduzir perda de tráfego e aumentar ação do visitante.",
+    title: "Cadastro de clientes",
+    icon: "👤",
+    href: "/locadora/cadastros/clientes",
+    description: "Cadastre clientes e siga direto para o fluxo comercial.",
   },
   {
-    title: "Estrutura pronta para expansão",
-    description:
-      "A Aurora já consegue crescer por módulos sem bagunçar a navegação principal da plataforma.",
+    title: "Clientes cadastrados",
+    icon: "📋",
+    href: "/locadora/clientes",
+    description: "Veja os clientes já gravados no banco e chame no WhatsApp.",
   },
   {
-    title: "Operação com cara de plataforma real",
-    description:
-      "Home, módulos e caminhos comerciais já aparecem de forma mais profissional para usuário e parceiro.",
-  },
-  {
-    title: "Atualização contínua",
-    description:
-      "Sistema em constante atualização. Pode haver momentos de instabilidade durante melhorias, segurança e novos lançamentos.",
+    title: "Central de cadastros",
+    icon: "🧩",
+    href: "/locadora/cadastros",
+    description: "Entre na área de cadastros e escolha o que quer operar.",
   },
 ];
-
-const metrics = [
-  { value: "4", label: "módulos centrais" },
-  { value: "100%", label: "entrada visível" },
-  { value: "24h", label: "plataforma ativa" },
-];
-
-function primaryButtonStyle() {
-  return {
-    display: "inline-flex",
-    alignItems: "center",
-    justifyContent: "center",
-    minHeight: 50,
-    padding: "0 20px",
-    borderRadius: 14,
-    textDecoration: "none",
-    fontWeight: 900,
-    border: "1px solid rgba(52,211,153,0.45)",
-    background:
-      "linear-gradient(135deg, rgba(16,185,129,0.95), rgba(6,182,212,0.95))",
-    color: "#04121d",
-  } as const;
-}
-
-function secondaryButtonStyle() {
-  return {
-    display: "inline-flex",
-    alignItems: "center",
-    justifyContent: "center",
-    minHeight: 50,
-    padding: "0 20px",
-    borderRadius: 14,
-    textDecoration: "none",
-    fontWeight: 800,
-    border: "1px solid rgba(255,255,255,0.12)",
-    background: "rgba(255,255,255,0.04)",
-    color: "#e5eef8",
-  } as const;
-}
 
 export default function HomePage() {
   return (
@@ -136,535 +72,535 @@ export default function HomePage() {
       style={{
         minHeight: "100vh",
         background:
-          "radial-gradient(circle at top, rgba(16,185,129,0.16), transparent 24%), #050816",
-        color: "#e5eef8",
-        padding: "28px 16px 80px",
+          "radial-gradient(circle at top, rgba(34,197,94,0.12), transparent 0%, transparent 24%), radial-gradient(circle at right top, rgba(59,130,246,0.12), transparent 0%, transparent 20%), linear-gradient(180deg, #030712 0%, #06111c 54%, #02060d 100%)",
+        color: "#eef6ff",
       }}
     >
-      <div
+      <section
         style={{
-          width: "100%",
-          maxWidth: 1240,
+          maxWidth: 1220,
           margin: "0 auto",
+          padding: "18px 14px 88px",
         }}
       >
-        <section
+        <header
           style={{
-            borderRadius: 28,
-            border: "1px solid rgba(255,255,255,0.08)",
-            background: "rgba(7,12,28,0.88)",
-            boxShadow: "0 18px 60px rgba(0,0,0,0.35)",
-            padding: "34px 24px",
+            position: "sticky",
+            top: 0,
+            zIndex: 20,
+            paddingBottom: 14,
+            background:
+              "linear-gradient(180deg, rgba(3,7,18,0.96), rgba(3,7,18,0.86), rgba(3,7,18,0))",
+            backdropFilter: "blur(10px)",
           }}
         >
           <div
             style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(12, minmax(0, 1fr))",
-              gap: 22,
-              alignItems: "center",
+              display: "flex",
+              flexDirection: "column",
+              gap: 14,
+              paddingTop: 8,
             }}
           >
             <div
               style={{
-                gridColumn: "span 8",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                gap: 12,
+                flexWrap: "wrap",
               }}
             >
-              <div
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: 8,
-                  padding: "8px 12px",
-                  borderRadius: 999,
-                  background: "rgba(16,185,129,0.12)",
-                  border: "1px solid rgba(16,185,129,0.26)",
-                  fontSize: 12,
-                  fontWeight: 800,
-                  letterSpacing: 0.5,
-                  textTransform: "uppercase",
-                  color: "#86efac",
-                  marginBottom: 16,
-                }}
-              >
-                Aurora IA
+              <div>
+                <div
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 8,
+                    padding: "7px 12px",
+                    borderRadius: 999,
+                    background: "rgba(34,197,94,0.10)",
+                    border: "1px solid rgba(34,197,94,0.22)",
+                    color: "#b9f7cf",
+                    fontWeight: 800,
+                    fontSize: 12,
+                    marginBottom: 10,
+                  }}
+                >
+                  <span>Aurora IA</span>
+                  <span>•</span>
+                  <span>Entrada inteligente</span>
+                </div>
+
+                <h1
+                  style={{
+                    margin: 0,
+                    fontSize: "clamp(28px, 7vw, 56px)",
+                    lineHeight: 1.02,
+                    letterSpacing: "-0.04em",
+                    fontWeight: 900,
+                    maxWidth: 760,
+                  }}
+                >
+                  Tudo em um só lugar, com entrada simples para celular
+                </h1>
+
+                <p
+                  style={{
+                    margin: "14px 0 0",
+                    maxWidth: 860,
+                    color: "#cbd5e1",
+                    fontSize: "clamp(15px, 3.5vw, 19px)",
+                    lineHeight: 1.65,
+                  }}
+                >
+                  Escolha o produto, entre direto no que precisa e navegue sem
+                  confusão. Sistema em constante atualização e pode haver
+                  momentos de instabilidade durante melhorias e novos
+                  lançamentos.
+                </p>
               </div>
 
               <div
                 style={{
-                  color: "#8fb7ff",
-                  fontWeight: 800,
-                  fontSize: 14,
-                  textTransform: "uppercase",
-                  letterSpacing: 0.5,
-                  marginBottom: 10,
+                  minWidth: 220,
+                  maxWidth: 280,
+                  width: "100%",
+                  borderRadius: 22,
+                  padding: 16,
+                  background: "rgba(255,255,255,0.04)",
+                  border: "1px solid rgba(255,255,255,0.08)",
+                  boxShadow: "0 18px 50px rgba(0,0,0,0.24)",
                 }}
               >
-                Plataforma em expansão comercial
-              </div>
+                <div
+                  style={{
+                    fontSize: 12,
+                    fontWeight: 800,
+                    letterSpacing: "0.18em",
+                    color: "#8db5d9",
+                    marginBottom: 10,
+                  }}
+                >
+                  ACESSO RÁPIDO
+                </div>
 
-              <h1
+                <div style={{ display: "grid", gap: 10 }}>
+                  <Link href="/chat" style={primaryButton}>
+                    Entrar no Chat
+                  </Link>
+
+                  <Link href="/locadora" style={secondaryButton}>
+                    Entrar na Locadora
+                  </Link>
+                </div>
+              </div>
+            </div>
+
+            <nav
+              aria-label="Produtos principais"
+              style={{
+                display: "flex",
+                gap: 10,
+                overflowX: "auto",
+                paddingBottom: 4,
+                scrollbarWidth: "thin",
+              }}
+            >
+              {products.map((item) => (
+                <Link
+                  key={item.title}
+                  href={item.href}
+                  style={topNavChip}
+                >
+                  <span aria-hidden="true">{item.icon}</span>
+                  <span>{item.title}</span>
+                </Link>
+              ))}
+            </nav>
+          </div>
+        </header>
+
+        <section style={{ marginTop: 20 }}>
+          <div style={sectionHeader}>
+            <div>
+              <div style={eyebrow}>PRODUTOS</div>
+              <h2 style={sectionTitle}>Escolha onde quer entrar</h2>
+            </div>
+          </div>
+
+          <div style={gridProducts}>
+            {products.map((item) => (
+              <Link key={item.title} href={item.href} style={cardLink}>
+                <article style={mainCard}>
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "flex-start",
+                      justifyContent: "space-between",
+                      gap: 14,
+                    }}
+                  >
+                    <div style={iconBox}>{item.icon}</div>
+
+                    <div style={badge}>{item.badge}</div>
+                  </div>
+
+                  <h3 style={cardTitle}>{item.title}</h3>
+
+                  <p style={cardText}>{item.description}</p>
+
+                  <div style={cardAction}>Entrar agora</div>
+                </article>
+              </Link>
+            ))}
+          </div>
+        </section>
+
+        <section style={{ marginTop: 28 }}>
+          <div style={sectionHeader}>
+            <div>
+              <div style={eyebrow}>CADASTROS</div>
+              <h2 style={sectionTitle}>Entre, cadastre e siga</h2>
+            </div>
+          </div>
+
+          <div style={gridCadastros}>
+            {cadastros.map((item) => (
+              <Link key={item.title} href={item.href} style={cardLink}>
+                <article style={cadastroCard}>
+                  <div style={iconBoxSmall}>{item.icon}</div>
+                  <div>
+                    <h3 style={cadastroTitle}>{item.title}</h3>
+                    <p style={cadastroText}>{item.description}</p>
+                  </div>
+                </article>
+              </Link>
+            ))}
+          </div>
+        </section>
+
+        <section style={{ marginTop: 28 }}>
+          <div style={sectionHeader}>
+            <div>
+              <div style={eyebrow}>DESTAQUE</div>
+              <h2 style={sectionTitle}>Livro e conteúdo estratégico</h2>
+            </div>
+          </div>
+
+          <div style={bookWrap}>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={bookBadge}>📘 LIVRO</div>
+
+              <h3
                 style={{
-                  margin: 0,
-                  fontSize: "clamp(34px, 6vw, 58px)",
+                  margin: "12px 0 10px",
+                  fontSize: "clamp(24px, 5vw, 38px)",
                   lineHeight: 1.08,
-                  maxWidth: 940,
+                  fontWeight: 900,
                 }}
               >
-                Aurora IA com acesso direto para{" "}
-                <span
-                  style={{
-                    color: "#34d399",
-                    fontWeight: 900,
-                    textShadow: "0 0 18px rgba(52,211,153,0.22)",
-                  }}
-                >
-                  Locadora
-                </span>
-                ,{" "}
-                <span
-                  style={{
-                    color: "#22c55e",
-                    fontWeight: 900,
-                    textShadow: "0 0 18px rgba(34,197,94,0.22)",
-                  }}
-                >
-                  AGRO
-                </span>
-                ,{" "}
-                <span
-                  style={{
-                    color: "#60a5fa",
-                    fontWeight: 900,
-                    textShadow: "0 0 18px rgba(96,165,250,0.22)",
-                  }}
-                >
-                  Imóveis
-                </span>{" "}
-                e{" "}
-                <span
-                  style={{
-                    color: "#fbbf24",
-                    fontWeight: 900,
-                    textShadow: "0 0 18px rgba(251,191,36,0.22)",
-                  }}
-                >
-                  Bancos
-                </span>
-              </h1>
+                Acesse o livro com entrada clara e visível na home
+              </h3>
 
               <p
                 style={{
-                  marginTop: 16,
-                  marginBottom: 0,
-                  color: "#9fb0c7",
-                  fontSize: 18,
-                  lineHeight: 1.8,
-                  maxWidth: 930,
+                  margin: 0,
+                  color: "#d5e5f7",
+                  fontSize: 16,
+                  lineHeight: 1.75,
+                  maxWidth: 760,
                 }}
               >
-                Converse, gere campanhas, cadastre oportunidades e acesse módulos
-                comerciais da Aurora em um só ambiente. A estrutura principal já
-                está pronta para atrair tráfego, distribuir interesse e acelerar
-                entrada comercial.
+                O livro não pode ficar escondido. Ele precisa aparecer como
+                produto principal para gerar retenção, autoridade e mais tempo
+                de permanência dentro da Aurora.
               </p>
-
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
-                  gap: 12,
-                  marginTop: 24,
-                  maxWidth: 930,
-                }}
-              >
-                {modules.map((module) => (
-                  <div
-                    key={`top-${module.title}`}
-                    style={{
-                      borderRadius: 18,
-                      padding: 14,
-                      background: module.accent,
-                      border: module.border,
-                    }}
-                  >
-                    <div
-                      style={{
-                        fontSize: 12,
-                        fontWeight: 900,
-                        color: module.accentText,
-                        textTransform: "uppercase",
-                        letterSpacing: 0.5,
-                        marginBottom: 6,
-                      }}
-                    >
-                      {module.title}
-                    </div>
-                    <div
-                      style={{
-                        color: "#dbe7f5",
-                        fontSize: 13,
-                        lineHeight: 1.55,
-                        fontWeight: 700,
-                      }}
-                    >
-                      {module.highlight}
-                    </div>
-                  </div>
-                ))}
-              </div>
 
               <div
                 style={{
                   display: "flex",
-                  gap: 12,
                   flexWrap: "wrap",
-                  marginTop: 24,
+                  gap: 12,
+                  marginTop: 18,
                 }}
               >
-                <Link href="/chat" style={primaryButtonStyle()}>
-                  Abrir chat da Aurora
+                <Link href="/livro" style={primaryButton}>
+                  Abrir livro
                 </Link>
 
-                <Link href="/locadora" style={secondaryButtonStyle()}>
-                  Entrar na Locadora
-                </Link>
-
-                <Link href="/planos" style={secondaryButtonStyle()}>
-                  Ver planos
-                </Link>
-
-                <Link href="/explorar" style={secondaryButtonStyle()}>
-                  Explorar plataforma
+                <Link href="/explorar" style={secondaryButton}>
+                  Explorar conteúdos
                 </Link>
               </div>
             </div>
 
-            <div
-              style={{
-                gridColumn: "span 4",
-              }}
-            >
-              <div
-                style={{
-                  borderRadius: 24,
-                  border: "1px solid rgba(255,255,255,0.08)",
-                  background:
-                    "linear-gradient(180deg, rgba(12,18,40,0.95), rgba(7,12,28,0.92))",
-                  padding: 22,
-                }}
-              >
-                <div
-                  style={{
-                    fontSize: 13,
-                    color: "#8fb7ff",
-                    fontWeight: 800,
-                    textTransform: "uppercase",
-                    letterSpacing: 0.4,
-                    marginBottom: 10,
-                  }}
-                >
-                  Entrada estratégica
-                </div>
-
-                <div
-                  style={{
-                    fontSize: 24,
-                    fontWeight: 900,
-                    lineHeight: 1.12,
-                    marginBottom: 12,
-                  }}
-                >
-                  Uma Home pronta para venda, navegação e expansão
-                </div>
-
-                <div
-                  style={{
-                    color: "#9fb0c7",
-                    lineHeight: 1.7,
-                    fontSize: 15,
-                  }}
-                >
-                  Os módulos principais ficam visíveis logo de cara para reduzir
-                  perda de tráfego e aumentar acesso comercial.
-                </div>
-
-                <div
-                  style={{
-                    display: "grid",
-                    gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
-                    gap: 10,
-                    marginTop: 18,
-                  }}
-                >
-                  {metrics.map((metric) => (
-                    <div
-                      key={metric.label}
-                      style={{
-                        borderRadius: 16,
-                        padding: "14px 10px",
-                        background: "rgba(255,255,255,0.04)",
-                        border: "1px solid rgba(255,255,255,0.08)",
-                        textAlign: "center",
-                      }}
-                    >
-                      <div
-                        style={{
-                          fontSize: 24,
-                          fontWeight: 900,
-                        }}
-                      >
-                        {metric.value}
-                      </div>
-                      <div
-                        style={{
-                          marginTop: 6,
-                          fontSize: 12,
-                          color: "#9fb0c7",
-                          lineHeight: 1.4,
-                        }}
-                      >
-                        {metric.label}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                <div
-                  style={{
-                    display: "grid",
-                    gap: 10,
-                    marginTop: 18,
-                  }}
-                >
-                  {modules.map((module) => (
-                    <div
-                      key={`side-${module.title}`}
-                      style={{
-                        borderRadius: 14,
-                        padding: "10px 12px",
-                        background: module.accentSoft,
-                        border: module.border,
-                        color: module.accentText,
-                        fontWeight: 900,
-                      }}
-                    >
-                      {module.title.replace("Aurora ", "")}
-                    </div>
-                  ))}
-                </div>
+            <div style={bookSideCard}>
+              <div style={statMiniLabel}>OBJETIVO</div>
+              <div style={statMiniText}>
+                Facilitar entrada, melhorar retenção e reduzir confusão no
+                mobile.
               </div>
             </div>
           </div>
         </section>
 
-        <section
-          style={{
-            marginTop: 24,
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(270px, 1fr))",
-            gap: 18,
-          }}
-        >
-          {modules.map((module) => (
-            <article
-              key={module.title}
-              style={{
-                borderRadius: 24,
-                border: module.border,
-                background:
-                  "linear-gradient(180deg, rgba(10,15,34,0.95), rgba(6,10,24,0.92))",
-                boxShadow: "0 16px 40px rgba(0,0,0,0.26)",
-                padding: 22,
-                display: "flex",
-                flexDirection: "column",
-              }}
-            >
-              <div
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  width: 56,
-                  height: 56,
-                  borderRadius: 18,
-                  background: module.accent,
-                  border: module.border,
-                  fontSize: 28,
-                  marginBottom: 16,
-                }}
-              >
-                {module.icon}
-              </div>
-
-              <div
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  padding: "6px 10px",
-                  borderRadius: 999,
-                  background: module.accentSoft,
-                  border: module.border,
-                  color: module.accentText,
-                  fontSize: 12,
-                  fontWeight: 800,
-                  marginBottom: 12,
-                  width: "fit-content",
-                }}
-              >
-                {module.highlight}
-              </div>
-
-              <h2
-                style={{
-                  margin: 0,
-                  fontSize: 25,
-                  lineHeight: 1.1,
-                }}
-              >
-                {module.title}
-              </h2>
-
-              <p
-                style={{
-                  marginTop: 12,
-                  marginBottom: 0,
-                  color: "#9fb0c7",
-                  fontSize: 15,
-                  lineHeight: 1.75,
-                  flex: 1,
-                  minHeight: 105,
-                }}
-              >
-                {module.description}
-              </p>
-
-              <div style={{ marginTop: 18 }}>
-                <Link
-                  href={module.href}
-                  style={{
-                    display: "inline-flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    minHeight: 48,
-                    padding: "0 16px",
-                    borderRadius: 14,
-                    textDecoration: "none",
-                    border: module.border,
-                    background: module.accentSoft,
-                    color: module.accentText,
-                    fontWeight: 900,
-                    width: "100%",
-                  }}
-                >
-                  {module.cta}
-                </Link>
-              </div>
-            </article>
-          ))}
-        </section>
-
-        <section
-          style={{
-            marginTop: 24,
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
-            gap: 16,
-          }}
-        >
-          {highlights.map((item) => (
-            <article
-              key={item.title}
-              style={{
-                borderRadius: 22,
-                border: "1px solid rgba(255,255,255,0.08)",
-                background: "rgba(255,255,255,0.03)",
-                padding: 20,
-              }}
-            >
-              <div
-                style={{
-                  fontSize: 18,
-                  fontWeight: 900,
-                  marginBottom: 10,
-                }}
-              >
-                {item.title}
-              </div>
-
-              <div
-                style={{
-                  color: "#9fb0c7",
-                  lineHeight: 1.75,
-                  fontSize: 15,
-                }}
-              >
-                {item.description}
-              </div>
-            </article>
-          ))}
-        </section>
-
-        <section
-          style={{
-            marginTop: 24,
-            borderRadius: 24,
-            border: "1px solid rgba(255,255,255,0.08)",
-            background: "rgba(255,255,255,0.03)",
-            padding: 22,
-            display: "flex",
-            gap: 16,
-            justifyContent: "space-between",
-            alignItems: "center",
-            flexWrap: "wrap",
-          }}
-        >
-          <div style={{ maxWidth: 760 }}>
-            <div
-              style={{
-                fontSize: 22,
-                fontWeight: 900,
-                marginBottom: 8,
-              }}
-            >
-              A Aurora já está distribuindo tráfego para os módulos
-            </div>
-
-            <div
-              style={{
-                color: "#9fb0c7",
-                lineHeight: 1.75,
-                fontSize: 15,
-              }}
-            >
-              O Analytics já mostra acessos na Home, AGRO, Bancos, Imóveis e
-              Locadora. O momento agora é fortalecer a entrada e continuar a
-              divulgação com a plataforma mais organizada.
+        <section style={{ marginTop: 28 }}>
+          <div style={sectionHeader}>
+            <div>
+              <div style={eyebrow}>HOME INTERNA</div>
+              <h2 style={sectionTitle}>Depois a pessoa aprofunda</h2>
             </div>
           </div>
 
-          <div
-            style={{
-              display: "flex",
-              gap: 12,
-              flexWrap: "wrap",
-            }}
-          >
-            <Link href="/agro" style={secondaryButtonStyle()}>
-              Ir para AGRO
-            </Link>
-            <Link href="/imoveis" style={secondaryButtonStyle()}>
-              Ir para Imóveis
-            </Link>
-            <Link href="/bancos" style={secondaryButtonStyle()}>
-              Ir para Bancos
-            </Link>
-            <Link href="/locadora" style={primaryButtonStyle()}>
-              Ir para Locadora
-            </Link>
+          <div style={infoPanel}>
+            <p style={infoText}>
+              Esta nova entrada funciona como uma home simples de decisão. Depois
+              que a pessoa escolhe o produto, ela cai na área específica e navega
+              com mais profundidade. Isso melhora entendimento, retenção e
+              conversão no celular.
+            </p>
           </div>
         </section>
-      </div>
+      </section>
     </main>
   );
 }
+
+const sectionHeader: React.CSSProperties = {
+  marginBottom: 14,
+};
+
+const eyebrow: React.CSSProperties = {
+  fontSize: 12,
+  fontWeight: 800,
+  letterSpacing: "0.18em",
+  color: "#8db5d9",
+  marginBottom: 8,
+};
+
+const sectionTitle: React.CSSProperties = {
+  margin: 0,
+  fontSize: "clamp(22px, 5vw, 34px)",
+  lineHeight: 1.08,
+  fontWeight: 900,
+};
+
+const gridProducts: React.CSSProperties = {
+  display: "grid",
+  gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+  gap: 14,
+};
+
+const gridCadastros: React.CSSProperties = {
+  display: "grid",
+  gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
+  gap: 12,
+};
+
+const cardLink: React.CSSProperties = {
+  textDecoration: "none",
+  color: "inherit",
+};
+
+const topNavChip: React.CSSProperties = {
+  display: "inline-flex",
+  alignItems: "center",
+  gap: 8,
+  whiteSpace: "nowrap",
+  textDecoration: "none",
+  color: "#e5eef8",
+  padding: "10px 14px",
+  borderRadius: 999,
+  border: "1px solid rgba(148,163,184,0.22)",
+  background: "rgba(15,23,42,0.72)",
+  fontWeight: 800,
+  fontSize: 14,
+};
+
+const primaryButton: React.CSSProperties = {
+  display: "inline-flex",
+  alignItems: "center",
+  justifyContent: "center",
+  minHeight: 46,
+  padding: "0 18px",
+  borderRadius: 14,
+  textDecoration: "none",
+  fontWeight: 800,
+  fontSize: 15,
+  color: "#04110a",
+  background: "linear-gradient(135deg, #22c55e, #86efac)",
+  boxShadow: "0 16px 40px rgba(34,197,94,0.22)",
+};
+
+const secondaryButton: React.CSSProperties = {
+  display: "inline-flex",
+  alignItems: "center",
+  justifyContent: "center",
+  minHeight: 46,
+  padding: "0 18px",
+  borderRadius: 14,
+  textDecoration: "none",
+  fontWeight: 700,
+  fontSize: 15,
+  color: "#e5e7eb",
+  border: "1px solid rgba(148,163,184,0.28)",
+  background: "rgba(15,23,42,0.62)",
+};
+
+const mainCard: React.CSSProperties = {
+  height: "100%",
+  borderRadius: 22,
+  padding: 18,
+  background:
+    "linear-gradient(180deg, rgba(10,24,36,0.92), rgba(5,11,18,0.98))",
+  border: "1px solid rgba(255,255,255,0.08)",
+  boxShadow: "0 18px 50px rgba(0,0,0,0.24)",
+};
+
+const cadastroCard: React.CSSProperties = {
+  height: "100%",
+  borderRadius: 20,
+  padding: 16,
+  display: "flex",
+  gap: 12,
+  alignItems: "flex-start",
+  background: "rgba(255,255,255,0.03)",
+  border: "1px solid rgba(255,255,255,0.08)",
+};
+
+const iconBox: React.CSSProperties = {
+  width: 52,
+  height: 52,
+  borderRadius: 16,
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  fontSize: 24,
+  background: "rgba(255,255,255,0.05)",
+};
+
+const iconBoxSmall: React.CSSProperties = {
+  width: 44,
+  height: 44,
+  borderRadius: 14,
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  fontSize: 20,
+  background: "rgba(255,255,255,0.05)",
+  flexShrink: 0,
+};
+
+const badge: React.CSSProperties = {
+  display: "inline-flex",
+  alignItems: "center",
+  justifyContent: "center",
+  minHeight: 28,
+  padding: "0 10px",
+  borderRadius: 999,
+  background: "rgba(34,197,94,0.10)",
+  border: "1px solid rgba(34,197,94,0.20)",
+  color: "#b9f7cf",
+  fontSize: 12,
+  fontWeight: 800,
+  textAlign: "center",
+};
+
+const cardTitle: React.CSSProperties = {
+  margin: "16px 0 8px",
+  fontSize: 22,
+  lineHeight: 1.1,
+  fontWeight: 900,
+};
+
+const cardText: React.CSSProperties = {
+  margin: 0,
+  color: "#cbd5e1",
+  lineHeight: 1.65,
+  fontSize: 15,
+};
+
+const cardAction: React.CSSProperties = {
+  marginTop: 16,
+  color: "#86efac",
+  fontWeight: 800,
+  fontSize: 15,
+};
+
+const cadastroTitle: React.CSSProperties = {
+  margin: "2px 0 8px",
+  fontSize: 18,
+  lineHeight: 1.1,
+  fontWeight: 800,
+};
+
+const cadastroText: React.CSSProperties = {
+  margin: 0,
+  color: "#cbd5e1",
+  lineHeight: 1.6,
+  fontSize: 14,
+};
+
+const bookWrap: React.CSSProperties = {
+  display: "flex",
+  flexWrap: "wrap",
+  gap: 16,
+  borderRadius: 24,
+  padding: 20,
+  background:
+    "linear-gradient(180deg, rgba(14,25,40,0.92), rgba(7,12,28,0.98))",
+  border: "1px solid rgba(255,255,255,0.08)",
+  boxShadow: "0 20px 60px rgba(0,0,0,0.25)",
+};
+
+const bookBadge: React.CSSProperties = {
+  display: "inline-flex",
+  alignItems: "center",
+  justifyContent: "center",
+  minHeight: 30,
+  padding: "0 12px",
+  borderRadius: 999,
+  background: "rgba(59,130,246,0.12)",
+  border: "1px solid rgba(59,130,246,0.22)",
+  color: "#bfdbfe",
+  fontSize: 12,
+  fontWeight: 800,
+};
+
+const bookSideCard: React.CSSProperties = {
+  width: 280,
+  maxWidth: "100%",
+  borderRadius: 20,
+  padding: 16,
+  background: "rgba(255,255,255,0.04)",
+  border: "1px solid rgba(255,255,255,0.08)",
+};
+
+const statMiniLabel: React.CSSProperties = {
+  fontSize: 12,
+  fontWeight: 800,
+  letterSpacing: "0.16em",
+  color: "#8db5d9",
+  marginBottom: 10,
+};
+
+const statMiniText: React.CSSProperties = {
+  color: "#e5eef8",
+  lineHeight: 1.7,
+  fontSize: 15,
+};
+
+const infoPanel: React.CSSProperties = {
+  borderRadius: 22,
+  padding: 20,
+  background: "rgba(255,255,255,0.03)",
+  border: "1px solid rgba(255,255,255,0.07)",
+};
+
+const infoText: React.CSSProperties = {
+  margin: 0,
+  color: "#d5e5f7",
+  lineHeight: 1.8,
+  fontSize: 16,
+};
