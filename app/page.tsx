@@ -21,7 +21,7 @@ const quickLinks: QuickLink[] = [
     icon: "🛠️",
   },
   {
-    href: "/cadastro-geral",
+    href: "/cadastro",
     title: "Cadastro Geral",
     subtitle: "Base principal para empresas, profissionais, parceiros e operações.",
     icon: "📋",
@@ -179,7 +179,7 @@ export default function HomePage() {
               }}
             >
               <Link
-                href="/cadastro-geral"
+                href="/cadastro"
                 style={{
                   textDecoration: "none",
                   borderRadius: 18,
