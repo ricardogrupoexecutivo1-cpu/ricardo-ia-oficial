@@ -1,126 +1,76 @@
-"use client";
-
 import Link from "next/link";
 
-const products = [
-  {
-    title: "Chat",
-    icon: "💬",
-    href: "/chat",
-    description: "Converse, peça campanhas, ideias, imagens e respostas rápidas.",
-    badge: "Aurora IA",
-    eventName: "open_chat_home",
-  },
-  {
-    title: "Locadora",
-    icon: "🚗",
-    href: "/locadora",
-    description: "Cadastros, clientes, veículos e operação comercial da locadora.",
-    badge: "Operação real",
-    eventName: "open_locadora_home",
-  },
-  {
-    title: "Agro",
-    icon: "🌾",
-    href: "/agro",
-    description: "Entrada para produtores, fornecedores e negócios do agro.",
-    badge: "Expansão",
-    eventName: "open_agro_home",
-  },
-  {
-    title: "Imóveis",
-    icon: "🏠",
-    href: "/imoveis",
-    description: "Imobiliárias, imóveis e operação de captação e venda.",
-    badge: "Mercado imobiliário",
-    eventName: "open_imoveis_home",
-  },
-  {
-    title: "Bancos",
-    icon: "🏦",
-    href: "/bancos",
-    description: "Fluxo com bancos e parceiros financeiros dentro da plataforma.",
-    badge: "Financeiro",
-    eventName: "open_bancos_home",
-  },
-  {
-    title: "Livro",
-    icon: "📘",
-    href: "/livro",
-    description: "Área do livro com acesso rápido para leitura, divulgação e conversão.",
-    badge: "Conteúdo",
-    eventName: "open_livro_home",
-  },
-];
-
-const cadastros = [
-  {
-    title: "Cadastro de clientes",
-    icon: "👤",
-    href: "/locadora/cadastros/clientes",
-    description: "Cadastre clientes e siga direto para o fluxo comercial.",
-    eventName: "open_cadastro_clientes_home",
-  },
-  {
-    title: "Clientes cadastrados",
-    icon: "📋",
-    href: "/locadora/clientes",
-    description: "Veja os clientes já gravados no banco e chame no WhatsApp.",
-    eventName: "open_clientes_lista_home",
-  },
-  {
-    title: "Central de cadastros",
-    icon: "🧩",
-    href: "/locadora/cadastros",
-    description: "Entre na área de cadastros e escolha o que quer operar.",
-    eventName: "open_central_cadastros_home",
-  },
-];
-
-function trackEvent(eventName: string, params?: Record<string, string | number>) {
-  if (typeof window === "undefined") return;
-
-  const payload = {
-    event: eventName,
-    ...params,
-  };
-
-  const w = window as typeof window & {
-    dataLayer?: Array<Record<string, string | number>>;
-    gtag?: (...args: unknown[]) => void;
-  };
-
-  w.dataLayer = w.dataLayer || [];
-  w.dataLayer.push(payload);
-
-  if (typeof w.gtag === "function") {
-    w.gtag("event", eventName, params || {});
-  }
-}
-
-function TrackedLink({
-  href,
-  eventName,
-  params,
-  style,
-  children,
-}: {
+type QuickLink = {
   href: string;
-  eventName: string;
-  params?: Record<string, string | number>;
-  style: React.CSSProperties;
-  children: React.ReactNode;
-}) {
-  return (
-    <Link
-      href={href}
-      style={style}
-      onClick={() => trackEvent(eventName, params)}
-    >
-      {children}
-    </Link>
-  );
-}
+  title: string;
+  subtitle: string;
+  icon: string;
+};
+
+const quickLinks: QuickLink[] = [
+  {
+    href: "/chat",
+    title: "Aurora Responde",
+    subtitle: "Converse, peça ideias, campanhas, imagens e apoio comercial.",
+    icon: "💬",
+  },
+  {
+    href: "/app-builder",
+    title: "App Builder",
+    subtitle: "Monte novos apps, estruturas e páginas para clientes ou uso interno.",
+    icon: "🛠️",
+  },
+  {
+    href: "/cadastro-geral",
+    title: "Cadastro Geral",
+    subtitle: "Base principal para empresas, profissionais, parceiros e operações.",
+    icon: "📋",
+  },
+  {
+    href: "/guardiao",
+    title: "Guardião",
+    subtitle: "Leitura, controle e edição da camada pública dos cadastros reais.",
+    icon: "🛡️",
+  },
+  {
+    href: "/mineracao",
+    title: "Mineração",
+    subtitle: "Área dedicada ao setor mineral, fornecedores e oportunidades.",
+    icon: "⛏️",
+  },
+  {
+    href: "/viral",
+    title: "Viral",
+    subtitle: "Área visível para tráfego, crescimento, compartilhamento e divulgação.",
+    icon: "🚀",
+  },
+];
+
+const pillars = [
+  {
+    title: "Cadastro sério e completo",
+    text: "Estrutura preparada para nível Brasil, estadual, regional, municipal, local ou multilocal, com espaço para crescer junto com a plataforma.",
+  },
+  {
+    title: "Sistema super editável",
+    text: "Segmentos, profissões, produtos e serviços precisam poder evoluir sem travar a operação nem obrigar retrabalho.",
+  },
+  {
+    title: "Privacidade por padrão",
+    text: "Dados pessoais e dados sensíveis não devem ficar públicos. A camada pública mostra apenas o que for seguro e publicável.",
+  },
+  {
+    title: "Mobile-first real",
+    text: "A navegação principal foi organizada para funcionar bem no celular, que é onde boa parte do tráfego já acontece.",
+  },
+];
+
+const highlights = [
+  "Home reorganizada para acesso rápido às áreas estratégicas.",
+  "Botão Viral visível logo na entrada da plataforma.",
+  "Atalhos diretos para Mineração, App Builder, Cadastro Geral e Guardião.",
+  "Blocos claros para reduzir confusão e acelerar operação.",
+];
 
 export default function HomePage() {
   return (
@@ -128,695 +78,468 @@ export default function HomePage() {
       style={{
         minHeight: "100vh",
         background:
-          "radial-gradient(circle at top, rgba(34,197,94,0.12), transparent 0%, transparent 24%), radial-gradient(circle at right top, rgba(59,130,246,0.12), transparent 0%, transparent 20%), linear-gradient(180deg, #030712 0%, #06111c 54%, #02060d 100%)",
-        color: "#eef6ff",
+          "radial-gradient(circle at top, rgba(22,163,74,0.18), transparent 28%), linear-gradient(180deg, #06110b 0%, #08140f 35%, #07110c 100%)",
+        color: "#e5fff1",
       }}
     >
       <section
         style={{
-          maxWidth: 1220,
+          maxWidth: 1180,
           margin: "0 auto",
-          padding: "18px 14px 88px",
+          padding: "20px 16px 48px",
         }}
       >
         <header
           style={{
-            position: "sticky",
-            top: 0,
-            zIndex: 20,
-            paddingBottom: 14,
+            position: "relative",
+            overflow: "hidden",
+            border: "1px solid rgba(74, 222, 128, 0.18)",
             background:
-              "linear-gradient(180deg, rgba(3,7,18,0.96), rgba(3,7,18,0.86), rgba(3,7,18,0))",
-            backdropFilter: "blur(10px)",
+              "linear-gradient(180deg, rgba(11, 26, 18, 0.96) 0%, rgba(8, 19, 13, 0.98) 100%)",
+            borderRadius: 24,
+            padding: "18px 16px 24px",
+            boxShadow: "0 20px 60px rgba(0,0,0,0.35)",
           }}
         >
+          <div
+            aria-hidden="true"
+            style={{
+              position: "absolute",
+              inset: 0,
+              pointerEvents: "none",
+              background:
+                "linear-gradient(135deg, rgba(34,197,94,0.10), transparent 28%, transparent 72%, rgba(59,130,246,0.10))",
+            }}
+          />
+
           <div
             style={{
               display: "flex",
               flexDirection: "column",
-              gap: 14,
-              paddingTop: 8,
+              gap: 16,
+              position: "relative",
+              zIndex: 1,
             }}
           >
             <div
               style={{
-                display: "flex",
+                display: "inline-flex",
+                width: "fit-content",
                 alignItems: "center",
-                justifyContent: "space-between",
-                gap: 12,
-                flexWrap: "wrap",
+                gap: 8,
+                padding: "8px 12px",
+                borderRadius: 999,
+                border: "1px solid rgba(74, 222, 128, 0.25)",
+                background: "rgba(20, 40, 29, 0.72)",
+                color: "#b8ffd2",
+                fontSize: 13,
+                fontWeight: 700,
               }}
             >
-              <div>
-                <div
-                  style={{
-                    display: "inline-flex",
-                    alignItems: "center",
-                    gap: 8,
-                    padding: "7px 12px",
-                    borderRadius: 999,
-                    background: "rgba(34,197,94,0.10)",
-                    border: "1px solid rgba(34,197,94,0.22)",
-                    color: "#b9f7cf",
-                    fontWeight: 800,
-                    fontSize: 12,
-                    marginBottom: 10,
-                  }}
-                >
-                  <span>Aurora IA</span>
-                  <span>•</span>
-                  <span>Entrada inteligente</span>
-                </div>
+              <span>⚡</span>
+              <span>Aurora IA Beta — novas funções sendo lançadas diariamente</span>
+            </div>
 
-                <h1
-                  style={{
-                    margin: 0,
-                    fontSize: "clamp(28px, 7vw, 56px)",
-                    lineHeight: 1.02,
-                    letterSpacing: "-0.04em",
-                    fontWeight: 900,
-                    maxWidth: 760,
-                  }}
-                >
-                  Tudo em um só lugar, com entrada simples para celular
-                </h1>
-
-                <p
-                  style={{
-                    margin: "14px 0 0",
-                    maxWidth: 860,
-                    color: "#cbd5e1",
-                    fontSize: "clamp(15px, 3.5vw, 19px)",
-                    lineHeight: 1.65,
-                  }}
-                >
-                  Escolha o produto, entre direto no que precisa e navegue sem
-                  confusão. Sistema em constante atualização e pode haver
-                  momentos de instabilidade durante melhorias e novos
-                  lançamentos.
-                </p>
-              </div>
-
-              <div
+            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+              <h1
                 style={{
-                  minWidth: 220,
-                  maxWidth: 320,
-                  width: "100%",
-                  borderRadius: 22,
-                  padding: 16,
-                  background: "rgba(255,255,255,0.04)",
-                  border: "1px solid rgba(255,255,255,0.08)",
-                  boxShadow: "0 18px 50px rgba(0,0,0,0.24)",
-                }}
-              >
-                <div
-                  style={{
-                    fontSize: 12,
-                    fontWeight: 800,
-                    letterSpacing: "0.18em",
-                    color: "#8db5d9",
-                    marginBottom: 10,
-                  }}
-                >
-                  ACESSO RÁPIDO
-                </div>
-
-                <div style={{ display: "grid", gap: 10 }}>
-                  <TrackedLink
-                    href="/chat"
-                    style={primaryButton}
-                    eventName="cta_home_chat"
-                    params={{ area: "home_topo" }}
-                  >
-                    Entrar no Chat
-                  </TrackedLink>
-
-                  <TrackedLink
-                    href="/locadora"
-                    style={secondaryButton}
-                    eventName="cta_home_locadora"
-                    params={{ area: "home_topo" }}
-                  >
-                    Entrar na Locadora
-                  </TrackedLink>
-                </div>
-              </div>
-            </div>
-
-            <nav
-              aria-label="Produtos principais"
-              style={{
-                display: "flex",
-                gap: 10,
-                overflowX: "auto",
-                paddingBottom: 4,
-                scrollbarWidth: "thin",
-              }}
-            >
-              {products.map((item) => (
-                <TrackedLink
-                  key={item.title}
-                  href={item.href}
-                  style={topNavChip}
-                  eventName={item.eventName}
-                  params={{ area: "barra_produtos", produto: item.title }}
-                >
-                  <span aria-hidden="true">{item.icon}</span>
-                  <span>{item.title}</span>
-                </TrackedLink>
-              ))}
-            </nav>
-          </div>
-        </header>
-
-        <section style={{ marginTop: 20 }}>
-          <div style={sectionHeader}>
-            <div>
-              <div style={eyebrow}>AÇÃO COMERCIAL</div>
-              <h2 style={sectionTitle}>Entre pelo seu objetivo</h2>
-            </div>
-          </div>
-
-          <div style={ctaGrid}>
-            <TrackedLink
-              href="/cadastro"
-              style={ctaCardLink}
-              eventName="cta_home_sou_empresa"
-              params={{ area: "objetivo", tipo: "empresa" }}
-            >
-              <article style={ctaCard}>
-                <div style={ctaIcon}>🏢</div>
-                <h3 style={ctaTitle}>Sou empresa</h3>
-                <p style={ctaText}>
-                  Cadastre empresa, serviços, perfil e entre no ecossistema.
-                </p>
-                <div style={ctaAction}>Cadastrar agora</div>
-              </article>
-            </TrackedLink>
-
-            <TrackedLink
-              href="/cadastro"
-              style={ctaCardLink}
-              eventName="cta_home_sou_fornecedor"
-              params={{ area: "objetivo", tipo: "fornecedor" }}
-            >
-              <article style={ctaCard}>
-                <div style={ctaIcon}>🧰</div>
-                <h3 style={ctaTitle}>Sou fornecedor</h3>
-                <p style={ctaText}>
-                  Entre para divulgar seu trabalho e receber oportunidades.
-                </p>
-                <div style={ctaAction}>Entrar como fornecedor</div>
-              </article>
-            </TrackedLink>
-
-            <TrackedLink
-              href="/locadora/cadastros/clientes"
-              style={ctaCardLink}
-              eventName="cta_home_sou_cliente"
-              params={{ area: "objetivo", tipo: "cliente" }}
-            >
-              <article style={ctaCard}>
-                <div style={ctaIcon}>👤</div>
-                <h3 style={ctaTitle}>Sou cliente</h3>
-                <p style={ctaText}>
-                  Cadastre seus dados e siga direto para atendimento comercial.
-                </p>
-                <div style={ctaAction}>Cadastrar cliente</div>
-              </article>
-            </TrackedLink>
-
-            <TrackedLink
-              href="/cadastro"
-              style={ctaCardLink}
-              eventName="cta_home_sou_motorista"
-              params={{ area: "objetivo", tipo: "motorista" }}
-            >
-              <article style={ctaCard}>
-                <div style={ctaIcon}>🪪</div>
-                <h3 style={ctaTitle}>Sou motorista</h3>
-                <p style={ctaText}>
-                  Entre na plataforma e deixe seu perfil pronto para contratação.
-                </p>
-                <div style={ctaAction}>Cadastrar motorista</div>
-              </article>
-            </TrackedLink>
-          </div>
-        </section>
-
-        <section style={{ marginTop: 28 }}>
-          <div style={sectionHeader}>
-            <div>
-              <div style={eyebrow}>PRODUTOS</div>
-              <h2 style={sectionTitle}>Escolha onde quer entrar</h2>
-            </div>
-          </div>
-
-          <div style={gridProducts}>
-            {products.map((item) => (
-              <TrackedLink
-                key={item.title}
-                href={item.href}
-                style={cardLink}
-                eventName={item.eventName}
-                params={{ area: "cards_produtos", produto: item.title }}
-              >
-                <article style={mainCard}>
-                  <div
-                    style={{
-                      display: "flex",
-                      alignItems: "flex-start",
-                      justifyContent: "space-between",
-                      gap: 14,
-                    }}
-                  >
-                    <div style={iconBox}>{item.icon}</div>
-                    <div style={badge}>{item.badge}</div>
-                  </div>
-
-                  <h3 style={cardTitle}>{item.title}</h3>
-                  <p style={cardText}>{item.description}</p>
-                  <div style={cardAction}>Entrar agora</div>
-                </article>
-              </TrackedLink>
-            ))}
-          </div>
-        </section>
-
-        <section style={{ marginTop: 28 }}>
-          <div style={sectionHeader}>
-            <div>
-              <div style={eyebrow}>CADASTROS</div>
-              <h2 style={sectionTitle}>Entre, cadastre e siga</h2>
-            </div>
-          </div>
-
-          <div style={gridCadastros}>
-            {cadastros.map((item) => (
-              <TrackedLink
-                key={item.title}
-                href={item.href}
-                style={cardLink}
-                eventName={item.eventName}
-                params={{ area: "cards_cadastros", cadastro: item.title }}
-              >
-                <article style={cadastroCard}>
-                  <div style={iconBoxSmall}>{item.icon}</div>
-                  <div>
-                    <h3 style={cadastroTitle}>{item.title}</h3>
-                    <p style={cadastroText}>{item.description}</p>
-                  </div>
-                </article>
-              </TrackedLink>
-            ))}
-          </div>
-        </section>
-
-        <section style={{ marginTop: 28 }}>
-          <div style={sectionHeader}>
-            <div>
-              <div style={eyebrow}>DESTAQUE</div>
-              <h2 style={sectionTitle}>Livro e conteúdo estratégico</h2>
-            </div>
-          </div>
-
-          <div style={bookWrap}>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={bookBadge}>📘 LIVRO</div>
-
-              <h3
-                style={{
-                  margin: "12px 0 10px",
-                  fontSize: "clamp(24px, 5vw, 38px)",
-                  lineHeight: 1.08,
+                  margin: 0,
+                  fontSize: "clamp(32px, 7vw, 64px)",
+                  lineHeight: 1.02,
                   fontWeight: 900,
+                  letterSpacing: "-0.03em",
+                  color: "#f3fff8",
                 }}
               >
-                Acesse o livro com entrada clara e visível na home
-              </h3>
+                Aurora IA
+              </h1>
 
               <p
                 style={{
                   margin: 0,
-                  color: "#d5e5f7",
-                  fontSize: 16,
-                  lineHeight: 1.75,
-                  maxWidth: 760,
+                  maxWidth: 820,
+                  fontSize: "clamp(15px, 3.4vw, 20px)",
+                  lineHeight: 1.6,
+                  color: "rgba(229,255,241,0.82)",
                 }}
               >
-                O livro não pode ficar escondido. Ele precisa aparecer como
-                produto principal para gerar retenção, autoridade e mais tempo
-                de permanência dentro da Aurora.
+                Plataforma em expansão para cadastro geral, operação real, app
+                builder, leitura pública protegida, mineração, crescimento e
+                divulgação. Estamos em constante atualização e pode haver
+                momentos de instabilidade.
               </p>
+            </div>
 
-              <div
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+                gap: 12,
+                marginTop: 6,
+              }}
+            >
+              <Link
+                href="/cadastro-geral"
                 style={{
-                  display: "flex",
-                  flexWrap: "wrap",
-                  gap: 12,
-                  marginTop: 18,
+                  textDecoration: "none",
+                  borderRadius: 18,
+                  padding: "14px 16px",
+                  background:
+                    "linear-gradient(180deg, rgba(22,163,74,0.22), rgba(22,163,74,0.10))",
+                  border: "1px solid rgba(74, 222, 128, 0.28)",
+                  color: "#f4fff8",
+                  fontWeight: 800,
+                  textAlign: "center",
                 }}
               >
-                <TrackedLink
-                  href="/livro"
-                  style={primaryButton}
-                  eventName="cta_home_abrir_livro"
-                  params={{ area: "livro_destaque" }}
-                >
-                  Abrir livro
-                </TrackedLink>
+                Entrar no Cadastro Geral
+              </Link>
 
-                <TrackedLink
-                  href="/explorar"
-                  style={secondaryButton}
-                  eventName="cta_home_explorar_conteudos"
-                  params={{ area: "livro_destaque" }}
-                >
-                  Explorar conteúdos
-                </TrackedLink>
-              </div>
-            </div>
+              <Link
+                href="/guardiao"
+                style={{
+                  textDecoration: "none",
+                  borderRadius: 18,
+                  padding: "14px 16px",
+                  background: "rgba(12, 25, 18, 0.95)",
+                  border: "1px solid rgba(74, 222, 128, 0.22)",
+                  color: "#d7ffe6",
+                  fontWeight: 800,
+                  textAlign: "center",
+                }}
+              >
+                Abrir Guardião
+              </Link>
 
-            <div style={bookSideCard}>
-              <div style={statMiniLabel}>OBJETIVO</div>
-              <div style={statMiniText}>
-                Facilitar entrada, melhorar retenção e reduzir confusão no
-                mobile.
-              </div>
+              <Link
+                href="/app-builder"
+                style={{
+                  textDecoration: "none",
+                  borderRadius: 18,
+                  padding: "14px 16px",
+                  background: "rgba(12, 25, 18, 0.95)",
+                  border: "1px solid rgba(74, 222, 128, 0.22)",
+                  color: "#d7ffe6",
+                  fontWeight: 800,
+                  textAlign: "center",
+                }}
+              >
+                Abrir App Builder
+              </Link>
+
+              <Link
+                href="/viral"
+                style={{
+                  textDecoration: "none",
+                  borderRadius: 18,
+                  padding: "14px 16px",
+                  background:
+                    "linear-gradient(180deg, rgba(59,130,246,0.22), rgba(59,130,246,0.10))",
+                  border: "1px solid rgba(96, 165, 250, 0.28)",
+                  color: "#eef6ff",
+                  fontWeight: 900,
+                  textAlign: "center",
+                }}
+              >
+                VIRAL
+              </Link>
             </div>
+          </div>
+        </header>
+
+        <section style={{ marginTop: 18 }}>
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
+              gap: 14,
+            }}
+          >
+            {quickLinks.map((item) => (
+              <Link
+                key={item.href}
+                href={item.href}
+                style={{
+                  textDecoration: "none",
+                  color: "inherit",
+                  borderRadius: 22,
+                  padding: 18,
+                  border: "1px solid rgba(74, 222, 128, 0.15)",
+                  background:
+                    "linear-gradient(180deg, rgba(10, 20, 14, 0.96) 0%, rgba(7, 14, 10, 0.98) 100%)",
+                  boxShadow: "0 12px 30px rgba(0,0,0,0.20)",
+                }}
+              >
+                <div
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: 10,
+                  }}
+                >
+                  <div
+                    style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      width: 46,
+                      height: 46,
+                      borderRadius: 14,
+                      background: "rgba(22, 163, 74, 0.14)",
+                      border: "1px solid rgba(74, 222, 128, 0.18)",
+                      fontSize: 24,
+                    }}
+                  >
+                    <span aria-hidden="true">{item.icon}</span>
+                  </div>
+
+                  <div>
+                    <h2
+                      style={{
+                        margin: 0,
+                        fontSize: 20,
+                        lineHeight: 1.2,
+                        fontWeight: 800,
+                        color: "#f4fff8",
+                      }}
+                    >
+                      {item.title}
+                    </h2>
+
+                    <p
+                      style={{
+                        margin: "8px 0 0",
+                        fontSize: 14,
+                        lineHeight: 1.6,
+                        color: "rgba(229,255,241,0.72)",
+                      }}
+                    >
+                      {item.subtitle}
+                    </p>
+                  </div>
+                </div>
+              </Link>
+            ))}
           </div>
         </section>
 
-        <section style={{ marginTop: 28 }}>
-          <div style={sectionHeader}>
-            <div>
-              <div style={eyebrow}>HOME INTERNA</div>
-              <h2 style={sectionTitle}>Depois a pessoa aprofunda</h2>
+        <section
+          style={{
+            marginTop: 18,
+            display: "grid",
+            gridTemplateColumns: "1.2fr 0.8fr",
+            gap: 16,
+          }}
+        >
+          <div
+            style={{
+              borderRadius: 24,
+              padding: 18,
+              border: "1px solid rgba(74, 222, 128, 0.15)",
+              background:
+                "linear-gradient(180deg, rgba(10, 20, 14, 0.96) 0%, rgba(7, 14, 10, 0.98) 100%)",
+            }}
+          >
+            <div
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 8,
+                padding: "8px 12px",
+                borderRadius: 999,
+                background: "rgba(22,163,74,0.10)",
+                border: "1px solid rgba(74, 222, 128, 0.18)",
+                color: "#b8ffd2",
+                fontSize: 13,
+                fontWeight: 800,
+              }}
+            >
+              <span>📌</span>
+              <span>Direção principal da plataforma</span>
+            </div>
+
+            <h3
+              style={{
+                margin: "14px 0 10px",
+                fontSize: "clamp(22px, 4vw, 32px)",
+                lineHeight: 1.15,
+                color: "#f4fff8",
+              }}
+            >
+              Base definitiva para operação séria, editável e escalável
+            </h3>
+
+            <p
+              style={{
+                margin: 0,
+                color: "rgba(229,255,241,0.78)",
+                fontSize: 15,
+                lineHeight: 1.7,
+              }}
+            >
+              A Aurora precisa aceitar empresas, profissionais, fornecedores,
+              compradores, parceiros e operações em vários níveis de cobertura,
+              sem engessar categorias. O sistema deve permitir crescimento real
+              de produtos, serviços e segmentos, com leitura pública protegida e
+              edição segura.
+            </p>
+
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+                gap: 12,
+                marginTop: 16,
+              }}
+            >
+              {pillars.map((item) => (
+                <div
+                  key={item.title}
+                  style={{
+                    borderRadius: 18,
+                    padding: 14,
+                    border: "1px solid rgba(74, 222, 128, 0.12)",
+                    background: "rgba(255,255,255,0.02)",
+                  }}
+                >
+                  <strong
+                    style={{
+                      display: "block",
+                      fontSize: 15,
+                      color: "#f3fff8",
+                      marginBottom: 8,
+                    }}
+                  >
+                    {item.title}
+                  </strong>
+                  <span
+                    style={{
+                      fontSize: 14,
+                      lineHeight: 1.6,
+                      color: "rgba(229,255,241,0.72)",
+                    }}
+                  >
+                    {item.text}
+                  </span>
+                </div>
+              ))}
             </div>
           </div>
 
-          <div style={infoPanel}>
-            <p style={infoText}>
-              Esta nova entrada funciona como uma home simples de decisão. Depois
-              que a pessoa escolhe o produto, ela cai na área específica e navega
-              com mais profundidade. Isso melhora entendimento, retenção e
-              conversão no celular.
-            </p>
-          </div>
+          <aside
+            style={{
+              borderRadius: 24,
+              padding: 18,
+              border: "1px solid rgba(74, 222, 128, 0.15)",
+              background:
+                "linear-gradient(180deg, rgba(10, 20, 14, 0.96) 0%, rgba(7, 14, 10, 0.98) 100%)",
+            }}
+          >
+            <div
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 8,
+                padding: "8px 12px",
+                borderRadius: 999,
+                background: "rgba(59,130,246,0.12)",
+                border: "1px solid rgba(96,165,250,0.18)",
+                color: "#dcecff",
+                fontSize: 13,
+                fontWeight: 800,
+              }}
+            >
+              <span>🚦</span>
+              <span>Status atual</span>
+            </div>
+
+            <h3
+              style={{
+                margin: "14px 0 10px",
+                fontSize: 24,
+                lineHeight: 1.2,
+                color: "#f4fff8",
+              }}
+            >
+              O que esta Home já resolve
+            </h3>
+
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                gap: 10,
+              }}
+            >
+              {highlights.map((text) => (
+                <div
+                  key={text}
+                  style={{
+                    display: "flex",
+                    alignItems: "flex-start",
+                    gap: 10,
+                    borderRadius: 16,
+                    padding: "12px 12px",
+                    background: "rgba(255,255,255,0.02)",
+                    border: "1px solid rgba(74, 222, 128, 0.10)",
+                  }}
+                >
+                  <span style={{ fontSize: 18, lineHeight: 1 }}>✓</span>
+                  <span
+                    style={{
+                      fontSize: 14,
+                      lineHeight: 1.6,
+                      color: "rgba(229,255,241,0.78)",
+                    }}
+                  >
+                    {text}
+                  </span>
+                </div>
+              ))}
+            </div>
+
+            <div
+              style={{
+                marginTop: 16,
+                display: "grid",
+                gap: 10,
+              }}
+            >
+              <Link
+                href="/explorar"
+                style={{
+                  textDecoration: "none",
+                  padding: "14px 16px",
+                  borderRadius: 16,
+                  textAlign: "center",
+                  fontWeight: 800,
+                  color: "#f4fff8",
+                  background: "rgba(22,163,74,0.16)",
+                  border: "1px solid rgba(74, 222, 128, 0.18)",
+                }}
+              >
+                Explorar plataforma
+              </Link>
+
+              <Link
+                href="/planos"
+                style={{
+                  textDecoration: "none",
+                  padding: "14px 16px",
+                  borderRadius: 16,
+                  textAlign: "center",
+                  fontWeight: 800,
+                  color: "#d7ffe6",
+                  background: "rgba(255,255,255,0.03)",
+                  border: "1px solid rgba(74, 222, 128, 0.12)",
+                }}
+              >
+                Ver planos
+              </Link>
+            </div>
+          </aside>
         </section>
       </section>
     </main>
   );
 }
-
-const sectionHeader: React.CSSProperties = {
-  marginBottom: 14,
-};
-
-const eyebrow: React.CSSProperties = {
-  fontSize: 12,
-  fontWeight: 800,
-  letterSpacing: "0.18em",
-  color: "#8db5d9",
-  marginBottom: 8,
-};
-
-const sectionTitle: React.CSSProperties = {
-  margin: 0,
-  fontSize: "clamp(22px, 5vw, 34px)",
-  lineHeight: 1.08,
-  fontWeight: 900,
-};
-
-const ctaGrid: React.CSSProperties = {
-  display: "grid",
-  gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-  gap: 14,
-};
-
-const ctaCardLink: React.CSSProperties = {
-  textDecoration: "none",
-  color: "inherit",
-};
-
-const ctaCard: React.CSSProperties = {
-  height: "100%",
-  borderRadius: 22,
-  padding: 18,
-  background:
-    "linear-gradient(180deg, rgba(20,38,32,0.98), rgba(5,11,18,0.98))",
-  border: "1px solid rgba(34,197,94,0.24)",
-  boxShadow: "0 18px 50px rgba(0,0,0,0.24)",
-};
-
-const ctaIcon: React.CSSProperties = {
-  width: 52,
-  height: 52,
-  borderRadius: 16,
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "center",
-  fontSize: 24,
-  background: "rgba(255,255,255,0.05)",
-  marginBottom: 14,
-};
-
-const ctaTitle: React.CSSProperties = {
-  margin: "0 0 8px",
-  fontSize: 22,
-  lineHeight: 1.08,
-  fontWeight: 900,
-};
-
-const ctaText: React.CSSProperties = {
-  margin: 0,
-  color: "#d5e5f7",
-  lineHeight: 1.65,
-  fontSize: 15,
-};
-
-const ctaAction: React.CSSProperties = {
-  marginTop: 16,
-  color: "#b9f7cf",
-  fontWeight: 800,
-  fontSize: 15,
-};
-
-const gridProducts: React.CSSProperties = {
-  display: "grid",
-  gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-  gap: 14,
-};
-
-const gridCadastros: React.CSSProperties = {
-  display: "grid",
-  gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
-  gap: 12,
-};
-
-const cardLink: React.CSSProperties = {
-  textDecoration: "none",
-  color: "inherit",
-};
-
-const topNavChip: React.CSSProperties = {
-  display: "inline-flex",
-  alignItems: "center",
-  gap: 8,
-  whiteSpace: "nowrap",
-  textDecoration: "none",
-  color: "#e5eef8",
-  padding: "10px 14px",
-  borderRadius: 999,
-  border: "1px solid rgba(148,163,184,0.22)",
-  background: "rgba(15,23,42,0.72)",
-  fontWeight: 800,
-  fontSize: 14,
-};
-
-const primaryButton: React.CSSProperties = {
-  display: "inline-flex",
-  alignItems: "center",
-  justifyContent: "center",
-  minHeight: 46,
-  padding: "0 18px",
-  borderRadius: 14,
-  textDecoration: "none",
-  fontWeight: 800,
-  fontSize: 15,
-  color: "#04110a",
-  background: "linear-gradient(135deg, #22c55e, #86efac)",
-  boxShadow: "0 16px 40px rgba(34,197,94,0.22)",
-};
-
-const secondaryButton: React.CSSProperties = {
-  display: "inline-flex",
-  alignItems: "center",
-  justifyContent: "center",
-  minHeight: 46,
-  padding: "0 18px",
-  borderRadius: 14,
-  textDecoration: "none",
-  fontWeight: 700,
-  fontSize: 15,
-  color: "#e5e7eb",
-  border: "1px solid rgba(148,163,184,0.28)",
-  background: "rgba(15,23,42,0.62)",
-};
-
-const mainCard: React.CSSProperties = {
-  height: "100%",
-  borderRadius: 22,
-  padding: 18,
-  background:
-    "linear-gradient(180deg, rgba(10,24,36,0.92), rgba(5,11,18,0.98))",
-  border: "1px solid rgba(255,255,255,0.08)",
-  boxShadow: "0 18px 50px rgba(0,0,0,0.24)",
-};
-
-const cadastroCard: React.CSSProperties = {
-  height: "100%",
-  borderRadius: 20,
-  padding: 16,
-  display: "flex",
-  gap: 12,
-  alignItems: "flex-start",
-  background: "rgba(255,255,255,0.03)",
-  border: "1px solid rgba(255,255,255,0.08)",
-};
-
-const iconBox: React.CSSProperties = {
-  width: 52,
-  height: 52,
-  borderRadius: 16,
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "center",
-  fontSize: 24,
-  background: "rgba(255,255,255,0.05)",
-};
-
-const iconBoxSmall: React.CSSProperties = {
-  width: 44,
-  height: 44,
-  borderRadius: 14,
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "center",
-  fontSize: 20,
-  background: "rgba(255,255,255,0.05)",
-  flexShrink: 0,
-};
-
-const badge: React.CSSProperties = {
-  display: "inline-flex",
-  alignItems: "center",
-  justifyContent: "center",
-  minHeight: 28,
-  padding: "0 10px",
-  borderRadius: 999,
-  background: "rgba(34,197,94,0.10)",
-  border: "1px solid rgba(34,197,94,0.20)",
-  color: "#b9f7cf",
-  fontSize: 12,
-  fontWeight: 800,
-  textAlign: "center",
-};
-
-const cardTitle: React.CSSProperties = {
-  margin: "16px 0 8px",
-  fontSize: 22,
-  lineHeight: 1.1,
-  fontWeight: 900,
-};
-
-const cardText: React.CSSProperties = {
-  margin: 0,
-  color: "#cbd5e1",
-  lineHeight: 1.65,
-  fontSize: 15,
-};
-
-const cardAction: React.CSSProperties = {
-  marginTop: 16,
-  color: "#86efac",
-  fontWeight: 800,
-  fontSize: 15,
-};
-
-const cadastroTitle: React.CSSProperties = {
-  margin: "2px 0 8px",
-  fontSize: 18,
-  lineHeight: 1.1,
-  fontWeight: 800,
-};
-
-const cadastroText: React.CSSProperties = {
-  margin: 0,
-  color: "#cbd5e1",
-  lineHeight: 1.6,
-  fontSize: 14,
-};
-
-const bookWrap: React.CSSProperties = {
-  display: "flex",
-  flexWrap: "wrap",
-  gap: 16,
-  borderRadius: 24,
-  padding: 20,
-  background:
-    "linear-gradient(180deg, rgba(14,25,40,0.92), rgba(7,12,28,0.98))",
-  border: "1px solid rgba(255,255,255,0.08)",
-  boxShadow: "0 20px 60px rgba(0,0,0,0.25)",
-};
-
-const bookBadge: React.CSSProperties = {
-  display: "inline-flex",
-  alignItems: "center",
-  justifyContent: "center",
-  minHeight: 30,
-  padding: "0 12px",
-  borderRadius: 999,
-  background: "rgba(59,130,246,0.12)",
-  border: "1px solid rgba(59,130,246,0.22)",
-  color: "#bfdbfe",
-  fontSize: 12,
-  fontWeight: 800,
-};
-
-const bookSideCard: React.CSSProperties = {
-  width: 280,
-  maxWidth: "100%",
-  borderRadius: 20,
-  padding: 16,
-  background: "rgba(255,255,255,0.04)",
-  border: "1px solid rgba(255,255,255,0.08)",
-};
-
-const statMiniLabel: React.CSSProperties = {
-  fontSize: 12,
-  fontWeight: 800,
-  letterSpacing: "0.16em",
-  color: "#8db5d9",
-  marginBottom: 10,
-};
-
-const statMiniText: React.CSSProperties = {
-  color: "#e5eef8",
-  lineHeight: 1.7,
-  fontSize: 15,
-};
-
-const infoPanel: React.CSSProperties = {
-  borderRadius: 22,
-  padding: 20,
-  background: "rgba(255,255,255,0.03)",
-  border: "1px solid rgba(255,255,255,0.07)",
-};
-
-const infoText: React.CSSProperties = {
-  margin: 0,
-  color: "#d5e5f7",
-  lineHeight: 1.8,
-  fontSize: 16,
-};
