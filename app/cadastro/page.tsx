@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 
 type CoverageType =
@@ -103,6 +104,8 @@ function slugifyTerm(value: string) {
 }
 
 export default function CadastroGeralPage() {
+  const router = useRouter();
+
   const [nomeResponsavel, setNomeResponsavel] = useState("");
   const [nomeEmpresa, setNomeEmpresa] = useState("");
   const [whatsapp, setWhatsapp] = useState("");
@@ -438,7 +441,12 @@ export default function CadastroGeralPage() {
         "Cadastro real salvo no Supabase com privacidade por padrão. Os campos públicos próprios também foram gravados."
       );
 
+      const emailSafe = encodeURIComponent(email.trim() || "");
       clearForm();
+
+      router.push(
+        `/cadastro/sucesso?next=/chat&email=${emailSafe}`
+      );
     } catch (error) {
       const message =
         error instanceof Error
