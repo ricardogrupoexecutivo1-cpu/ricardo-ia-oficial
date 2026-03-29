@@ -39,6 +39,18 @@ const quickLinks: QuickLink[] = [
     icon: "⛏️",
   },
   {
+    href: "/locadora",
+    title: "Aurora Locadora",
+    subtitle: "Área comercial para locadoras, veículos, clientes e operação.",
+    icon: "🚗",
+  },
+  {
+    href: "/cadastro-veiculos",
+    title: "Cadastro de Veículos",
+    subtitle: "Módulo real para cadastrar, listar e organizar veículos.",
+    icon: "📄",
+  },
+  {
     href: "/viral",
     title: "Viral",
     subtitle: "Área visível para tráfego, crescimento, compartilhamento e divulgação.",
@@ -68,7 +80,7 @@ const pillars = [
 const highlights = [
   "Home reorganizada para acesso rápido às áreas estratégicas.",
   "Botão Viral visível logo na entrada da plataforma.",
-  "Atalhos diretos para Mineração, App Builder, Cadastro Geral e Guardião.",
+  "Atalhos diretos para Mineração, App Builder, Cadastro Geral, Guardião e Locadora.",
   "Blocos claros para reduzir confusão e acelerar operação.",
 ];
 
@@ -164,9 +176,9 @@ export default function HomePage() {
                 }}
               >
                 Plataforma em expansão para cadastro geral, operação real, app
-                builder, leitura pública protegida, mineração, crescimento e
-                divulgação. Estamos em constante atualização e pode haver
-                momentos de instabilidade.
+                builder, leitura pública protegida, mineração, locadora,
+                crescimento e divulgação. Estamos em constante atualização e pode
+                haver momentos de instabilidade.
               </p>
             </div>
 
@@ -178,69 +190,23 @@ export default function HomePage() {
                 marginTop: 6,
               }}
             >
-              <Link
-                href="/cadastro"
-                style={{
-                  textDecoration: "none",
-                  borderRadius: 18,
-                  padding: "14px 16px",
-                  background:
-                    "linear-gradient(180deg, rgba(22,163,74,0.22), rgba(22,163,74,0.10))",
-                  border: "1px solid rgba(74, 222, 128, 0.28)",
-                  color: "#f4fff8",
-                  fontWeight: 800,
-                  textAlign: "center",
-                }}
-              >
+              <Link href="/cadastro" style={ctaGreen}>
                 Entrar no Cadastro Geral
               </Link>
 
-              <Link
-                href="/guardiao"
-                style={{
-                  textDecoration: "none",
-                  borderRadius: 18,
-                  padding: "14px 16px",
-                  background: "rgba(12, 25, 18, 0.95)",
-                  border: "1px solid rgba(74, 222, 128, 0.22)",
-                  color: "#d7ffe6",
-                  fontWeight: 800,
-                  textAlign: "center",
-                }}
-              >
+              <Link href="/locadora" style={ctaBlue}>
+                Abrir Locadora
+              </Link>
+
+              <Link href="/guardiao" style={ctaDark}>
                 Abrir Guardião
               </Link>
 
-              <Link
-                href="/app-builder"
-                style={{
-                  textDecoration: "none",
-                  borderRadius: 18,
-                  padding: "14px 16px",
-                  background: "rgba(12, 25, 18, 0.95)",
-                  border: "1px solid rgba(74, 222, 128, 0.22)",
-                  color: "#d7ffe6",
-                  fontWeight: 800,
-                  textAlign: "center",
-                }}
-              >
+              <Link href="/app-builder" style={ctaDark}>
                 Abrir App Builder
               </Link>
 
-              <Link
-                href="/viral"
-                style={{
-                  textDecoration: "none",
-                  borderRadius: 18,
-                  padding: "14px 16px",
-                  background:
-                    "linear-gradient(180deg, rgba(59,130,246,0.22), rgba(59,130,246,0.10))",
-                  border: "1px solid rgba(96, 165, 250, 0.28)",
-                  color: "#eef6ff",
-                  fontWeight: 900,
-                  textAlign: "center",
-                }}
-              >
+              <Link href="/viral" style={ctaBlue}>
                 VIRAL
               </Link>
             </div>
@@ -380,8 +346,8 @@ export default function HomePage() {
               A Aurora precisa aceitar empresas, profissionais, fornecedores,
               compradores, parceiros e operações em vários níveis de cobertura,
               sem engessar categorias. O sistema deve permitir crescimento real
-              de produtos, serviços e segmentos, com leitura pública protegida e
-              edição segura.
+              de produtos, serviços e segmentos, com leitura pública protegida,
+              edição segura e módulos comerciais prontos para expansão.
             </p>
 
             <div
@@ -505,36 +471,20 @@ export default function HomePage() {
                 gap: 10,
               }}
             >
-              <Link
-                href="/explorar"
-                style={{
-                  textDecoration: "none",
-                  padding: "14px 16px",
-                  borderRadius: 16,
-                  textAlign: "center",
-                  fontWeight: 800,
-                  color: "#f4fff8",
-                  background: "rgba(22,163,74,0.16)",
-                  border: "1px solid rgba(74, 222, 128, 0.18)",
-                }}
-              >
+              <Link href="/explorar" style={ctaGreenSoft}>
                 Explorar plataforma
               </Link>
 
-              <Link
-                href="/planos"
-                style={{
-                  textDecoration: "none",
-                  padding: "14px 16px",
-                  borderRadius: 16,
-                  textAlign: "center",
-                  fontWeight: 800,
-                  color: "#d7ffe6",
-                  background: "rgba(255,255,255,0.03)",
-                  border: "1px solid rgba(74, 222, 128, 0.12)",
-                }}
-              >
+              <Link href="/planos" style={ctaDarkSoft}>
                 Ver planos
+              </Link>
+
+              <Link href="/locadora" style={ctaBlueSoft}>
+                Entrar na Locadora
+              </Link>
+
+              <Link href="/cadastro-veiculos" style={ctaDarkSoft}>
+                Abrir Cadastro de Veículos
               </Link>
             </div>
           </aside>
@@ -543,3 +493,71 @@ export default function HomePage() {
     </main>
   );
 }
+
+const ctaGreen = {
+  textDecoration: "none",
+  borderRadius: 18,
+  padding: "14px 16px",
+  background:
+    "linear-gradient(180deg, rgba(22,163,74,0.22), rgba(22,163,74,0.10))",
+  border: "1px solid rgba(74, 222, 128, 0.28)",
+  color: "#f4fff8",
+  fontWeight: 800,
+  textAlign: "center" as const,
+};
+
+const ctaBlue = {
+  textDecoration: "none",
+  borderRadius: 18,
+  padding: "14px 16px",
+  background:
+    "linear-gradient(180deg, rgba(59,130,246,0.22), rgba(59,130,246,0.10))",
+  border: "1px solid rgba(96, 165, 250, 0.28)",
+  color: "#eef6ff",
+  fontWeight: 900,
+  textAlign: "center" as const,
+};
+
+const ctaDark = {
+  textDecoration: "none",
+  borderRadius: 18,
+  padding: "14px 16px",
+  background: "rgba(12, 25, 18, 0.95)",
+  border: "1px solid rgba(74, 222, 128, 0.22)",
+  color: "#d7ffe6",
+  fontWeight: 800,
+  textAlign: "center" as const,
+};
+
+const ctaGreenSoft = {
+  textDecoration: "none",
+  padding: "14px 16px",
+  borderRadius: 16,
+  textAlign: "center" as const,
+  fontWeight: 800,
+  color: "#f4fff8",
+  background: "rgba(22,163,74,0.16)",
+  border: "1px solid rgba(74, 222, 128, 0.18)",
+};
+
+const ctaBlueSoft = {
+  textDecoration: "none",
+  padding: "14px 16px",
+  borderRadius: 16,
+  textAlign: "center" as const,
+  fontWeight: 800,
+  color: "#eef6ff",
+  background: "rgba(59,130,246,0.14)",
+  border: "1px solid rgba(96,165,250,0.18)",
+};
+
+const ctaDarkSoft = {
+  textDecoration: "none",
+  padding: "14px 16px",
+  borderRadius: 16,
+  textAlign: "center" as const,
+  fontWeight: 800,
+  color: "#d7ffe6",
+  background: "rgba(255,255,255,0.03)",
+  border: "1px solid rgba(74, 222, 128, 0.12)",
+};
