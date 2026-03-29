@@ -1,237 +1,326 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 
-type Proposta = {
-  id: number;
-  cliente: string;
-  veiculo: string;
-  valor: string;
-  status: "aberta" | "aprovada" | "recusada";
+type Cliente = {
+  id: string;
+  nome?: string;
+  email?: string;
+  whatsapp?: string;
 };
 
-export default function PropostasLocadoraPage() {
-  const [cliente, setCliente] = useState("");
-  const [veiculo, setVeiculo] = useState("");
+type Veiculo = {
+  id: string;
+  titulo?: string;
+  marca?: string;
+  modelo?: string;
+};
+
+type Proposta = {
+  id: string;
+  cliente_id?: string | null;
+  cliente_nome?: string;
+  veiculo_id?: string | null;
+  veiculo_nome?: string;
+  valor?: number | string;
+  status?: string;
+  comissao_percentual?: number | string;
+  comissao_valor?: number | string;
+};
+
+function normalizarValorParaNumero(valor: string) {
+  const limpo = String(valor)
+    .trim()
+    .replace(/\s/g, "")
+    .replace(/\./g, "")
+    .replace(",", ".")
+    .replace(/[^\d.-]/g, "");
+
+  const numero = Number(limpo);
+  return isNaN(numero) ? 0 : numero;
+}
+
+function formatarMoeda(valor: any) {
+  const numero = Number(valor || 0);
+  return numero.toLocaleString("pt-BR", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+}
+
+export default function PropostasPage() {
+  const [clienteId, setClienteId] = useState("");
+  const [veiculoId, setVeiculoId] = useState("");
   const [valor, setValor] = useState("");
+  const [comissaoPercentual, setComissaoPercentual] = useState("10");
 
+  const [clientes, setClientes] = useState<Cliente[]>([]);
+  const [veiculos, setVeiculos] = useState<Veiculo[]>([]);
   const [propostas, setPropostas] = useState<Proposta[]>([]);
-  const [busca, setBusca] = useState("");
 
-  function criarProposta() {
-    if (!cliente || !veiculo || !valor) return;
+  const [email, setEmail] = useState("");
 
-    const nova: Proposta = {
-      id: Date.now(),
-      cliente,
-      veiculo,
-      valor,
-      status: "aberta",
-    };
+  useEffect(() => {
+    const userEmail = localStorage.getItem("userEmail") || "";
+    setEmail(userEmail);
 
-    setPropostas([nova, ...propostas]);
+    if (userEmail) {
+      carregarPropostas(userEmail);
+      carregarClientes(userEmail);
+      carregarVeiculos(userEmail);
+    }
+  }, []);
 
-    setCliente("");
-    setVeiculo("");
-    setValor("");
-  }
-
-  function atualizarStatus(id: number, status: Proposta["status"]) {
-    setPropostas((prev) =>
-      prev.map((p) => (p.id === id ? { ...p, status } : p))
+  async function carregarPropostas(ownerEmail: string) {
+    const res = await fetch(
+      `/api/locadora/propostas?ownerEmail=${encodeURIComponent(ownerEmail)}`
     );
+    const data = await res.json();
+    setPropostas(Array.isArray(data) ? data : []);
   }
 
-  const propostasFiltradas = propostas.filter((p) =>
-    `${p.cliente} ${p.veiculo}`.toLowerCase().includes(busca.toLowerCase())
+  async function carregarClientes(ownerEmail: string) {
+    const res = await fetch(
+      `/api/locadora/clientes?ownerEmail=${encodeURIComponent(ownerEmail)}`
+    );
+    const data = await res.json();
+    setClientes(data.items || []);
+  }
+
+  async function carregarVeiculos(ownerEmail: string) {
+    const res = await fetch(
+      `/api/locadora/vehicles?ownerEmail=${encodeURIComponent(ownerEmail)}`
+    );
+    const data = await res.json();
+    setVeiculos(data.vehicles || []);
+  }
+
+  const clienteSelecionado = useMemo(
+    () => clientes.find((c) => c.id === clienteId),
+    [clientes, clienteId]
   );
 
+  const veiculoSelecionado = useMemo(
+    () => veiculos.find((v) => v.id === veiculoId),
+    [veiculos, veiculoId]
+  );
+
+  async function criarProposta() {
+    if (!clienteId || !veiculoId || !valor) {
+      alert("Selecione cliente, veículo e informe o valor.");
+      return;
+    }
+
+    const valorNumero = normalizarValorParaNumero(valor);
+    const percentualNumero = normalizarValorParaNumero(comissaoPercentual);
+
+    if (!valorNumero || valorNumero <= 0) {
+      alert("Informe um valor válido. Ex.: 2800,00");
+      return;
+    }
+
+    if (percentualNumero < 0) {
+      alert("Informe um percentual de comissão válido.");
+      return;
+    }
+
+    const res = await fetch("/api/locadora/propostas", {
+      method: "POST",
+      body: JSON.stringify({
+        cliente_id: clienteSelecionado?.id || null,
+        cliente_nome: clienteSelecionado?.nome || "",
+        cliente_email: clienteSelecionado?.email || "",
+        cliente_whatsapp: clienteSelecionado?.whatsapp || "",
+        veiculo_id: veiculoSelecionado?.id || null,
+        veiculo_nome: veiculoSelecionado?.titulo || "",
+        valor: valorNumero,
+        owner_email: email,
+        comissao_percentual: percentualNumero,
+      }),
+    });
+
+    const data = await res.json();
+
+    if (data?.error) {
+      alert(`Erro ao criar proposta: ${data.error}`);
+      return;
+    }
+
+    setClienteId("");
+    setVeiculoId("");
+    setValor("");
+    setComissaoPercentual("10");
+
+    carregarPropostas(email);
+  }
+
+  async function atualizarStatus(id: string, status: string) {
+    const res = await fetch("/api/locadora/propostas", {
+      method: "PATCH",
+      body: JSON.stringify({ id, status }),
+    });
+
+    const data = await res.json();
+
+    if (data?.error) {
+      alert(`Erro ao atualizar status: ${data.error}`);
+      return;
+    }
+
+    carregarPropostas(email);
+  }
+
   return (
-    <main
-      style={{
-        minHeight: "100vh",
-        background: "#020617",
-        color: "#fff",
-        padding: "24px 16px",
-      }}
-    >
-      <div style={{ maxWidth: 1100, margin: "0 auto" }}>
-        {/* topo */}
-        <div style={{ marginBottom: 20 }}>
-          <Link href="/locadora" style={linkTop}>
-            Voltar para locadora
-          </Link>
-        </div>
+    <main style={{ padding: 20 }}>
+      <Link href="/locadora">← Voltar para locadora</Link>
 
-        <h1 style={title}>📄 Propostas da Locadora</h1>
+      <h1 style={{ fontSize: 28, marginTop: 20 }}>
+        📄 Propostas da Locadora
+      </h1>
 
-        <p style={subtitle}>
-          Crie propostas comerciais conectando cliente, veículo e valor. Sistema
-          em constante atualização.
-        </p>
+      <p style={{ color: "#94a3b8" }}>
+        Sistema conectado ao banco real. Pode haver instabilidade durante
+        atualizações.
+      </p>
 
-        {/* criação */}
-        <div style={box}>
-          <h2 style={sectionTitle}>Nova proposta</h2>
-
-          <div style={grid}>
-            <input
-              placeholder="Cliente"
-              value={cliente}
-              onChange={(e) => setCliente(e.target.value)}
-              style={input}
-            />
-
-            <input
-              placeholder="Veículo"
-              value={veiculo}
-              onChange={(e) => setVeiculo(e.target.value)}
-              style={input}
-            />
-
-            <input
-              placeholder="Valor (ex: 1500)"
-              value={valor}
-              onChange={(e) => setValor(e.target.value)}
-              style={input}
-            />
-          </div>
-
-          <button onClick={criarProposta} style={btnPrimary}>
-            Criar proposta
-          </button>
-        </div>
-
-        {/* busca */}
-        <div style={{ marginTop: 24 }}>
-          <input
-            placeholder="Buscar proposta..."
-            value={busca}
-            onChange={(e) => setBusca(e.target.value)}
-            style={input}
-          />
-        </div>
-
-        {/* lista */}
-        <div style={{ marginTop: 20, display: "grid", gap: 14 }}>
-          {propostasFiltradas.map((p) => (
-            <div key={p.id} style={card}>
-              <div>
-                <strong>{p.cliente}</strong>
-                <div style={text}>Veículo: {p.veiculo}</div>
-                <div style={text}>Valor: R$ {p.valor}</div>
-                <div style={text}>Status: {p.status}</div>
-              </div>
-
-              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                <button
-                  onClick={() => atualizarStatus(p.id, "aprovada")}
-                  style={btnGreen}
-                >
-                  Aprovar
-                </button>
-
-                <button
-                  onClick={() => atualizarStatus(p.id, "recusada")}
-                  style={btnRed}
-                >
-                  Recusar
-                </button>
-
-                <a
-                  href={`https://wa.me/55?text=Proposta%20para%20${p.cliente}%20-%20${p.veiculo}%20-%20R$${p.valor}`}
-                  target="_blank"
-                  style={btnWhats}
-                >
-                  WhatsApp
-                </a>
-              </div>
-            </div>
+      <div style={{ marginTop: 20 }}>
+        <select
+          value={clienteId}
+          onChange={(e) => setClienteId(e.target.value)}
+          style={input}
+        >
+          <option value="">Selecionar cliente</option>
+          {clientes.map((c) => (
+            <option key={c.id} value={c.id}>
+              {c.nome}
+            </option>
           ))}
+        </select>
 
-          {propostasFiltradas.length === 0 && (
-            <div style={text}>Nenhuma proposta criada ainda.</div>
-          )}
-        </div>
+        <select
+          value={veiculoId}
+          onChange={(e) => setVeiculoId(e.target.value)}
+          style={input}
+        >
+          <option value="">Selecionar veículo</option>
+          {veiculos.map((v) => (
+            <option key={v.id} value={v.id}>
+              {v.titulo}
+            </option>
+          ))}
+        </select>
+
+        <input
+          placeholder="Valor (ex.: 2800,00)"
+          value={valor}
+          onChange={(e) => setValor(e.target.value)}
+          style={input}
+        />
+
+        <input
+          placeholder="Comissão % (ex.: 10)"
+          value={comissaoPercentual}
+          onChange={(e) => setComissaoPercentual(e.target.value)}
+          style={input}
+        />
+
+        <button onClick={criarProposta} style={btnPrimary}>
+          Criar proposta
+        </button>
+      </div>
+
+      <div style={{ marginTop: 30 }}>
+        {propostas.length === 0 && (
+          <p style={{ color: "#94a3b8" }}>
+            Nenhuma proposta encontrada.
+          </p>
+        )}
+
+        {propostas.map((p) => (
+          <div key={p.id} style={card}>
+            <div>
+              <strong>{p.cliente_nome}</strong>
+              <p>Cliente ID: {p.cliente_id || "-"}</p>
+              <p>Veículo: {p.veiculo_nome}</p>
+              <p>Veículo ID: {p.veiculo_id || "-"}</p>
+              <p>Valor: R$ {formatarMoeda(p.valor)}</p>
+              <p>Status: {p.status}</p>
+              <p>Comissão %: {Number(p.comissao_percentual || 0)}%</p>
+              <p>Comissão valor: R$ {formatarMoeda(p.comissao_valor)}</p>
+            </div>
+
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              <button
+                onClick={() => atualizarStatus(p.id, "aprovada")}
+                style={btnGreen}
+              >
+                Aprovar
+              </button>
+
+              <button
+                onClick={() => atualizarStatus(p.id, "recusada")}
+                style={btnRed}
+              >
+                Recusar
+              </button>
+
+              <a
+                href={`https://wa.me/55?text=Proposta ${p.cliente_nome} - ${p.veiculo_nome}`}
+                target="_blank"
+                style={btnWhats}
+              >
+                WhatsApp
+              </a>
+            </div>
+          </div>
+        ))}
       </div>
     </main>
   );
 }
 
-/* estilos */
-const title = { fontSize: 32, fontWeight: 900 };
-const subtitle = { color: "#94a3b8", marginBottom: 20 };
-
-const sectionTitle = { fontSize: 20, marginBottom: 10 };
-
-const box = {
-  padding: 16,
-  borderRadius: 16,
-  background: "#020617",
-  border: "1px solid #334155",
-};
-
-const grid = {
-  display: "grid",
-  gridTemplateColumns: "repeat(auto-fit,minmax(200px,1fr))",
-  gap: 10,
-  marginBottom: 10,
-};
-
 const input = {
+  display: "block",
+  marginBottom: 10,
   padding: 10,
-  borderRadius: 10,
+  width: "100%",
+  maxWidth: 400,
+  borderRadius: 8,
   border: "1px solid #334155",
-  background: "#020617",
-  color: "#fff",
 };
 
 const btnPrimary = {
   padding: "10px 16px",
-  borderRadius: 10,
+  borderRadius: 8,
   background: "#22c55e",
-  color: "#000",
-  fontWeight: 800,
   border: "none",
+  fontWeight: 800,
 };
 
 const card = {
-  padding: 14,
-  borderRadius: 14,
   border: "1px solid #334155",
-  background: "#020617",
-  display: "flex",
-  justifyContent: "space-between",
-  alignItems: "center",
+  padding: 12,
+  borderRadius: 10,
+  marginBottom: 10,
 };
 
-const text = { color: "#94a3b8", fontSize: 14 };
-
 const btnGreen = {
-  padding: "6px 10px",
-  borderRadius: 8,
   background: "#22c55e",
   border: "none",
+  padding: "6px 10px",
 };
 
 const btnRed = {
-  padding: "6px 10px",
-  borderRadius: 8,
   background: "#ef4444",
   border: "none",
+  padding: "6px 10px",
   color: "#fff",
 };
 
 const btnWhats = {
-  padding: "6px 10px",
-  borderRadius: 8,
   background: "#25D366",
+  padding: "6px 10px",
   textDecoration: "none",
   color: "#000",
-};
-
-const linkTop = {
-  color: "#38bdf8",
-  textDecoration: "none",
 };
