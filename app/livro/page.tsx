@@ -1,297 +1,325 @@
+"use client";
+
 import Link from "next/link";
+import { useEffect, useState } from "react";
 
-const PAGE_URL = "https://ricardoiaoficial.com/livro";
-const PAGE_TITLE = "O ser humano só não conquista o que não quer";
-const PAGE_TEXT =
-  "Leia o livro na Aurora IA e transforme conhecimento em ação real.";
+const chapter1 = `
+Capitulo 1 - O comeco da virada
 
-const WHATSAPP_URL = `https://wa.me/?text=${encodeURIComponent(
-  `${PAGE_TITLE} - ${PAGE_TEXT} ${PAGE_URL}`
-)}`;
+Todo negocio nasce duas vezes. Primeiro na mente de quem enxerga uma oportunidade. Depois no mundo real, quando essa visao ganha forma, produto, atendimento e constancia.
 
-const FACEBOOK_URL = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(
-  PAGE_URL
-)}`;
+A maioria das pessoas para no primeiro nascimento. Sonha, fala, imagina, planeja, mas nao constroi. O vencedor entende que visao sem execucao e so desejo bonito.
 
-const X_URL = `https://twitter.com/intent/tweet?text=${encodeURIComponent(
-  `${PAGE_TITLE} - ${PAGE_TEXT}`
-)}&url=${encodeURIComponent(PAGE_URL)}`;
+A Aurora nasce com esse espirito: organizar, integrar, acelerar e transformar ideias em operacao real. Nao basta ter um site. Nao basta ter trafego. Nao basta aparecer. O que gera resultado e construir um ecossistema em que cada entrada leva a uma acao, cada acao leva a uma oportunidade, e cada oportunidade pode virar relacionamento, recorrencia e faturamento.
 
-const LINKEDIN_URL = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(
-  PAGE_URL
-)}`;
+Quem domina isso sai do improviso e entra na gestao.
+`;
 
-const TELEGRAM_URL = `https://t.me/share/url?url=${encodeURIComponent(
-  PAGE_URL
-)}&text=${encodeURIComponent(`${PAGE_TITLE} - ${PAGE_TEXT}`)}`;
+const chapter2 = `
+Capitulo 2 - A forca do ecossistema
+
+Negocios isolados brigam para sobreviver. Ecossistemas crescem se alimentando das conexoes entre suas partes.
+
+Quando uma empresa entra, ela nao compra apenas visibilidade. Ela entra em uma rede. Um fornecedor pode virar parceiro. Um motorista pode virar oportunidade. Um cliente pode virar recorrencia. Um conteudo pode virar autoridade. Um atendimento pode virar indicacao. Uma plataforma organizada transforma trafego em relacionamento.
+
+Esse e o poder de uma estrutura bem pensada: um cadastro nao e so um formulario, uma pagina nao e so uma tela, um botao nao e so um clique. Tudo e porta de entrada para uma proxima acao.
+
+O grande jogo nao e apenas atrair pessoas. E manter, direcionar e transformar esse movimento em valor real.
+`;
+
+const previewText = `
+Capitulo 3 - A construcao da confianca
+
+Confianca nao e discurso. E experiencia. E o cliente sentir que existe organizacao, clareza, cuidado e continuidade.
+
+Capitulo 4 - Retencao e permanencia
+
+A retencao nasce quando o usuario encontra valor recorrente. Perfil proprio, historico, atendimento, financeiro, vistoria, contratos e relacionamento formam um ambiente onde voltar faz sentido.
+`;
 
 export default function LivroPage() {
+  const [unlocked, setUnlocked] = useState(false);
+
+  useEffect(() => {
+    try {
+      const saved = window.localStorage.getItem("aurora_book_unlocked");
+      setUnlocked(saved === "true");
+    } catch {
+      setUnlocked(false);
+    }
+  }, []);
+
+  function unlockLocal() {
+    try {
+      window.localStorage.setItem("aurora_book_unlocked", "true");
+      setUnlocked(true);
+    } catch {}
+  }
+
   return (
-    <main className="min-h-screen bg-[#020617] text-white">
-      <div className="mx-auto max-w-6xl px-4 py-10">
-        <section className="rounded-3xl border border-emerald-400/20 bg-gradient-to-br from-emerald-500/10 via-black to-black px-6 py-10 shadow-[0_0_80px_rgba(16,185,129,0.15)]">
-          <div className="grid gap-8 md:grid-cols-[320px_minmax(0,1fr)] md:items-center">
-            <div className="flex justify-center">
-              <img
-                src="/livros/capa.jpg"
-                alt="Capa do livro O ser humano só não conquista o que não quer"
-                className="w-full max-w-[280px] rounded-2xl border border-white/10 shadow-[0_0_30px_rgba(255,255,255,0.1)]"
-              />
-            </div>
+    <main
+      style={{
+        minHeight: "100vh",
+        background: "#020617",
+        color: "#ffffff",
+        padding: "24px 14px 80px",
+      }}
+    >
+      <section
+        style={{
+          maxWidth: 960,
+          margin: "0 auto",
+        }}
+      >
+        <div
+          style={{
+            display: "inline-block",
+            padding: "8px 12px",
+            borderRadius: 999,
+            background: "rgba(59,130,246,0.12)",
+            border: "1px solid rgba(59,130,246,0.22)",
+            color: "#bfdbfe",
+            fontWeight: 800,
+            fontSize: 12,
+            marginBottom: 18,
+          }}
+        >
+          LIVRO AURORA IA
+        </div>
 
-            <div>
-              <p className="text-sm font-semibold uppercase tracking-[0.25em] text-emerald-300">
-                Livro Aurora IA
-              </p>
+        <h1
+          style={{
+            margin: 0,
+            fontSize: "clamp(30px, 8vw, 56px)",
+            lineHeight: 1.02,
+            fontWeight: 900,
+            maxWidth: 760,
+          }}
+        >
+          Leia dois capitulos e desbloqueie o livro completo
+        </h1>
 
-              <h1 className="mt-4 text-3xl font-bold leading-tight md:text-5xl">
-                O ser humano só não conquista o que não quer
-              </h1>
+        <p
+          style={{
+            marginTop: 16,
+            color: "#cbd5e1",
+            fontSize: 18,
+            lineHeight: 1.7,
+            maxWidth: 820,
+          }}
+        >
+          O livro vira porta de entrada para a Aurora. A pessoa le uma parte,
+          entende o valor e recebe um convite claro para continuar.
+        </p>
 
-              <p className="mt-4 text-white/70 md:text-lg">
-                Decisão, ação e disciplina. Um conteúdo direto para quem quer
-                sair do comum e construir resultado real.
-              </p>
+        <div
+          style={{
+            display: "flex",
+            flexWrap: "wrap",
+            gap: 12,
+            marginTop: 22,
+          }}
+        >
+          <Link href="/" style={secondaryButton}>
+            Voltar para home
+          </Link>
 
-              <p className="mt-2 text-sm text-white/50">
-                Por Ricardo Leonardo Moreira
-              </p>
+          <button type="button" onClick={unlockLocal} style={primaryButton}>
+            Simular desbloqueio local
+          </button>
+        </div>
 
-              <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-                <a
-                  href="/livros/livro-aurora.pdf"
-                  download
-                  className="rounded-xl bg-emerald-500 px-6 py-3 text-center font-bold text-black transition hover:bg-emerald-400"
-                >
-                  📥 Baixar PDF
-                </a>
-
-                <Link
-                  href="/livro/capitulo-1"
-                  className="rounded-xl border border-white/20 px-6 py-3 text-center font-semibold transition hover:bg-white/10"
-                >
-                  📖 Ler agora
-                </Link>
-              </div>
-
-              <div className="mt-6 rounded-2xl border border-white/10 bg-white/5 p-4">
-                <p className="text-xs uppercase tracking-[0.22em] text-emerald-300">
-                  Compartilhar nas redes
-                </p>
-
-                <div className="mt-4 flex flex-wrap gap-3">
-                  <a
-                    href={WHATSAPP_URL}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="rounded-xl bg-emerald-500 px-4 py-2 text-sm font-semibold text-black transition hover:bg-emerald-400"
-                  >
-                    WhatsApp
-                  </a>
-
-                  <a
-                    href={FACEBOOK_URL}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="rounded-xl border border-white/20 px-4 py-2 text-sm font-semibold transition hover:bg-white/10"
-                  >
-                    Facebook
-                  </a>
-
-                  <a
-                    href={X_URL}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="rounded-xl border border-white/20 px-4 py-2 text-sm font-semibold transition hover:bg-white/10"
-                  >
-                    X
-                  </a>
-
-                  <a
-                    href={LINKEDIN_URL}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="rounded-xl border border-white/20 px-4 py-2 text-sm font-semibold transition hover:bg-white/10"
-                  >
-                    LinkedIn
-                  </a>
-
-                  <a
-                    href={TELEGRAM_URL}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="rounded-xl border border-white/20 px-4 py-2 text-sm font-semibold transition hover:bg-white/10"
-                  >
-                    Telegram
-                  </a>
-                </div>
-
-                <p className="mt-3 text-xs text-white/50">
-                  Para Instagram e TikTok, use o link desta página na bio,
-                  stories, descrição ou direct.
-                </p>
-              </div>
-            </div>
-          </div>
+        <section style={card}>
+          <div style={label}>CAPITULO 1</div>
+          <h2 style={title}>O comeco da virada</h2>
+          <div style={bodyText}>{chapter1}</div>
         </section>
 
-        <section className="mt-10 rounded-3xl border border-emerald-400/20 bg-emerald-500/5 p-6 text-center">
-          <h2 className="text-xl font-bold md:text-2xl">
-            Leia, aplique e transforme em resultado
-          </h2>
-
-          <p className="mt-3 text-white/70">
-            Use o conteúdo junto com o Chat e o Editor da Aurora para transformar
-            conhecimento em ação.
-          </p>
-
-          <div className="mt-6 flex flex-wrap justify-center gap-3">
-            <Link
-              href="/chat"
-              className="rounded-xl bg-emerald-500 px-5 py-3 text-sm font-semibold text-black hover:bg-emerald-400"
-            >
-              💬 Usar no chat
-            </Link>
-
-            <Link
-              href="/editor"
-              className="rounded-xl border border-white/20 px-5 py-3 text-sm font-semibold hover:bg-white/10"
-            >
-              🎨 Criar campanha
-            </Link>
-
-            <Link
-              href="/planos"
-              className="rounded-xl border border-white/20 px-5 py-3 text-sm font-semibold hover:bg-white/10"
-            >
-              🚀 Ver planos
-            </Link>
-          </div>
+        <section style={{ ...card, marginTop: 16 }}>
+          <div style={label}>CAPITULO 2</div>
+          <h2 style={title}>A forca do ecossistema</h2>
+          <div style={bodyText}>{chapter2}</div>
         </section>
 
-        <section className="mt-10 grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
-          <div className="space-y-6">
-            <section className="rounded-3xl border border-white/10 bg-white/5 p-6">
-              <p className="text-sm font-semibold uppercase tracking-[0.22em] text-emerald-300">
-                Sobre o livro
-              </p>
+        {!unlocked ? (
+          <section style={lockCard}>
+            <div style={labelGreen}>CONTEUDO BLOQUEADO</div>
+            <h2 style={lockTitle}>
+              Continue lendo e baixe o livro completo gratuitamente
+            </h2>
 
-              <div className="mt-4 space-y-4 text-sm leading-7 text-white/75 md:text-base">
-                <p>
-                  Este livro é para quem sabe que pode mais, mas ainda não
-                  transformou intenção em ação real.
-                </p>
+            <p style={lockText}>
+              No proximo passo, vamos ligar isso ao cadastro real da plataforma.
+              Por enquanto, voce ja consegue validar a experiencia de leitura e
+              bloqueio.
+            </p>
 
-                <p>
-                  Aqui você encontra um caminho direto: decisão, execução e
-                  constância.
-                </p>
+            <div style={previewBox}>
+              <div style={label}>PREVIA</div>
+              <div style={bodyText}>{previewText}</div>
+            </div>
 
-                <p>Não é teoria. É movimento.</p>
-              </div>
-            </section>
+            <div
+              style={{
+                display: "flex",
+                flexWrap: "wrap",
+                gap: 12,
+                marginTop: 18,
+              }}
+            >
+              <button type="button" onClick={unlockLocal} style={primaryButton}>
+                Liberar leitura local
+              </button>
 
-            <section className="rounded-3xl border border-white/10 bg-white/5 p-6">
-              <p className="text-sm font-semibold uppercase tracking-[0.22em] text-emerald-300">
-                Índice de leitura
-              </p>
-
-              <div className="mt-5 space-y-4">
-                <Link
-                  href="/livro/capitulo-1"
-                  className="block rounded-2xl border border-white/10 bg-black/20 p-5 transition hover:bg-white/10"
-                >
-                  <div className="text-sm font-semibold text-emerald-300">
-                    Capítulo 1
-                  </div>
-                  <h2 className="mt-2 text-xl font-bold">
-                    A decisão que muda tudo
-                  </h2>
-                  <p className="mt-2 text-sm leading-6 text-white/70">
-                    O ponto de virada começa quando a vontade vira decisão firme.
-                  </p>
-                </Link>
-
-                <Link
-                  href="/livro/capitulo-2"
-                  className="block rounded-2xl border border-white/10 bg-black/20 p-5 transition hover:bg-white/10"
-                >
-                  <div className="text-sm font-semibold text-emerald-300">
-                    Capítulo 2
-                  </div>
-                  <h2 className="mt-2 text-xl font-bold">
-                    A ação separa quem conquista
-                  </h2>
-                  <p className="mt-2 text-sm leading-6 text-white/70">
-                    A execução é o que transforma pensamento em resultado.
-                  </p>
-                </Link>
-              </div>
-            </section>
-          </div>
-
-          <aside className="space-y-6">
-            <section className="rounded-3xl border border-white/10 bg-white/5 p-6">
-              <p className="text-sm font-semibold uppercase tracking-[0.22em] text-emerald-300">
-                Leitura dentro da Aurora
-              </p>
-
-              <p className="mt-4 text-sm leading-7 text-white/70">
-                Leia dentro da Aurora IA, aumente o tempo de permanência na
-                plataforma e conecte o conteúdo com chat, editor e planos.
-              </p>
-
-              <Link
-                href="/livro/capitulo-1"
-                className="mt-5 inline-flex rounded-xl bg-emerald-500 px-5 py-3 text-sm font-semibold text-black transition hover:bg-emerald-400"
-              >
-                Começar leitura
+              <Link href="/" style={secondaryButton}>
+                Voltar
               </Link>
-            </section>
+            </div>
+          </section>
+        ) : (
+          <section style={unlockCard}>
+            <div style={labelBlue}>ACESSO LIBERADO</div>
+            <h2 style={lockTitle}>Livro completo desbloqueado</h2>
 
-            <section className="rounded-3xl border border-white/10 bg-white/5 p-6">
-              <p className="text-sm font-semibold uppercase tracking-[0.22em] text-emerald-300">
-                Ecossistema Aurora
-              </p>
+            <p style={lockText}>
+              Agora a leitura completa pode ser vista aqui. No proximo passo,
+              vamos amarrar isso com cadastro real e download liberado.
+            </p>
 
-              <div className="mt-4 flex flex-col gap-3">
-                <Link
-                  href="/chat"
-                  className="rounded-xl border border-white/15 px-4 py-3 text-sm font-semibold transition hover:bg-white/10"
-                >
-                  Abrir chat
-                </Link>
-
-                <Link
-                  href="/editor"
-                  className="rounded-xl border border-white/15 px-4 py-3 text-sm font-semibold transition hover:bg-white/10"
-                >
-                  Abrir editor
-                </Link>
-
-                <Link
-                  href="/planos"
-                  className="rounded-xl border border-white/15 px-4 py-3 text-sm font-semibold transition hover:bg-white/10"
-                >
-                  Ver planos
-                </Link>
+            <div style={previewBox}>
+              <div style={label}>VERSAO LIBERADA</div>
+              <div style={bodyText}>
+                {chapter1}
+                {"\n\n"}
+                {chapter2}
+                {"\n\n"}
+                {previewText}
+                {"\n\n"}
+                Capitulo 5 - Direcionamento total ao cliente
+                {"\n\n"}
+                O verdadeiro diferencial esta em entender a intencao de cada
+                pessoa e conduzir para o lugar certo. Um sistema que escuta,
+                organiza e direciona vende mais e retem melhor.
               </div>
-            </section>
-
-            <section className="rounded-3xl border border-amber-400/20 bg-amber-500/5 p-6">
-              <p className="text-sm font-semibold uppercase tracking-[0.22em] text-amber-300">
-                Aviso
-              </p>
-
-              <p className="mt-4 text-sm leading-7 text-white/70">
-                A Aurora IA está em constante atualização e pode apresentar
-                pequenos momentos de instabilidade durante melhorias na
-                plataforma.
-              </p>
-            </section>
-          </aside>
-        </section>
-      </div>
+            </div>
+          </section>
+        )}
+      </section>
     </main>
   );
 }
+
+const card = {
+  marginTop: 24,
+  borderRadius: 20,
+  padding: 18,
+  background: "rgba(255,255,255,0.04)",
+  border: "1px solid rgba(255,255,255,0.08)",
+};
+
+const lockCard = {
+  marginTop: 24,
+  borderRadius: 20,
+  padding: 20,
+  background: "rgba(34,197,94,0.08)",
+  border: "1px solid rgba(34,197,94,0.22)",
+};
+
+const unlockCard = {
+  marginTop: 24,
+  borderRadius: 20,
+  padding: 20,
+  background: "rgba(59,130,246,0.08)",
+  border: "1px solid rgba(59,130,246,0.22)",
+};
+
+const label = {
+  fontSize: 12,
+  fontWeight: 800,
+  letterSpacing: "0.14em",
+  color: "#8db5d9",
+  marginBottom: 10,
+};
+
+const labelGreen = {
+  fontSize: 12,
+  fontWeight: 800,
+  letterSpacing: "0.14em",
+  color: "#b9f7cf",
+  marginBottom: 10,
+};
+
+const labelBlue = {
+  fontSize: 12,
+  fontWeight: 800,
+  letterSpacing: "0.14em",
+  color: "#bfdbfe",
+  marginBottom: 10,
+};
+
+const title = {
+  margin: "0 0 10px",
+  fontSize: 28,
+  fontWeight: 900,
+  lineHeight: 1.08,
+};
+
+const lockTitle = {
+  margin: "0 0 10px",
+  fontSize: "clamp(24px, 6vw, 38px)",
+  fontWeight: 900,
+  lineHeight: 1.08,
+};
+
+const bodyText = {
+  whiteSpace: "pre-wrap" as const,
+  color: "#d5e5f7",
+  lineHeight: 1.85,
+  fontSize: 16,
+};
+
+const lockText = {
+  margin: 0,
+  color: "#d5e5f7",
+  lineHeight: 1.8,
+  fontSize: 16,
+};
+
+const previewBox = {
+  marginTop: 16,
+  borderRadius: 18,
+  padding: 16,
+  background: "rgba(255,255,255,0.04)",
+  border: "1px solid rgba(255,255,255,0.08)",
+};
+
+const primaryButton = {
+  display: "inline-flex",
+  alignItems: "center",
+  justifyContent: "center",
+  minHeight: 46,
+  padding: "0 18px",
+  borderRadius: 14,
+  textDecoration: "none",
+  fontWeight: 800,
+  fontSize: 15,
+  color: "#04110a",
+  background: "linear-gradient(135deg, #22c55e, #86efac)",
+  border: "none",
+  cursor: "pointer",
+};
+
+const secondaryButton = {
+  display: "inline-flex",
+  alignItems: "center",
+  justifyContent: "center",
+  minHeight: 46,
+  padding: "0 18px",
+  borderRadius: 14,
+  textDecoration: "none",
+  fontWeight: 700,
+  fontSize: 15,
+  color: "#e5e7eb",
+  border: "1px solid rgba(148,163,184,0.28)",
+  background: "rgba(15,23,42,0.62)",
+};

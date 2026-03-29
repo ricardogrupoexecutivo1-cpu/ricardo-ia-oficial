@@ -18,6 +18,14 @@ type Message = {
   imagePageUrl?: string | null;
 };
 
+type LeadResult = {
+  saved?: boolean;
+  nivel?: "frio" | "morno" | "quente";
+  interesse?: string;
+  score?: number;
+  reason?: string;
+};
+
 type ChatResponse = {
   reply?: string | null;
   message?: string | null;
@@ -37,6 +45,9 @@ type ChatResponse = {
   imageSaved?: boolean | null;
   imageSavedId?: string | null;
   imageSaveError?: string | null;
+  leadSaved?: boolean | null;
+  leadResult?: LeadResult | null;
+  detectedIntent?: string | null;
 };
 
 type UsageStatusResponse = {
@@ -120,6 +131,39 @@ function buildTelegramShareUrl(url: string) {
   return `https://t.me/share/url?url=${encodeURIComponent(url)}`;
 }
 
+function leadTone(
+  nivel: "frio" | "morno" | "quente" | ""
+): {
+  title: string;
+  border: string;
+  background: string;
+} {
+  if (nivel === "quente") {
+    return {
+      title: "Lead quente",
+      border: "1px solid rgba(255, 107, 107, 0.45)",
+      background:
+        "linear-gradient(135deg, rgba(255,107,107,0.18), rgba(255,255,255,0.04))",
+    };
+  }
+
+  if (nivel === "morno") {
+    return {
+      title: "Lead morno",
+      border: "1px solid rgba(255, 193, 7, 0.35)",
+      background:
+        "linear-gradient(135deg, rgba(255,193,7,0.16), rgba(255,255,255,0.04))",
+    };
+  }
+
+  return {
+    title: "Lead frio",
+    border: "1px solid rgba(0, 208, 132, 0.25)",
+    background:
+      "linear-gradient(135deg, rgba(0,208,132,0.12), rgba(255,255,255,0.03))",
+  };
+}
+
 export default function ChatClient() {
   const [messages, setMessages] = useState<Message[]>([INITIAL_MESSAGE]);
   const [input, setInput] = useState("");
@@ -133,6 +177,15 @@ export default function ChatClient() {
   const [referralCode, setReferralCode] = useState<string | null>(null);
   const [referralLink, setReferralLink] = useState<string | null>(null);
   const [referredBy, setReferredBy] = useState<string | null>(null);
+
+  const [leadNivel, setLeadNivel] = useState<"" | "frio" | "morno" | "quente">(
+    ""
+  );
+  const [leadScore, setLeadScore] = useState<number | null>(null);
+  const [leadInteresse, setLeadInteresse] = useState<string>("");
+  const [leadSavedFeedback, setLeadSavedFeedback] = useState<
+    "idle" | "saved" | "error"
+  >("idle");
 
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const trackedOpenRef = useRef(false);
@@ -208,6 +261,8 @@ export default function ChatClient() {
     return null;
   }, [referralCode, referralLink]);
 
+  const leadUi = leadTone(leadNivel);
+
   async function handleCopyReferralLink() {
     if (!referralLinkResolved) return;
 
@@ -269,6 +324,10 @@ export default function ChatClient() {
         body: JSON.stringify({
           message: text,
           email: userEmail.trim() || undefined,
+          messages: nextMessages.map((item) => ({
+            role: item.role,
+            content: item.content,
+          })),
         }),
       });
 
@@ -300,6 +359,28 @@ export default function ChatClient() {
 
       if (typeof data?.referredBy === "string") {
         setReferredBy(data.referredBy);
+      }
+
+      if (data?.leadResult?.saved) {
+        setLeadSavedFeedback("saved");
+
+        if (
+          data.leadResult.nivel === "frio" ||
+          data.leadResult.nivel === "morno" ||
+          data.leadResult.nivel === "quente"
+        ) {
+          setLeadNivel(data.leadResult.nivel);
+        }
+
+        if (typeof data.leadResult.score === "number") {
+          setLeadScore(data.leadResult.score);
+        }
+
+        if (typeof data.leadResult.interesse === "string") {
+          setLeadInteresse(data.leadResult.interesse);
+        }
+      } else if (userEmail.trim()) {
+        setLeadSavedFeedback("error");
       }
 
       const imageUrl = data.imageUrl || data.image_url || null;
@@ -346,6 +427,10 @@ export default function ChatClient() {
 
       if (promptLooksLikeImage) {
         trackImageGenerationFailed("chat-page", "exception");
+      }
+
+      if (userEmail.trim()) {
+        setLeadSavedFeedback("error");
       }
     } finally {
       setLoading(false);
@@ -462,6 +547,45 @@ export default function ChatClient() {
                 Esse e-mail ajuda a controlar plano, limites e recursos liberados.
               </p>
             </div>
+
+            {userEmail.trim() ? (
+              <div
+                style={{
+                  marginTop: 14,
+                  padding: 16,
+                  borderRadius: 18,
+                  border: leadUi.border,
+                  background: leadUi.background,
+                }}
+              >
+                <strong style={{ display: "block", marginBottom: 8 }}>
+                  CRM Aurora
+                </strong>
+
+                <p style={{ margin: 0, lineHeight: 1.6 }}>
+                  Status atual: <strong>{leadNivel ? leadUi.title : "Aguardando interação"}</strong>
+                </p>
+
+                <p style={{ margin: "8px 0 0", lineHeight: 1.6 }}>
+                  Score: <strong>{leadScore ?? 0}</strong>
+                </p>
+
+                <p style={{ margin: "8px 0 0", lineHeight: 1.6 }}>
+                  Interesse: <strong>{leadInteresse || "-"}</strong>
+                </p>
+
+                <p style={{ margin: "8px 0 0", lineHeight: 1.6 }}>
+                  Gravação:{" "}
+                  <strong>
+                    {leadSavedFeedback === "saved"
+                      ? "lead salvo no CRM"
+                      : leadSavedFeedback === "error"
+                      ? "falha ao gravar"
+                      : "aguardando envio"}
+                  </strong>
+                </p>
+              </div>
+            ) : null}
           </div>
         </section>
       </header>

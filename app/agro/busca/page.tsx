@@ -1,12 +1,12 @@
 import Link from "next/link";
 
-export default function ImoveisPage() {
+export default function AgroBuscaPage() {
   return (
     <main
       style={{
         minHeight: "100vh",
         background:
-          "radial-gradient(circle at top, rgba(59,130,246,0.18), transparent 30%), #050816",
+          "radial-gradient(circle at top, rgba(34,197,94,0.18), transparent 30%), #050816",
         color: "#e5eef8",
         padding: "32px 16px 80px",
       }}
@@ -34,7 +34,7 @@ export default function ImoveisPage() {
           </Link>
 
           <Link
-            href="/app-builder"
+            href="/agro"
             style={{
               color: "#86efac",
               textDecoration: "none",
@@ -43,11 +43,11 @@ export default function ImoveisPage() {
               padding: "10px 14px",
             }}
           >
-            Ir para o App Builder
+            Ir para AGRO
           </Link>
 
           <Link
-            href="/guardiao"
+            href="/agro/cadastrar"
             style={{
               color: "#facc15",
               textDecoration: "none",
@@ -56,7 +56,7 @@ export default function ImoveisPage() {
               padding: "10px 14px",
             }}
           >
-            Ir para o Guardião
+            Ir para Cadastro AGRO
           </Link>
         </div>
 
@@ -76,16 +76,16 @@ export default function ImoveisPage() {
               display: "inline-flex",
               padding: "8px 12px",
               borderRadius: 999,
-              background: "rgba(59,130,246,0.14)",
-              border: "1px solid rgba(59,130,246,0.25)",
-              color: "#93c5fd",
+              background: "rgba(34,197,94,0.14)",
+              border: "1px solid rgba(34,197,94,0.25)",
+              color: "#86efac",
               fontSize: 13,
               fontWeight: 700,
               letterSpacing: 0.3,
               marginBottom: 14,
             }}
           >
-            Aurora Imóveis
+            Busca AGRO
           </div>
 
           <h1
@@ -95,7 +95,7 @@ export default function ImoveisPage() {
               margin: 0,
             }}
           >
-            Plataforma de Imóveis em atualização
+            Busca AGRO em atualização
           </h1>
 
           <p
@@ -107,10 +107,10 @@ export default function ImoveisPage() {
               lineHeight: 1.7,
             }}
           >
-            Esta área da Aurora está em evolução para atender imobiliárias,
-            corretores, compradores, investidores e oportunidades do setor
-            imobiliário. Estamos em constante atualização e pode haver momentos
-            de instabilidade.
+            Esta rota foi ativada para eliminar erros 404 e preparar a busca
+            real do AGRO com produtores, empresas, fornecedores, compradores,
+            oportunidades e operação comercial. Estamos em constante atualização
+            e pode haver momentos de instabilidade.
           </p>
         </section>
 
@@ -132,10 +132,10 @@ export default function ImoveisPage() {
           >
             <div style={{ fontSize: 12, color: "#94a3b8" }}>Status atual</div>
             <div style={{ fontWeight: 800, fontSize: 20, marginTop: 8 }}>
-              Página ativa
+              Busca ativa
             </div>
             <p style={{ color: "#cbd5e1", marginTop: 10, marginBottom: 0 }}>
-              O 404 desta rota foi eliminado e a estrutura base já está pronta.
+              O 404 desta rota foi eliminado e a base da busca já está pronta.
             </p>
           </div>
 
@@ -149,11 +149,10 @@ export default function ImoveisPage() {
           >
             <div style={{ fontSize: 12, color: "#94a3b8" }}>Objetivo</div>
             <div style={{ fontWeight: 800, fontSize: 20, marginTop: 8 }}>
-              Expansão imobiliária
+              Busca comercial
             </div>
             <p style={{ color: "#cbd5e1", marginTop: 10, marginBottom: 0 }}>
-              Estruturar imóveis, corretores, leads, propostas e operação
-              comercial dentro da Aurora.
+              Reunir participantes do setor e facilitar encontro de oportunidades.
             </p>
           </div>
 
@@ -167,11 +166,10 @@ export default function ImoveisPage() {
           >
             <div style={{ fontSize: 12, color: "#94a3b8" }}>Próximo passo</div>
             <div style={{ fontWeight: 800, fontSize: 20, marginTop: 8 }}>
-              Estrutura comercial
+              Busca real no banco
             </div>
             <p style={{ color: "#cbd5e1", marginTop: 10, marginBottom: 0 }}>
-              Criar páginas internas, busca real, cadastro de imóveis e captação
-              de leads.
+              Ligar filtros, categorias e resultados ao Supabase de forma real.
             </p>
           </div>
         </section>
@@ -185,7 +183,7 @@ export default function ImoveisPage() {
             boxShadow: "0 20px 80px rgba(0,0,0,0.35)",
           }}
         >
-          <h2 style={{ fontSize: 24, marginTop: 0 }}>Áreas previstas</h2>
+          <h2 style={{ fontSize: 24, marginTop: 0 }}>Filtros previstos</h2>
 
           <div
             style={{
@@ -196,12 +194,12 @@ export default function ImoveisPage() {
             }}
           >
             {[
-              "Cadastro de imóveis",
-              "Cadastro de corretores",
-              "Busca e filtros",
-              "Leads e propostas",
-              "Painel gerencial",
-              "Contato e captação",
+              "Produtores",
+              "Empresas",
+              "Fornecedores",
+              "Compradores",
+              "Oportunidades",
+              "Localização",
             ].map((item) => (
               <div
                 key={item}

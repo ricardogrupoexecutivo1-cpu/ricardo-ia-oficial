@@ -1,179 +1,223 @@
-"use client";
+import Link from "next/link";
 
-import { useState } from "react";
-
-export default function CadastroImobiliariaPage() {
-  const [loading, setLoading] = useState(false);
-  const [msg, setMsg] = useState("");
-
-  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    setLoading(true);
-    setMsg("");
-
-    const form = new FormData(e.currentTarget);
-    const data = Object.fromEntries(form.entries());
-
-    try {
-      const res = await fetch("/api/imoveis/cadastrar", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(data),
-      });
-
-      const json = await res.json();
-
-      if (json.ok) {
-        setMsg("Cadastro de imobiliária enviado com sucesso.");
-        e.currentTarget.reset();
-      } else {
-        setMsg(json.error || "Erro ao cadastrar imobiliária.");
-      }
-    } catch {
-      setMsg("Erro inesperado ao enviar cadastro.");
-    } finally {
-      setLoading(false);
-    }
-  }
-
+export default function ImobiliariasCadastrarPage() {
   return (
     <main
       style={{
         minHeight: "100vh",
-        padding: 20,
-        display: "flex",
-        justifyContent: "center",
-        alignItems: "flex-start",
         background:
-          "radial-gradient(circle at top, rgba(59,130,246,0.16), transparent 24%), #050816",
+          "radial-gradient(circle at top, rgba(99,102,241,0.18), transparent 30%), #050816",
         color: "#e5eef8",
+        padding: "32px 16px 80px",
       }}
     >
-      <div
-        style={{
-          width: "100%",
-          maxWidth: 560,
-          background: "rgba(7,12,28,0.88)",
-          border: "1px solid rgba(255,255,255,0.08)",
-          borderRadius: 24,
-          padding: 24,
-          boxShadow: "0 18px 60px rgba(0,0,0,0.35)",
-        }}
-      >
-        <h1
-          style={{
-            fontSize: 28,
-            marginTop: 0,
-            marginBottom: 10,
-          }}
-        >
-          Cadastro de Imobiliária
-        </h1>
-
-        <p
-          style={{
-            marginBottom: 20,
-            color: "#9fb0c7",
-            lineHeight: 1.7,
-          }}
-        >
-          Cadastre sua imobiliária e receba contatos dentro da Aurora.
-        </p>
-
-        <form
-          onSubmit={handleSubmit}
+      <div style={{ maxWidth: 1100, margin: "0 auto" }}>
+        <div
           style={{
             display: "flex",
-            flexDirection: "column",
             gap: 12,
+            flexWrap: "wrap",
+            marginBottom: 16,
           }}
         >
-          <input
-            name="name"
-            placeholder="Nome da imobiliária"
-            required
-            style={inputStyle}
-          />
-
-          <input
-            name="city"
-            placeholder="Cidade"
-            required
-            style={inputStyle}
-          />
-
-          <input
-            name="state"
-            placeholder="Estado"
-            required
-            style={inputStyle}
-          />
-
-          <input
-            name="whatsapp"
-            placeholder="WhatsApp"
-            required
-            style={inputStyle}
-          />
-
-          <input
-            name="email"
-            placeholder="Email"
-            style={inputStyle}
-          />
-
-          <button
-            type="submit"
-            disabled={loading}
+          <Link
+            href="/"
             style={{
-              height: 50,
-              borderRadius: 12,
-              border: "none",
-              background: "#16a34a",
-              color: "#fff",
-              fontWeight: "bold",
-              fontSize: 16,
-              cursor: "pointer",
+              color: "#93c5fd",
+              textDecoration: "none",
+              border: "1px solid rgba(147,197,253,0.25)",
+              borderRadius: 999,
+              padding: "10px 14px",
             }}
           >
-            {loading ? "Enviando..." : "Cadastrar imobiliária"}
-          </button>
-        </form>
+            Voltar à Home
+          </Link>
 
-        {msg && (
+          <Link
+            href="/imobiliarias"
+            style={{
+              color: "#86efac",
+              textDecoration: "none",
+              border: "1px solid rgba(134,239,172,0.25)",
+              borderRadius: 999,
+              padding: "10px 14px",
+            }}
+          >
+            Ir para Imobiliárias
+          </Link>
+
+          <Link
+            href="/app-builder"
+            style={{
+              color: "#facc15",
+              textDecoration: "none",
+              border: "1px solid rgba(250,204,21,0.25)",
+              borderRadius: 999,
+              padding: "10px 14px",
+            }}
+          >
+            Ir para o App Builder
+          </Link>
+        </div>
+
+        <section
+          style={{
+            border: "1px solid rgba(148,163,184,0.18)",
+            background: "rgba(15,23,42,0.72)",
+            backdropFilter: "blur(10px)",
+            borderRadius: 24,
+            padding: 24,
+            boxShadow: "0 20px 80px rgba(0,0,0,0.35)",
+            marginBottom: 24,
+          }}
+        >
+          <div
+            style={{
+              display: "inline-flex",
+              padding: "8px 12px",
+              borderRadius: 999,
+              background: "rgba(99,102,241,0.14)",
+              border: "1px solid rgba(99,102,241,0.25)",
+              color: "#c7d2fe",
+              fontSize: 13,
+              fontWeight: 700,
+              letterSpacing: 0.3,
+              marginBottom: 14,
+            }}
+          >
+            Cadastro Imobiliárias
+          </div>
+
+          <h1
+            style={{
+              fontSize: 36,
+              lineHeight: 1.05,
+              margin: 0,
+            }}
+          >
+            Cadastro de imobiliárias em atualização
+          </h1>
+
           <p
             style={{
-              marginTop: 15,
-              fontWeight: "bold",
+              color: "#94a3b8",
+              marginTop: 14,
+              maxWidth: 820,
+              fontSize: 16,
+              lineHeight: 1.7,
             }}
           >
-            {msg}
+            Esta rota foi ativada para eliminar erros 404 e preparar a entrada
+            de imobiliárias, corretores, parceiros e operação comercial do setor
+            dentro da Aurora. Estamos em constante atualização e pode haver
+            momentos de instabilidade.
           </p>
-        )}
+        </section>
 
-        <p
+        <section
           style={{
-            marginTop: 20,
-            fontSize: 12,
-            opacity: 0.7,
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+            gap: 16,
+            marginBottom: 24,
           }}
         >
-          Sistema em constante atualização. Podem ocorrer instabilidades.
-        </p>
+          <div
+            style={{
+              borderRadius: 20,
+              padding: 18,
+              background: "rgba(15,23,42,0.72)",
+              border: "1px solid rgba(148,163,184,0.16)",
+            }}
+          >
+            <div style={{ fontSize: 12, color: "#94a3b8" }}>Status atual</div>
+            <div style={{ fontWeight: 800, fontSize: 20, marginTop: 8 }}>
+              Cadastro ativo
+            </div>
+            <p style={{ color: "#cbd5e1", marginTop: 10, marginBottom: 0 }}>
+              O 404 desta rota foi eliminado e a base do fluxo já está pronta.
+            </p>
+          </div>
+
+          <div
+            style={{
+              borderRadius: 20,
+              padding: 18,
+              background: "rgba(15,23,42,0.72)",
+              border: "1px solid rgba(148,163,184,0.16)",
+            }}
+          >
+            <div style={{ fontSize: 12, color: "#94a3b8" }}>Objetivo</div>
+            <div style={{ fontWeight: 800, fontSize: 20, marginTop: 8 }}>
+              Entrada profissional
+            </div>
+            <p style={{ color: "#cbd5e1", marginTop: 10, marginBottom: 0 }}>
+              Organizar o cadastro de imobiliárias e corretores no ecossistema.
+            </p>
+          </div>
+
+          <div
+            style={{
+              borderRadius: 20,
+              padding: 18,
+              background: "rgba(15,23,42,0.72)",
+              border: "1px solid rgba(148,163,184,0.16)",
+            }}
+          >
+            <div style={{ fontSize: 12, color: "#94a3b8" }}>Próximo passo</div>
+            <div style={{ fontWeight: 800, fontSize: 20, marginTop: 8 }}>
+              Formulário real
+            </div>
+            <p style={{ color: "#cbd5e1", marginTop: 10, marginBottom: 0 }}>
+              Ligar o cadastro ao banco e abrir o fluxo comercial imobiliário.
+            </p>
+          </div>
+        </section>
+
+        <section
+          style={{
+            borderRadius: 24,
+            padding: 24,
+            background: "rgba(15,23,42,0.72)",
+            border: "1px solid rgba(148,163,184,0.18)",
+            boxShadow: "0 20px 80px rgba(0,0,0,0.35)",
+          }}
+        >
+          <h2 style={{ fontSize: 24, marginTop: 0 }}>Entradas previstas</h2>
+
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+              gap: 14,
+              marginTop: 18,
+            }}
+          >
+            {[
+              "Cadastro de imobiliárias",
+              "Cadastro de corretores",
+              "Captação de imóveis",
+              "Leads e propostas",
+              "Contato comercial",
+              "Painel administrativo",
+            ].map((item) => (
+              <div
+                key={item}
+                style={{
+                  borderRadius: 16,
+                  padding: 16,
+                  background: "rgba(2,6,23,0.45)",
+                  border: "1px solid rgba(148,163,184,0.14)",
+                  color: "#e2e8f0",
+                  fontWeight: 700,
+                }}
+              >
+                {item}
+              </div>
+            ))}
+          </div>
+        </section>
       </div>
     </main>
   );
 }
-
-const inputStyle: React.CSSProperties = {
-  height: 46,
-  borderRadius: 10,
-  border: "1px solid rgba(255,255,255,0.15)",
-  background: "rgba(255,255,255,0.04)",
-  color: "#fff",
-  padding: "0 12px",
-  fontSize: 14,
-  outline: "none",
-};

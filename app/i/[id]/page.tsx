@@ -1,485 +1,502 @@
 import type { Metadata } from "next";
-import Image from "next/image";
 import Link from "next/link";
-import { notFound } from "next/navigation";
-import { analyzePromptForSeo, getCategoryLinksFromPrompt } from "@/lib/seo";
-import { SITE_NAME, SITE_URL, absoluteUrl } from "@/lib/site";
-import { getSupabaseAdmin } from "@/lib/supabase-admin";
+import { createClient } from "@supabase/supabase-js";
 
-type ImageRecord = {
-  id: string;
-  prompt: string | null;
-  image_url: string | null;
-  created_at: string | null;
-  is_public: boolean | null;
+type PageProps = {
+  params: Promise<{
+    id: string;
+  }>;
 };
 
-async function getImage(id: string): Promise<ImageRecord | null> {
-  const supabase = getSupabaseAdmin();
+type ImageRow = {
+  id: string;
+  prompt?: string | null;
+  image_url?: string | null;
+  user_email?: string | null;
+  email?: string | null;
+  created_at?: string | null;
+  is_public?: boolean | null;
+};
 
-  const { data } = await supabase
-    .from("images")
-    .select("id, prompt, image_url, created_at, is_public")
-    .eq("id", id)
-    .eq("is_public", true)
-    .maybeSingle();
+function getEnv(name: string) {
+  return process.env[name]?.trim() || "";
+}
 
-  return data;
+function getSupabaseClient() {
+  const supabaseUrl =
+    getEnv("SUPABASE_URL") || getEnv("NEXT_PUBLIC_SUPABASE_URL");
+  const supabaseKey =
+    getEnv("SUPABASE_SERVICE_ROLE_KEY") || getEnv("NEXT_PUBLIC_SUPABASE_ANON_KEY");
+
+  if (!supabaseUrl || !supabaseKey) {
+    throw new Error(
+      "Variáveis do Supabase não configuradas para a página /i/[id]."
+    );
+  }
+
+  return createClient(supabaseUrl, supabaseKey, {
+    auth: {
+      persistSession: false,
+      autoRefreshToken: false,
+    },
+  });
+}
+
+function text(value: unknown) {
+  if (typeof value !== "string") return "";
+  return value.trim();
+}
+
+function absoluteUrl(pathOrUrl: string) {
+  if (!pathOrUrl) return "";
+  if (pathOrUrl.startsWith("http://") || pathOrUrl.startsWith("https://")) {
+    return pathOrUrl;
+  }
+
+  const siteUrl =
+    getEnv("NEXT_PUBLIC_SITE_URL") ||
+    getEnv("NEXT_PUBLIC_APP_URL") ||
+    "http://localhost:3000";
+
+  return `${siteUrl.replace(/\/$/, "")}/${pathOrUrl.replace(/^\//, "")}`;
+}
+
+async function findImageById(id: string): Promise<ImageRow | null> {
+  const supabase = getSupabaseClient();
+  const tables = ["images", "aurora_images"];
+
+  for (const table of tables) {
+    const result = await supabase
+      .from(table)
+      .select("id,prompt,image_url,user_email,email,created_at,is_public")
+      .eq("id", id)
+      .maybeSingle();
+
+    if (!result.error && result.data) {
+      return result.data as ImageRow;
+    }
+  }
+
+  return null;
+}
+
+function buildTitle(image: ImageRow | null) {
+  const prompt = text(image?.prompt);
+  if (!prompt) return "Imagem | Aurora IA";
+  return `${prompt.slice(0, 60)}${prompt.length > 60 ? "..." : ""} | Aurora IA`;
+}
+
+function buildDescription(image: ImageRow | null) {
+  const prompt = text(image?.prompt);
+  if (!prompt) {
+    return "Imagem pública da Aurora IA.";
+  }
+
+  return `Imagem pública da Aurora IA gerada a partir do prompt: ${prompt.slice(
+    0,
+    140
+  )}${prompt.length > 140 ? "..." : ""}`;
 }
 
 export async function generateMetadata({
   params,
-}: {
-  params: Promise<{ id: string }>;
-}): Promise<Metadata> {
+}: PageProps): Promise<Metadata> {
   const { id } = await params;
-  const image = await getImage(id);
+  const image = await findImageById(id);
 
-  if (!image) {
-    return {
-      title: "Imagem não encontrada",
-      description: "A imagem pública solicitada não foi encontrada.",
-    };
-  }
-
-  const seo = analyzePromptForSeo(image.prompt);
-  const pageUrl = `${SITE_URL}/i/${image.id}`;
-  const ogImage = image.image_url || absoluteUrl("/icons/icon-512.png");
+  const title = buildTitle(image);
+  const description = buildDescription(image);
+  const imageUrl = text(image?.image_url);
 
   return {
-    title: seo.title,
-    description: seo.description,
-    keywords: [
-      ...seo.categories,
-      ...seo.keywords,
-      "Aurora IA",
-      "imagem gerada por IA",
-    ],
-    alternates: {
-      canonical: pageUrl,
-    },
+    title,
+    description,
     openGraph: {
-      type: "article",
-      url: pageUrl,
-      title: seo.title,
-      description: seo.description,
-      siteName: SITE_NAME,
-      images: [
-        {
-          url: ogImage,
-          alt: image.prompt || "Imagem gerada por IA",
-        },
-      ],
+      title,
+      description,
+      images: imageUrl ? [absoluteUrl(imageUrl)] : [],
     },
     twitter: {
-      card: "summary_large_image",
-      title: seo.title,
-      description: seo.description,
-      images: [ogImage],
+      card: imageUrl ? "summary_large_image" : "summary",
+      title,
+      description,
+      images: imageUrl ? [absoluteUrl(imageUrl)] : [],
     },
   };
 }
 
-function cardStyle() {
-  return {
-    borderRadius: 20,
-    border: "1px solid rgba(255,255,255,0.08)",
-    background: "rgba(255,255,255,0.03)",
-    padding: 20,
-  } as const;
-}
-
-function pillLinkStyle(primary = false) {
-  return {
-    display: "inline-flex",
-    alignItems: "center",
-    justifyContent: "center",
-    padding: "10px 14px",
-    borderRadius: 999,
-    border: primary
-      ? "1px solid rgba(16,185,129,0.38)"
-      : "1px solid rgba(255,255,255,0.14)",
-    background: primary
-      ? "rgba(16,185,129,0.18)"
-      : "rgba(255,255,255,0.04)",
-    textDecoration: "none",
-    color: "inherit",
-    fontWeight: 700,
-  } as const;
-}
-
-function formatDate(value: string | null) {
-  if (!value) return null;
-
-  try {
-    return new Intl.DateTimeFormat("pt-BR", {
-      dateStyle: "medium",
-      timeStyle: "short",
-    }).format(new Date(value));
-  } catch {
-    return null;
-  }
-}
-
-export default async function PublicImagePage({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
+export default async function PublicImagePage({ params }: PageProps) {
   const { id } = await params;
-  const image = await getImage(id);
+  const image = await findImageById(id);
 
-  if (!image || !image.image_url) {
-    notFound();
-  }
-
-  const seo = analyzePromptForSeo(image.prompt);
-  const categoryLinks = getCategoryLinksFromPrompt(image.prompt);
-  const pageUrl = `${SITE_URL}/i/${image.id}`;
-  const encodedPageUrl = encodeURIComponent(pageUrl);
-  const encodedTitle = encodeURIComponent(seo.title);
-  const createdAtLabel = formatDate(image.created_at);
-
-  const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(
-    `${seo.title} - ${pageUrl}`
-  )}`;
-  const facebookUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodedPageUrl}`;
-  const xUrl = `https://twitter.com/intent/tweet?text=${encodedTitle}&url=${encodedPageUrl}`;
-  const linkedinUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${encodedPageUrl}`;
-  const telegramUrl = `https://t.me/share/url?url=${encodedPageUrl}&text=${encodedTitle}`;
-
-  return (
-    <main
-      style={{
-        maxWidth: 1180,
-        margin: "0 auto",
-        padding: "24px",
-        color: "white",
-      }}
-    >
-      <section
+  if (!image || !text(image.image_url)) {
+    return (
+      <main
         style={{
-          ...cardStyle(),
-          marginBottom: 24,
-          textAlign: "center",
+          minHeight: "100vh",
           background:
-            "linear-gradient(135deg, rgba(16,185,129,0.14), rgba(15,23,42,0.94))",
-          boxShadow: "0 0 40px rgba(16,185,129,0.08)",
+            "radial-gradient(circle at top, rgba(59,130,246,0.14), transparent 28%), #050816",
+          color: "#e5eef8",
+          padding: "32px 16px 80px",
+          display: "flex",
+          alignItems: "center",
         }}
       >
-        <p style={{ opacity: 0.72, margin: 0, marginBottom: 10 }}>
-          Imagem pública • Aurora IA
-        </p>
-
-        <h1
-          style={{
-            fontSize: "2rem",
-            fontWeight: 800,
-            lineHeight: 1.25,
-            margin: 0,
-            marginBottom: 14,
-          }}
-        >
-          {image.prompt || "Imagem gerada por IA"}
-        </h1>
-
-        <p
-          style={{
-            margin: "0 auto 20px",
-            maxWidth: 860,
-            lineHeight: 1.7,
-            opacity: 0.88,
-          }}
-        >
-          {seo.description}
-        </p>
-
-        <div
-          style={{
-            display: "flex",
-            flexWrap: "wrap",
-            gap: 12,
-            justifyContent: "center",
-            marginBottom: 14,
-          }}
-        >
-          <Link href="/chat" style={pillLinkStyle(true)}>
-            Abrir chat
-          </Link>
-
-          <Link href="/planos" style={pillLinkStyle()}>
-            Ver planos
-          </Link>
-
-          <Link href="/explorar" style={pillLinkStyle()}>
-            Explorar mais imagens
-          </Link>
-        </div>
-
-        {createdAtLabel ? (
-          <p style={{ margin: 0, opacity: 0.6, fontSize: 13 }}>
-            Publicada em {createdAtLabel}
-          </p>
-        ) : null}
-      </section>
-
-      <section
-        style={{
-          display: "grid",
-          gap: 24,
-          gridTemplateColumns: "minmax(0, 1fr)",
-          marginBottom: 24,
-        }}
-      >
-        <article
-          style={{
-            ...cardStyle(),
-            overflow: "hidden",
-          }}
-        >
-          <div
+        <div style={{ maxWidth: 1000, margin: "0 auto", width: "100%" }}>
+          <section
             style={{
-              position: "relative",
-              width: "100%",
-              aspectRatio: "1 / 1",
-              background: "rgba(255,255,255,0.02)",
-              borderRadius: 16,
-              overflow: "hidden",
+              border: "1px solid rgba(148,163,184,0.18)",
+              background: "rgba(15,23,42,0.72)",
+              backdropFilter: "blur(10px)",
+              borderRadius: 24,
+              padding: 32,
+              boxShadow: "0 20px 80px rgba(0,0,0,0.35)",
+              textAlign: "center",
             }}
           >
-            <Image
-              src={image.image_url}
-              alt={image.prompt || "Imagem gerada por IA"}
-              fill
-              sizes="(max-width: 768px) 100vw, 900px"
-              style={{ objectFit: "contain" }}
-              priority
-            />
-          </div>
-        </article>
-      </section>
-
-      <section
-        style={{
-          display: "grid",
-          gap: 24,
-          gridTemplateColumns: "minmax(0, 1fr)",
-          marginBottom: 24,
-        }}
-      >
-        <article style={cardStyle()}>
-          <p
-            style={{
-              marginTop: 0,
-              marginBottom: 12,
-              color: "rgb(110 231 183)",
-              fontWeight: 700,
-              textTransform: "uppercase",
-              letterSpacing: "0.16em",
-              fontSize: 12,
-            }}
-          >
-            Compartilhar imagem
-          </p>
-
-          <div
-            style={{
-              display: "flex",
-              flexWrap: "wrap",
-              gap: 12,
-            }}
-          >
-            <a
-              href={whatsappUrl}
-              target="_blank"
-              rel="noreferrer"
-              style={pillLinkStyle(true)}
-            >
-              WhatsApp
-            </a>
-
-            <a
-              href={facebookUrl}
-              target="_blank"
-              rel="noreferrer"
-              style={pillLinkStyle()}
-            >
-              Facebook
-            </a>
-
-            <a
-              href={xUrl}
-              target="_blank"
-              rel="noreferrer"
-              style={pillLinkStyle()}
-            >
-              X
-            </a>
-
-            <a
-              href={linkedinUrl}
-              target="_blank"
-              rel="noreferrer"
-              style={pillLinkStyle()}
-            >
-              LinkedIn
-            </a>
-
-            <a
-              href={telegramUrl}
-              target="_blank"
-              rel="noreferrer"
-              style={pillLinkStyle()}
-            >
-              Telegram
-            </a>
-
-            <a
-              href={image.image_url}
-              target="_blank"
-              rel="noreferrer"
-              style={pillLinkStyle()}
-            >
-              Ver imagem original
-            </a>
-          </div>
-
-          <p style={{ marginTop: 14, marginBottom: 0, opacity: 0.64, fontSize: 13 }}>
-            Para Instagram e TikTok, use este link na bio, stories, descrição ou direct:
-            <br />
-            <span style={{ wordBreak: "break-all" }}>{pageUrl}</span>
-          </p>
-        </article>
-      </section>
-
-      <section
-        style={{
-          display: "grid",
-          gap: 24,
-          gridTemplateColumns: "minmax(0, 1fr)",
-        }}
-      >
-        <article style={cardStyle()}>
-          <p
-            style={{
-              marginTop: 0,
-              marginBottom: 12,
-              color: "rgb(110 231 183)",
-              fontWeight: 700,
-              textTransform: "uppercase",
-              letterSpacing: "0.16em",
-              fontSize: 12,
-            }}
-          >
-            Prompt e contexto
-          </p>
-
-          <p
-            style={{
-              marginTop: 0,
-              lineHeight: 1.8,
-              opacity: 0.9,
-              whiteSpace: "pre-wrap",
-            }}
-          >
-            {image.prompt || "Imagem gerada por IA na Aurora."}
-          </p>
-        </article>
-
-        <article style={cardStyle()}>
-          <p
-            style={{
-              marginTop: 0,
-              marginBottom: 12,
-              color: "rgb(110 231 183)",
-              fontWeight: 700,
-              textTransform: "uppercase",
-              letterSpacing: "0.16em",
-              fontSize: 12,
-            }}
-          >
-            Descrição da imagem
-          </p>
-
-          <p style={{ margin: 0, lineHeight: 1.8, opacity: 0.85 }}>
-            {seo.description}
-          </p>
-        </article>
-
-        {categoryLinks.length ? (
-          <article style={cardStyle()}>
-            <p
+            <div
               style={{
-                marginTop: 0,
-                marginBottom: 12,
-                color: "rgb(110 231 183)",
+                display: "inline-flex",
+                padding: "8px 12px",
+                borderRadius: 999,
+                background: "rgba(239,68,68,0.14)",
+                border: "1px solid rgba(239,68,68,0.25)",
+                color: "#fca5a5",
+                fontSize: 13,
                 fontWeight: 700,
-                textTransform: "uppercase",
-                letterSpacing: "0.16em",
-                fontSize: 12,
+                letterSpacing: 0.3,
+                marginBottom: 16,
               }}
             >
-              Categorias relacionadas
+              Imagem não encontrada
+            </div>
+
+            <h1 style={{ fontSize: 38, lineHeight: 1.05, margin: 0 }}>
+              Esta imagem não está mais disponível
+            </h1>
+
+            <p
+              style={{
+                color: "#94a3b8",
+                marginTop: 16,
+                maxWidth: 760,
+                marginLeft: "auto",
+                marginRight: "auto",
+                fontSize: 16,
+                lineHeight: 1.7,
+              }}
+            >
+              O link acessado pode ser antigo, inválido ou a imagem pode ter sido
+              removida. Estamos em constante atualização e pode haver momentos de
+              instabilidade.
             </p>
 
             <div
               style={{
                 display: "flex",
-                flexWrap: "wrap",
                 gap: 12,
+                flexWrap: "wrap",
+                justifyContent: "center",
+                marginTop: 24,
               }}
             >
-              {categoryLinks.map((item) => (
-                <Link
-                  key={item.slug}
-                  href={item.href}
-                  style={pillLinkStyle()}
-                >
-                  {item.name}
-                </Link>
-              ))}
-            </div>
-          </article>
-        ) : null}
+              <Link
+                href="/explorar"
+                style={{
+                  color: "#86efac",
+                  textDecoration: "none",
+                  border: "1px solid rgba(134,239,172,0.25)",
+                  borderRadius: 999,
+                  padding: "12px 16px",
+                }}
+              >
+                Ir para Explorar
+              </Link>
 
-        <article style={cardStyle()}>
-          <p
+              <Link
+                href="/"
+                style={{
+                  color: "#93c5fd",
+                  textDecoration: "none",
+                  border: "1px solid rgba(147,197,253,0.25)",
+                  borderRadius: 999,
+                  padding: "12px 16px",
+                }}
+              >
+                Voltar à Home
+              </Link>
+
+              <Link
+                href="/chat"
+                style={{
+                  color: "#facc15",
+                  textDecoration: "none",
+                  border: "1px solid rgba(250,204,21,0.25)",
+                  borderRadius: 999,
+                  padding: "12px 16px",
+                }}
+              >
+                Criar nova imagem
+              </Link>
+            </div>
+
+            <div
+              style={{
+                marginTop: 24,
+                borderRadius: 18,
+                padding: 18,
+                background: "rgba(2,6,23,0.45)",
+                border: "1px solid rgba(148,163,184,0.14)",
+                color: "#cbd5e1",
+                textAlign: "left",
+              }}
+            >
+              <div
+                style={{
+                  fontSize: 12,
+                  color: "#94a3b8",
+                  textTransform: "uppercase",
+                  letterSpacing: 0.4,
+                  marginBottom: 8,
+                }}
+              >
+                ID auditado
+              </div>
+              <code style={{ wordBreak: "break-all" }}>{id}</code>
+            </div>
+          </section>
+        </div>
+      </main>
+    );
+  }
+
+  const prompt = text(image.prompt) || "Imagem Aurora IA";
+  const imageUrl = absoluteUrl(text(image.image_url));
+  const createdAt = text(image.created_at);
+  const ownerEmail = text(image.user_email) || text(image.email);
+
+  return (
+    <main
+      style={{
+        minHeight: "100vh",
+        background:
+          "radial-gradient(circle at top, rgba(34,197,94,0.14), transparent 28%), #050816",
+        color: "#e5eef8",
+        padding: "32px 16px 80px",
+      }}
+    >
+      <div style={{ maxWidth: 1180, margin: "0 auto" }}>
+        <div
+          style={{
+            display: "flex",
+            gap: 12,
+            flexWrap: "wrap",
+            marginBottom: 16,
+          }}
+        >
+          <Link
+            href="/"
             style={{
-              marginTop: 0,
-              marginBottom: 12,
-              color: "rgb(110 231 183)",
-              fontWeight: 700,
-              textTransform: "uppercase",
-              letterSpacing: "0.16em",
-              fontSize: 12,
+              color: "#93c5fd",
+              textDecoration: "none",
+              border: "1px solid rgba(147,197,253,0.25)",
+              borderRadius: 999,
+              padding: "10px 14px",
             }}
           >
-            Próximo passo
-          </p>
+            Voltar à Home
+          </Link>
 
-          <p style={{ marginTop: 0, lineHeight: 1.8, opacity: 0.85 }}>
-            Use esta imagem como prova social, compartilhe com clientes e leve
-            tráfego para a Aurora IA com páginas públicas indexáveis.
+          <Link
+            href="/explorar"
+            style={{
+              color: "#86efac",
+              textDecoration: "none",
+              border: "1px solid rgba(134,239,172,0.25)",
+              borderRadius: 999,
+              padding: "10px 14px",
+            }}
+          >
+            Ir para Explorar
+          </Link>
+
+          <Link
+            href="/chat"
+            style={{
+              color: "#facc15",
+              textDecoration: "none",
+              border: "1px solid rgba(250,204,21,0.25)",
+              borderRadius: 999,
+              padding: "10px 14px",
+            }}
+          >
+            Criar nova imagem
+          </Link>
+        </div>
+
+        <section
+          style={{
+            border: "1px solid rgba(148,163,184,0.18)",
+            background: "rgba(15,23,42,0.72)",
+            backdropFilter: "blur(10px)",
+            borderRadius: 24,
+            padding: 24,
+            boxShadow: "0 20px 80px rgba(0,0,0,0.35)",
+            marginBottom: 24,
+          }}
+        >
+          <div
+            style={{
+              display: "inline-flex",
+              padding: "8px 12px",
+              borderRadius: 999,
+              background: "rgba(34,197,94,0.14)",
+              border: "1px solid rgba(34,197,94,0.25)",
+              color: "#86efac",
+              fontSize: 13,
+              fontWeight: 700,
+              letterSpacing: 0.3,
+              marginBottom: 14,
+            }}
+          >
+            Página pública da imagem
+          </div>
+
+          <h1 style={{ fontSize: 34, lineHeight: 1.1, margin: 0 }}>{prompt}</h1>
+
+          <p
+            style={{
+              color: "#94a3b8",
+              marginTop: 14,
+              maxWidth: 860,
+              fontSize: 16,
+              lineHeight: 1.7,
+            }}
+          >
+            Página individual da imagem gerada na Aurora IA. Estamos em constante
+            atualização e pode haver momentos de instabilidade.
           </p>
 
           <div
             style={{
-              display: "flex",
-              flexWrap: "wrap",
-              gap: 12,
-              marginTop: 16,
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+              gap: 14,
+              marginTop: 18,
             }}
           >
-            <Link href="/chat" style={pillLinkStyle(true)}>
-              Gerar nova imagem
-            </Link>
+            <div
+              style={{
+                borderRadius: 18,
+                padding: 16,
+                background: "rgba(2,6,23,0.45)",
+                border: "1px solid rgba(148,163,184,0.14)",
+              }}
+            >
+              <div style={{ fontSize: 12, color: "#94a3b8" }}>ID da imagem</div>
+              <div style={{ fontWeight: 700, marginTop: 8, wordBreak: "break-all" }}>
+                {image.id}
+              </div>
+            </div>
 
-            <Link href="/editor" style={pillLinkStyle()}>
-              Criar campanha
-            </Link>
+            <div
+              style={{
+                borderRadius: 18,
+                padding: 16,
+                background: "rgba(2,6,23,0.45)",
+                border: "1px solid rgba(148,163,184,0.14)",
+              }}
+            >
+              <div style={{ fontSize: 12, color: "#94a3b8" }}>Criado em</div>
+              <div style={{ fontWeight: 700, marginTop: 8 }}>
+                {createdAt || "-"}
+              </div>
+            </div>
+
+            <div
+              style={{
+                borderRadius: 18,
+                padding: 16,
+                background: "rgba(2,6,23,0.45)",
+                border: "1px solid rgba(148,163,184,0.14)",
+              }}
+            >
+              <div style={{ fontSize: 12, color: "#94a3b8" }}>Contato</div>
+              <div style={{ fontWeight: 700, marginTop: 8 }}>
+                {ownerEmail || "Não informado"}
+              </div>
+            </div>
           </div>
-        </article>
-      </section>
+        </section>
+
+        <section
+          style={{
+            borderRadius: 24,
+            padding: 24,
+            background: "rgba(15,23,42,0.72)",
+            border: "1px solid rgba(148,163,184,0.18)",
+            boxShadow: "0 20px 80px rgba(0,0,0,0.35)",
+          }}
+        >
+          <div
+            style={{
+              borderRadius: 20,
+              overflow: "hidden",
+              border: "1px solid rgba(148,163,184,0.16)",
+              background: "rgba(2,6,23,0.45)",
+            }}
+          >
+            <img
+              src={imageUrl}
+              alt={prompt}
+              style={{
+                width: "100%",
+                height: "auto",
+                display: "block",
+              }}
+            />
+          </div>
+
+          <div
+            style={{
+              display: "flex",
+              gap: 12,
+              flexWrap: "wrap",
+              marginTop: 18,
+            }}
+          >
+            <a
+              href={imageUrl}
+              target="_blank"
+              rel="noreferrer"
+              style={{
+                color: "#93c5fd",
+                textDecoration: "none",
+                border: "1px solid rgba(147,197,253,0.25)",
+                borderRadius: 999,
+                padding: "10px 14px",
+              }}
+            >
+              Abrir imagem
+            </a>
+
+            <a
+              href={`https://wa.me/?text=${encodeURIComponent(imageUrl)}`}
+              target="_blank"
+              rel="noreferrer"
+              style={{
+                color: "#86efac",
+                textDecoration: "none",
+                border: "1px solid rgba(134,239,172,0.25)",
+                borderRadius: 999,
+                padding: "10px 14px",
+              }}
+            >
+              Compartilhar no WhatsApp
+            </a>
+          </div>
+        </section>
+      </div>
     </main>
   );
 }

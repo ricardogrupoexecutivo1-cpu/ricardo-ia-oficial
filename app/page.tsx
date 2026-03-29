@@ -1,3 +1,5 @@
+"use client";
+
 import Link from "next/link";
 
 const products = [
@@ -7,6 +9,7 @@ const products = [
     href: "/chat",
     description: "Converse, peça campanhas, ideias, imagens e respostas rápidas.",
     badge: "Aurora IA",
+    eventName: "open_chat_home",
   },
   {
     title: "Locadora",
@@ -14,6 +17,7 @@ const products = [
     href: "/locadora",
     description: "Cadastros, clientes, veículos e operação comercial da locadora.",
     badge: "Operação real",
+    eventName: "open_locadora_home",
   },
   {
     title: "Agro",
@@ -21,6 +25,7 @@ const products = [
     href: "/agro",
     description: "Entrada para produtores, fornecedores e negócios do agro.",
     badge: "Expansão",
+    eventName: "open_agro_home",
   },
   {
     title: "Imóveis",
@@ -28,6 +33,7 @@ const products = [
     href: "/imoveis",
     description: "Imobiliárias, imóveis e operação de captação e venda.",
     badge: "Mercado imobiliário",
+    eventName: "open_imoveis_home",
   },
   {
     title: "Bancos",
@@ -35,6 +41,7 @@ const products = [
     href: "/bancos",
     description: "Fluxo com bancos e parceiros financeiros dentro da plataforma.",
     badge: "Financeiro",
+    eventName: "open_bancos_home",
   },
   {
     title: "Livro",
@@ -42,6 +49,7 @@ const products = [
     href: "/livro",
     description: "Área do livro com acesso rápido para leitura, divulgação e conversão.",
     badge: "Conteúdo",
+    eventName: "open_livro_home",
   },
 ];
 
@@ -51,20 +59,68 @@ const cadastros = [
     icon: "👤",
     href: "/locadora/cadastros/clientes",
     description: "Cadastre clientes e siga direto para o fluxo comercial.",
+    eventName: "open_cadastro_clientes_home",
   },
   {
     title: "Clientes cadastrados",
     icon: "📋",
     href: "/locadora/clientes",
     description: "Veja os clientes já gravados no banco e chame no WhatsApp.",
+    eventName: "open_clientes_lista_home",
   },
   {
     title: "Central de cadastros",
     icon: "🧩",
     href: "/locadora/cadastros",
     description: "Entre na área de cadastros e escolha o que quer operar.",
+    eventName: "open_central_cadastros_home",
   },
 ];
+
+function trackEvent(eventName: string, params?: Record<string, string | number>) {
+  if (typeof window === "undefined") return;
+
+  const payload = {
+    event: eventName,
+    ...params,
+  };
+
+  const w = window as typeof window & {
+    dataLayer?: Array<Record<string, string | number>>;
+    gtag?: (...args: unknown[]) => void;
+  };
+
+  w.dataLayer = w.dataLayer || [];
+  w.dataLayer.push(payload);
+
+  if (typeof w.gtag === "function") {
+    w.gtag("event", eventName, params || {});
+  }
+}
+
+function TrackedLink({
+  href,
+  eventName,
+  params,
+  style,
+  children,
+}: {
+  href: string;
+  eventName: string;
+  params?: Record<string, string | number>;
+  style: React.CSSProperties;
+  children: React.ReactNode;
+}) {
+  return (
+    <Link
+      href={href}
+      style={style}
+      onClick={() => trackEvent(eventName, params)}
+    >
+      {children}
+    </Link>
+  );
+}
 
 export default function HomePage() {
   return (
@@ -164,7 +220,7 @@ export default function HomePage() {
               <div
                 style={{
                   minWidth: 220,
-                  maxWidth: 280,
+                  maxWidth: 320,
                   width: "100%",
                   borderRadius: 22,
                   padding: 16,
@@ -186,13 +242,23 @@ export default function HomePage() {
                 </div>
 
                 <div style={{ display: "grid", gap: 10 }}>
-                  <Link href="/chat" style={primaryButton}>
+                  <TrackedLink
+                    href="/chat"
+                    style={primaryButton}
+                    eventName="cta_home_chat"
+                    params={{ area: "home_topo" }}
+                  >
                     Entrar no Chat
-                  </Link>
+                  </TrackedLink>
 
-                  <Link href="/locadora" style={secondaryButton}>
+                  <TrackedLink
+                    href="/locadora"
+                    style={secondaryButton}
+                    eventName="cta_home_locadora"
+                    params={{ area: "home_topo" }}
+                  >
                     Entrar na Locadora
-                  </Link>
+                  </TrackedLink>
                 </div>
               </div>
             </div>
@@ -208,20 +274,97 @@ export default function HomePage() {
               }}
             >
               {products.map((item) => (
-                <Link
+                <TrackedLink
                   key={item.title}
                   href={item.href}
                   style={topNavChip}
+                  eventName={item.eventName}
+                  params={{ area: "barra_produtos", produto: item.title }}
                 >
                   <span aria-hidden="true">{item.icon}</span>
                   <span>{item.title}</span>
-                </Link>
+                </TrackedLink>
               ))}
             </nav>
           </div>
         </header>
 
         <section style={{ marginTop: 20 }}>
+          <div style={sectionHeader}>
+            <div>
+              <div style={eyebrow}>AÇÃO COMERCIAL</div>
+              <h2 style={sectionTitle}>Entre pelo seu objetivo</h2>
+            </div>
+          </div>
+
+          <div style={ctaGrid}>
+            <TrackedLink
+              href="/cadastro"
+              style={ctaCardLink}
+              eventName="cta_home_sou_empresa"
+              params={{ area: "objetivo", tipo: "empresa" }}
+            >
+              <article style={ctaCard}>
+                <div style={ctaIcon}>🏢</div>
+                <h3 style={ctaTitle}>Sou empresa</h3>
+                <p style={ctaText}>
+                  Cadastre empresa, serviços, perfil e entre no ecossistema.
+                </p>
+                <div style={ctaAction}>Cadastrar agora</div>
+              </article>
+            </TrackedLink>
+
+            <TrackedLink
+              href="/cadastro"
+              style={ctaCardLink}
+              eventName="cta_home_sou_fornecedor"
+              params={{ area: "objetivo", tipo: "fornecedor" }}
+            >
+              <article style={ctaCard}>
+                <div style={ctaIcon}>🧰</div>
+                <h3 style={ctaTitle}>Sou fornecedor</h3>
+                <p style={ctaText}>
+                  Entre para divulgar seu trabalho e receber oportunidades.
+                </p>
+                <div style={ctaAction}>Entrar como fornecedor</div>
+              </article>
+            </TrackedLink>
+
+            <TrackedLink
+              href="/locadora/cadastros/clientes"
+              style={ctaCardLink}
+              eventName="cta_home_sou_cliente"
+              params={{ area: "objetivo", tipo: "cliente" }}
+            >
+              <article style={ctaCard}>
+                <div style={ctaIcon}>👤</div>
+                <h3 style={ctaTitle}>Sou cliente</h3>
+                <p style={ctaText}>
+                  Cadastre seus dados e siga direto para atendimento comercial.
+                </p>
+                <div style={ctaAction}>Cadastrar cliente</div>
+              </article>
+            </TrackedLink>
+
+            <TrackedLink
+              href="/cadastro"
+              style={ctaCardLink}
+              eventName="cta_home_sou_motorista"
+              params={{ area: "objetivo", tipo: "motorista" }}
+            >
+              <article style={ctaCard}>
+                <div style={ctaIcon}>🪪</div>
+                <h3 style={ctaTitle}>Sou motorista</h3>
+                <p style={ctaText}>
+                  Entre na plataforma e deixe seu perfil pronto para contratação.
+                </p>
+                <div style={ctaAction}>Cadastrar motorista</div>
+              </article>
+            </TrackedLink>
+          </div>
+        </section>
+
+        <section style={{ marginTop: 28 }}>
           <div style={sectionHeader}>
             <div>
               <div style={eyebrow}>PRODUTOS</div>
@@ -231,7 +374,13 @@ export default function HomePage() {
 
           <div style={gridProducts}>
             {products.map((item) => (
-              <Link key={item.title} href={item.href} style={cardLink}>
+              <TrackedLink
+                key={item.title}
+                href={item.href}
+                style={cardLink}
+                eventName={item.eventName}
+                params={{ area: "cards_produtos", produto: item.title }}
+              >
                 <article style={mainCard}>
                   <div
                     style={{
@@ -242,17 +391,14 @@ export default function HomePage() {
                     }}
                   >
                     <div style={iconBox}>{item.icon}</div>
-
                     <div style={badge}>{item.badge}</div>
                   </div>
 
                   <h3 style={cardTitle}>{item.title}</h3>
-
                   <p style={cardText}>{item.description}</p>
-
                   <div style={cardAction}>Entrar agora</div>
                 </article>
-              </Link>
+              </TrackedLink>
             ))}
           </div>
         </section>
@@ -267,7 +413,13 @@ export default function HomePage() {
 
           <div style={gridCadastros}>
             {cadastros.map((item) => (
-              <Link key={item.title} href={item.href} style={cardLink}>
+              <TrackedLink
+                key={item.title}
+                href={item.href}
+                style={cardLink}
+                eventName={item.eventName}
+                params={{ area: "cards_cadastros", cadastro: item.title }}
+              >
                 <article style={cadastroCard}>
                   <div style={iconBoxSmall}>{item.icon}</div>
                   <div>
@@ -275,7 +427,7 @@ export default function HomePage() {
                     <p style={cadastroText}>{item.description}</p>
                   </div>
                 </article>
-              </Link>
+              </TrackedLink>
             ))}
           </div>
         </section>
@@ -325,13 +477,23 @@ export default function HomePage() {
                   marginTop: 18,
                 }}
               >
-                <Link href="/livro" style={primaryButton}>
+                <TrackedLink
+                  href="/livro"
+                  style={primaryButton}
+                  eventName="cta_home_abrir_livro"
+                  params={{ area: "livro_destaque" }}
+                >
                   Abrir livro
-                </Link>
+                </TrackedLink>
 
-                <Link href="/explorar" style={secondaryButton}>
+                <TrackedLink
+                  href="/explorar"
+                  style={secondaryButton}
+                  eventName="cta_home_explorar_conteudos"
+                  params={{ area: "livro_destaque" }}
+                >
                   Explorar conteúdos
-                </Link>
+                </TrackedLink>
               </div>
             </div>
 
@@ -384,6 +546,60 @@ const sectionTitle: React.CSSProperties = {
   fontSize: "clamp(22px, 5vw, 34px)",
   lineHeight: 1.08,
   fontWeight: 900,
+};
+
+const ctaGrid: React.CSSProperties = {
+  display: "grid",
+  gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+  gap: 14,
+};
+
+const ctaCardLink: React.CSSProperties = {
+  textDecoration: "none",
+  color: "inherit",
+};
+
+const ctaCard: React.CSSProperties = {
+  height: "100%",
+  borderRadius: 22,
+  padding: 18,
+  background:
+    "linear-gradient(180deg, rgba(20,38,32,0.98), rgba(5,11,18,0.98))",
+  border: "1px solid rgba(34,197,94,0.24)",
+  boxShadow: "0 18px 50px rgba(0,0,0,0.24)",
+};
+
+const ctaIcon: React.CSSProperties = {
+  width: 52,
+  height: 52,
+  borderRadius: 16,
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  fontSize: 24,
+  background: "rgba(255,255,255,0.05)",
+  marginBottom: 14,
+};
+
+const ctaTitle: React.CSSProperties = {
+  margin: "0 0 8px",
+  fontSize: 22,
+  lineHeight: 1.08,
+  fontWeight: 900,
+};
+
+const ctaText: React.CSSProperties = {
+  margin: 0,
+  color: "#d5e5f7",
+  lineHeight: 1.65,
+  fontSize: 15,
+};
+
+const ctaAction: React.CSSProperties = {
+  marginTop: 16,
+  color: "#b9f7cf",
+  fontWeight: 800,
+  fontSize: 15,
 };
 
 const gridProducts: React.CSSProperties = {

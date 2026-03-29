@@ -1,330 +1,772 @@
 import { NextRequest, NextResponse } from "next/server";
-import OpenAI from "openai";
-import { env, hasOpenAi } from "../../../lib/env";
+import { createClient } from "@supabase/supabase-js";
 
 export const runtime = "nodejs";
-export const dynamic = "force-dynamic";
-export const revalidate = 0;
-export const maxDuration = 60;
 
-function jsonNoStore(body: unknown, init?: ResponseInit) {
-  const response = NextResponse.json(body, init);
+type LeadNivel = "frio" | "morno" | "quente";
+type IntentType = "campanha" | "imagem" | "ideia" | "monetizacao" | "geral";
 
-  response.headers.set(
-    "Cache-Control",
-    "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0"
-  );
-  response.headers.set("Pragma", "no-cache");
-  response.headers.set("Expires", "0");
-  response.headers.set("Surrogate-Control", "no-store");
-  response.headers.set("CDN-Cache-Control", "no-store");
-  response.headers.set("Vercel-CDN-Cache-Control", "no-store");
+type IncomingMessage = {
+  role?: "user" | "assistant" | string;
+  content?: string;
+};
 
-  return response;
-}
+function getSupabaseAdmin() {
+  const supabaseUrl =
+    process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL;
+  const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-function getOpenAiClient() {
-  if (!hasOpenAi()) {
-    throw new Error("OPENAI_API_KEY não configurada.");
+  if (!supabaseUrl || !supabaseServiceRoleKey) {
+    return null;
   }
 
-  return new OpenAI({
-    apiKey: env.openAiApiKey as string,
+  return createClient(supabaseUrl, supabaseServiceRoleKey, {
+    auth: {
+      persistSession: false,
+      autoRefreshToken: false,
+    },
   });
 }
 
-function shouldGenerateImage(message: string) {
-  const text = message.toLowerCase().trim();
+function normalizeText(value: string) {
+  return String(value || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .trim();
+}
 
-  const strongTriggers = [
+function isAffirmative(message: string) {
+  const text = normalizeText(message);
+
+  const terms = [
+    "sim",
+    "ok",
+    "pode",
+    "pode ser",
+    "sim pode",
+    "sim criar",
+    "isso",
+    "isso mesmo",
+    "exatamente",
+    "perfeito",
+    "pode fazer",
+    "gera",
+    "gerar",
+    "criar",
+    "pode criar",
+    "como o exemplo",
+    "como seu exemplo",
+    "como o exemplo acima",
+    "igual ao exemplo",
+    "esse mesmo",
+    "seguir",
+    "pode seguir",
+    "seguir com isso",
+    "seguir com pedido",
+    "seguir com o pedido",
+    "seguir com o pedido de imagem",
+    "continuar",
+    "continuar imagem",
+    "continuar com a imagem",
+    "prosseguir",
+    "prosseguir com a imagem",
+  ];
+
+  return terms.some((term) => text === term || text.includes(term));
+}
+
+function isImageCreationRequest(message: string) {
+  const text = normalizeText(message);
+
+  const terms = [
     "crie uma imagem",
     "gere uma imagem",
     "gerar imagem",
-    "faça uma imagem",
-    "faca uma imagem",
-    "me mostre uma imagem",
-    "crie uma arte",
-    "gere uma arte",
-    "crie um banner",
-    "gere um banner",
-    "crie uma foto",
-    "gere uma foto",
-    "crie uma ilustração",
-    "gere uma ilustração",
-    "crie uma ilustracao",
-    "gere uma ilustracao",
-    "crie uma capa",
-    "gere uma capa",
-    "crie um post",
-    "gere um post",
-    "crie um criativo",
-    "gere um criativo",
-    "quero uma imagem",
-    "preciso de uma imagem",
-  ];
-
-  if (strongTriggers.some((term) => text.includes(term))) {
-    return true;
-  }
-
-  const genericImageWords = [
-    "imagem",
-    "foto",
-    "arte",
+    "criar imagem",
+    "imagem profissional",
+    "imagem da aurora",
+    "robo aurora",
+    "robô aurora",
     "banner",
-    "ilustração",
-    "ilustracao",
-    "post",
+    "arte",
+    "foto",
     "criativo",
     "thumbnail",
     "capa",
-    "logo",
-    "cartaz",
-    "story",
+    "anuncio visual",
+    "imagem vendendo",
+    "plataforma ricardoiaoficial.com",
+    "2 crie",
+    "quero uma imagem",
+    "pedido de imagem",
+    "imagem linda",
+    "imagem real",
+    "imagem futurista",
+    "super imagem",
   ];
 
-  return genericImageWords.some((term) => text.includes(term));
+  return terms.some((term) => text.includes(term));
 }
 
-function getReadableError(error: unknown) {
-  if (error instanceof Error) {
-    return error.message;
-  }
+function isImageRefinement(message: string) {
+  const text = normalizeText(message);
 
-  if (typeof error === "string") {
-    return error;
-  }
+  const terms = [
+    "estilo",
+    "cinematografico",
+    "mais realista",
+    "mais real",
+    "mais futurista",
+    "mais premium",
+    "mais elegante",
+    "mais impactante",
+    "mais chamativa",
+    "mais encantadora",
+    "fundo escuro",
+    "neon",
+    "azul",
+    "verde",
+    "roupa",
+    "vestida",
+    "deslumbrante",
+    "instagram",
+    "formato quadrado",
+    "banner",
+    "vertical",
+    "horizontal",
+    "4k",
+    "ultra detalhado",
+    "realista",
+    "luxuosa",
+    "luxuoso",
+    "brilhante",
+    "dramatico",
+    "dramática",
+    "dramatic lighting",
+    "seguir com o pedido de imagem",
+    "continuar com a imagem",
+    "prosseguir com a imagem",
+  ];
 
-  return "erro_desconhecido";
+  return terms.some((term) => text.includes(term));
 }
 
-function getBaseUrl(req: NextRequest) {
-  const envBase = env.siteUrl || env.appUrl;
+function isCampaignRequest(message: string) {
+  const text = normalizeText(message);
 
-  if (envBase) {
-    return envBase.replace(/\/+$/, "");
-  }
+  const terms = [
+    "campanha",
+    "vender",
+    "marketing",
+    "clientes",
+    "cliente",
+    "anuncio",
+    "anunciar",
+    "copy",
+    "texto de vendas",
+    "instagram",
+    "whatsapp",
+  ];
 
-  const host = req.headers.get("host");
-  const proto =
-    req.headers.get("x-forwarded-proto") ||
-    (host?.includes("localhost") ? "http" : "https");
-
-  if (host) {
-    return `${proto}://${host}`;
-  }
-
-  return "http://localhost:3000";
+  return terms.some((term) => text.includes(term));
 }
 
-async function readJsonBody(req: NextRequest) {
-  const raw = await req.text();
+function isBusinessIdeaRequest(message: string) {
+  const text = normalizeText(message);
 
-  if (!raw || !raw.trim()) {
-    throw new Error("Body vazio na requisição.");
-  }
+  const terms = [
+    "ideia",
+    "negocio",
+    "negocios",
+    "empresa",
+    "modelo de negocio",
+    "criar negocio",
+  ];
 
-  try {
-    return JSON.parse(raw) as {
-      message?: string;
-      email?: string;
-    };
-  } catch {
-    throw new Error("JSON inválido na requisição.");
-  }
+  return terms.some((term) => text.includes(term));
 }
 
-async function generateTextReply(message: string) {
-  const openai = getOpenAiClient();
+function isMonetizationRequest(message: string) {
+  const text = normalizeText(message);
 
-  const completion = await openai.chat.completions.create({
-    model: "gpt-5-mini",
-    messages: [
-      {
-        role: "system",
-        content:
-          "Você é a Aurora IA, especialista em marketing, campanhas, vendas, copy, negócios e produtividade. Responda sempre em português do Brasil, de forma clara, útil, objetiva e comercial quando fizer sentido.",
-      },
-      {
-        role: "user",
-        content: message,
-      },
-    ],
+  const terms = [
+    "monetizar",
+    "receita",
+    "faturar",
+    "muitos clientes",
+    "muito cliente",
+    "gerar muita receita",
+    "mais receita",
+    "escalar",
+    "crescer a aurora",
+  ];
+
+  return terms.some((term) => text.includes(term));
+}
+
+function detectIntent(message: string): IntentType {
+  const text = normalizeText(message);
+
+  if (text === "1") return "campanha";
+  if (text === "2") return "imagem";
+  if (text === "3") return "ideia";
+
+  if (isMonetizationRequest(text)) return "monetizacao";
+  if (isImageCreationRequest(text)) return "imagem";
+  if (isCampaignRequest(text)) return "campanha";
+  if (isBusinessIdeaRequest(text)) return "ideia";
+
+  return "geral";
+}
+
+function detectLeadData(message: string): {
+  nivel: LeadNivel;
+  interesse: string;
+  score: number;
+} {
+  const intent = detectIntent(message);
+
+  if (intent === "campanha") {
+    return { nivel: "quente", interesse: "campanha", score: 10 };
+  }
+
+  if (intent === "monetizacao") {
+    return { nivel: "quente", interesse: "monetizacao", score: 10 };
+  }
+
+  if (intent === "imagem") {
+    return { nivel: "morno", interesse: "imagem", score: 5 };
+  }
+
+  if (intent === "ideia") {
+    return { nivel: "morno", interesse: "ideia", score: 5 };
+  }
+
+  return { nivel: "frio", interesse: "geral", score: 1 };
+}
+
+function extractEmailFromBody(body: any): string {
+  const candidates = [
+    body?.email,
+    body?.userEmail,
+    body?.user?.email,
+    body?.profile?.email,
+  ];
+
+  for (const candidate of candidates) {
+    if (typeof candidate === "string" && candidate.trim()) {
+      return candidate.trim().toLowerCase();
+    }
+  }
+
+  return "";
+}
+
+function extractMessageFromBody(body: any): string {
+  if (typeof body?.message === "string" && body.message.trim()) {
+    return body.message.trim();
+  }
+
+  if (Array.isArray(body?.messages) && body.messages.length > 0) {
+    const lastUserMessage = [...body.messages]
+      .reverse()
+      .find(
+        (item: IncomingMessage) =>
+          item &&
+          item.role === "user" &&
+          typeof item.content === "string" &&
+          item.content.trim()
+      );
+
+    if (lastUserMessage?.content) {
+      return lastUserMessage.content.trim();
+    }
+  }
+
+  return "";
+}
+
+function extractConversationMessages(body: any): IncomingMessage[] {
+  if (!Array.isArray(body?.messages)) return [];
+
+  return body.messages.filter(
+    (item: IncomingMessage) =>
+      item &&
+      (item.role === "user" || item.role === "assistant") &&
+      typeof item.content === "string" &&
+      item.content.trim()
+  );
+}
+
+function getLastMeaningfulUserIntent(
+  messages: IncomingMessage[],
+  currentMessage: string
+): IntentType {
+  const currentNormalized = normalizeText(currentMessage);
+
+  for (let i = messages.length - 1; i >= 0; i -= 1) {
+    const item = messages[i];
+
+    if (!item || item.role !== "user" || typeof item.content !== "string") {
+      continue;
+    }
+
+    const content = item.content.trim();
+    const normalized = normalizeText(content);
+
+    if (!normalized) continue;
+    if (normalized === currentNormalized) continue;
+
+    const intent = detectIntent(content);
+    if (intent !== "geral") {
+      return intent;
+    }
+  }
+
+  return "geral";
+}
+
+function getLastImageRequest(messages: IncomingMessage[], currentMessage: string) {
+  const currentNormalized = normalizeText(currentMessage);
+
+  for (let i = messages.length - 1; i >= 0; i -= 1) {
+    const item = messages[i];
+
+    if (!item || item.role !== "user" || typeof item.content !== "string") {
+      continue;
+    }
+
+    const content = item.content.trim();
+    const normalized = normalizeText(content);
+
+    if (!normalized) continue;
+    if (normalized === currentNormalized) continue;
+
+    if (detectIntent(content) === "imagem" || isImageRefinement(content)) {
+      return content;
+    }
+  }
+
+  return "";
+}
+
+function getLastAssistantImagePrompt(
+  messages: IncomingMessage[],
+  currentMessage: string
+) {
+  const currentNormalized = normalizeText(currentMessage);
+
+  for (let i = messages.length - 1; i >= 0; i -= 1) {
+    const item = messages[i];
+
+    if (!item || item.role !== "assistant" || typeof item.content !== "string") {
+      continue;
+    }
+
+    const content = item.content.trim();
+    const normalized = normalizeText(content);
+
+    if (!normalized) continue;
+    if (normalized === currentNormalized) continue;
+
+    if (
+      normalized.includes("crie uma imagem publicitaria premium") ||
+      normalized.includes("objetivo:") ||
+      normalized.includes("personagem principal:") ||
+      normalized.includes("direcao visual:") ||
+      normalized.includes("instrucoes completas do usuario:")
+    ) {
+      return content;
+    }
+  }
+
+  return "";
+}
+
+function buildCampaignReply() {
+  return `🔥 Perfeito — vou te ajudar com campanha de vendas.
+
+Aqui está uma estrutura inicial pronta 👇
+
+1. Oferta
+Defina exatamente o que você está vendendo e qual o principal benefício.
+
+2. Chamada forte
+Use algo direto como:
+"Venda mais com uma campanha pronta para atrair clientes agora."
+
+3. Divulgação
+Publique no:
+- Instagram
+- WhatsApp
+- Facebook
+- Status
+
+4. Ação
+Sempre termine com uma chamada clara:
+"Fale agora", "Peça orçamento", "Chame no WhatsApp" ou "Compre agora".
+
+🚀 Se quiser, no próximo passo eu monto sua campanha completa pronta para copiar e usar.
+
+Se quiser liberar uso profissional ilimitado:
+ricardoiaoficial.com/planos`;
+}
+
+function buildImageGuidanceReply() {
+  return `🎨 Perfeito — vamos criar sua imagem profissional.
+
+Me envie agora uma descrição assim:
+
+- produto ou serviço
+- texto principal da imagem
+- estilo visual
+- cores
+- formato (Instagram, banner, anúncio ou capa)
+
+Exemplo:
+"Crie uma imagem vendendo a Aurora IA, com um robô futurista, visual premium, fundo tecnológico escuro, neon azul e verde, e texto forte de venda."
+
+👉 Escreva do seu jeito que eu monto o prompt completo para você.`;
+}
+
+function buildBusinessIdeaReply() {
+  return `💡 Perfeito — vamos criar uma ideia de negócio.
+
+Posso montar para você agora:
+
+- nome da ideia
+- público-alvo
+- como vender
+- diferencial
+- texto inicial de divulgação
+
+👉 Me diga o segmento que você quer, por exemplo:
+- locadora
+- mineração
+- agro
+- imóveis
+- loja
+- consultoria
+
+Se quiser, escreva só o ramo e eu monto a ideia completa.`;
+}
+
+function buildMonetizationReply() {
+  return `💰 Perfeito — monetizar a Aurora IA com muitos clientes exige 4 frentes ao mesmo tempo:
+
+1. Entrada de tráfego
+- Google Maps
+- Instagram
+- Google Meu Negócio
+- SEO da plataforma
+
+2. Conversão
+- chat com resposta rápida
+- campanhas prontas
+- imagens prontas
+- CTA para planos
+
+3. Monetização
+- plano FREE
+- plano Influencer
+- plano PRO
+- serviços extras
+
+4. Retenção
+- salvar leads
+- WhatsApp
+- indicações
+- perfil público por link
+
+🚀 Se quiser, no próximo passo eu monto agora um plano prático de monetização da Aurora IA com:
+- aquisição de clientes
+- oferta
+- planos
+- funil de vendas`;
+}
+
+function mergeImageInstructions(
+  baseRequest: string,
+  currentMessage: string,
+  assistantPrompt: string
+) {
+  const base = String(baseRequest || "").trim();
+  const current = String(currentMessage || "").trim();
+  const assistant = String(assistantPrompt || "").trim();
+
+  if (assistant && isAffirmative(current)) {
+    return `${base || "Aurora IA"}.
+Use como base o prompt anterior já aprovado pelo usuário e continue a partir dele.`;
+  }
+
+  if (!base && !current) {
+    return "Aurora IA, robô futurista premium, anúncio de alta conversão para ricardoiaoficial.com";
+  }
+
+  if (!base) return current;
+  if (!current) return base;
+
+  return `${base}. Ajustes adicionais pedidos pelo usuário: ${current}.`;
+}
+
+function buildImagePromptFromMessage(
+  message: string,
+  baseRequest?: string,
+  assistantPrompt?: string
+) {
+  const mergedRequest = mergeImageInstructions(
+    baseRequest || "",
+    message,
+    assistantPrompt || ""
+  );
+
+  return `Crie uma imagem publicitária premium para a Aurora IA com foco total em vendas.
+
+Objetivo:
+Vender o acesso à plataforma ricardoiaoficial.com com aparência extremamente profissional, encantadora e futurista.
+
+Personagem principal:
+- um robô feminino futurista representando a Aurora IA
+- extremamente inteligente, elegante, confiável e visualmente deslumbrante
+- aparência realista premium
+- presença forte de tecnologia avançada
+
+Direção visual:
+- estilo cinematográfico
+- iluminação dramática e refinada
+- fundo tecnológico escuro
+- efeitos neon azul, verde e detalhes luminosos
+- visual moderno, impactante e de alta conversão
+- composição luxuosa para anúncio profissional
+
+Texto sugerido na imagem:
+"Aurora IA"
+"Crie campanhas, imagens e ideias com inteligência artificial"
+"ricardoiaoficial.com"
+
+Formato e uso:
+- anúncio premium
+- Instagram
+- divulgação digital
+- visual encantador para vender muito
+
+Instruções completas do usuário:
+"${mergedRequest}"`;
+}
+
+function shouldGeneratePromptFromCurrentMessage(
+  currentMessage: string,
+  previousIntent: IntentType
+) {
+  const normalized = normalizeText(currentMessage);
+
+  if (isImageCreationRequest(normalized)) {
+    return true;
+  }
+
+  if (previousIntent === "imagem" && isImageRefinement(normalized)) {
+    return true;
+  }
+
+  if (previousIntent === "imagem" && isAffirmative(normalized)) {
+    return true;
+  }
+
+  return false;
+}
+
+async function saveLead(email: string, message: string) {
+  const supabase = getSupabaseAdmin();
+
+  if (!supabase) {
+    console.warn("Lead não salvo: variáveis do Supabase não configuradas.");
+    return { saved: false, reason: "supabase_not_configured" };
+  }
+
+  const cleanEmail = String(email || "").trim().toLowerCase();
+  if (!cleanEmail) {
+    return { saved: false, reason: "missing_email" };
+  }
+
+  const { nivel, interesse, score } = detectLeadData(message);
+
+  const { error } = await supabase.from("leads").insert({
+    email: cleanEmail,
+    nivel,
+    interesse,
+    score,
+    updated_at: new Date().toISOString(),
   });
 
-  const reply = completion.choices[0]?.message?.content?.trim();
+  if (error) {
+    console.error("Erro ao salvar lead:", error.message);
+    return { saved: false, reason: error.message };
+  }
 
-  return reply || "Recebi sua mensagem e estou pronta para ajudar.";
+  return {
+    saved: true,
+    nivel,
+    interesse,
+    score,
+  };
 }
 
-type ImageApiResponse = {
-  reply?: string | null;
-  message?: string | null;
-  imageUrl?: string | null;
-  imagePageUrl?: string | null;
-  publicPageUrl?: string | null;
-  shareUrl?: string | null;
-  savedToDatabase?: boolean | null;
-  databaseError?: string | null;
-  error?: string | null;
-};
-
-async function callImageApi(
-  baseUrl: string,
+function buildFallbackReply(
   message: string,
-  email: string | null
+  previousIntent: IntentType = "geral",
+  lastImageRequest = "",
+  lastAssistantImagePrompt = ""
 ) {
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 60000);
+  const currentIntent = detectIntent(message);
+  const normalized = normalizeText(message);
 
-  try {
-    const imageResponse = await fetch(`${baseUrl}/api/image`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      cache: "no-store",
-      signal: controller.signal,
-      body: JSON.stringify({
-        prompt: message,
-        email,
-      }),
-    });
-
-    const imageData = (await imageResponse.json()) as ImageApiResponse;
-
-    return {
-      ok: imageResponse.ok,
-      status: imageResponse.status,
-      data: imageData,
-    };
-  } finally {
-    clearTimeout(timeout);
+  if (currentIntent === "campanha") {
+    return buildCampaignReply();
   }
+
+  if (currentIntent === "imagem") {
+    const messageLooksDetailed =
+      normalized.length > 20 || isImageRefinement(normalized);
+
+    if (messageLooksDetailed) {
+      return buildImagePromptFromMessage(
+        message,
+        lastImageRequest,
+        lastAssistantImagePrompt
+      );
+    }
+
+    return buildImageGuidanceReply();
+  }
+
+  if (currentIntent === "ideia") {
+    return buildBusinessIdeaReply();
+  }
+
+  if (currentIntent === "monetizacao") {
+    return buildMonetizationReply();
+  }
+
+  if (previousIntent === "imagem") {
+    if (isAffirmative(normalized) || isImageRefinement(normalized)) {
+      return buildImagePromptFromMessage(
+        message,
+        lastImageRequest,
+        lastAssistantImagePrompt
+      );
+    }
+  }
+
+  if (previousIntent === "campanha" && isAffirmative(normalized)) {
+    return `🔥 Perfeito — aqui vai uma campanha inicial pronta para usar:
+
+Título:
+Aurora IA — inteligência artificial para vender, criar e acelerar resultados
+
+Texto:
+Crie campanhas, imagens e ideias de negócio em minutos com uma plataforma inteligente, moderna e pronta para o dia a dia.
+Acesse agora e descubra como vender mais com apoio da Aurora IA.
+
+CTA:
+Entre agora em ricardoiaoficial.com
+
+Se quiser, no próximo passo eu monto:
+- versão Instagram
+- versão WhatsApp
+- versão anúncio curto`;
+  }
+
+  if (previousIntent === "ideia" && isAffirmative(normalized)) {
+    return `💡 Perfeito — vamos estruturar sua ideia.
+
+Me diga agora só uma destas opções:
+- locadora
+- mineração
+- agro
+- imóveis
+- consultoria
+- outro segmento
+
+Escreva só o ramo que eu monto a ideia completa.`;
+  }
+
+  return `🔥 Eu posso te ajudar agora com:
+
+1. Criar campanha de vendas
+2. Gerar imagem profissional
+3. Ideia de negócio pronta
+
+👉 Me diga o número ou escreva o que você quer.`;
+}
+
+export async function GET() {
+  return NextResponse.json({
+    ok: true,
+    method: "GET",
+    message: "rota /api/chat ativa",
+  });
 }
 
 export async function POST(req: NextRequest) {
   try {
-    if (!hasOpenAi()) {
-      return jsonNoStore(
-        {
-          reply: "A chave da OpenAI não está configurada.",
-          error: "OPENAI_API_KEY não configurada.",
-          imageUrl: null,
-          imagePageUrl: null,
-          imageSaved: false,
-          imageSavedId: null,
-          imageSaveError: "OPENAI_API_KEY não configurada.",
-        },
-        { status: 500 }
-      );
+    const body = await req.json();
+
+    const email = extractEmailFromBody(body);
+    const message = extractMessageFromBody(body);
+    const messages = extractConversationMessages(body);
+
+    const previousIntent = getLastMeaningfulUserIntent(messages, message);
+    const currentIntent = detectIntent(message);
+    const lastImageRequest = getLastImageRequest(messages, message);
+    const lastAssistantImagePrompt = getLastAssistantImagePrompt(
+      messages,
+      message
+    );
+
+    let leadResult: any = null;
+
+    if (email && message) {
+      leadResult = await saveLead(email, message);
     }
 
-    const body = await readJsonBody(req);
-    const message = String(body?.message || "").trim();
-    const email = String(body?.email || "").trim().toLowerCase() || null;
+    const wantsPrompt = shouldGeneratePromptFromCurrentMessage(
+      message,
+      previousIntent
+    );
 
-    if (!message) {
-      return jsonNoStore(
-        {
-          reply: "Digite uma mensagem para eu continuar.",
-          error: "Mensagem não enviada.",
-          imageUrl: null,
-          imagePageUrl: null,
-          imageSaved: false,
-          imageSavedId: null,
-          imageSaveError: "Mensagem não enviada.",
-        },
-        { status: 400 }
-      );
-    }
+    const reply =
+      typeof body?.mockReply === "string" && body.mockReply.trim()
+        ? body.mockReply.trim()
+        : wantsPrompt
+        ? buildImagePromptFromMessage(
+            message,
+            lastImageRequest,
+            lastAssistantImagePrompt
+          )
+        : buildFallbackReply(
+            message,
+            previousIntent,
+            lastImageRequest,
+            lastAssistantImagePrompt
+          );
 
-    const wantsImage = shouldGenerateImage(message);
-
-    if (!wantsImage) {
-      const reply = await generateTextReply(message);
-
-      return jsonNoStore(
-        {
-          reply,
-          imageUrl: null,
-          imagePageUrl: null,
-          imageSaved: false,
-          imageSavedId: null,
-          imageSaveError: null,
-        },
-        { status: 200 }
-      );
-    }
-
-    const baseUrl = getBaseUrl(req);
-
-    try {
-      const imageResult = await callImageApi(baseUrl, message, email);
-      const imageData = imageResult.data;
-
-      const imageUrl = imageData.imageUrl || null;
-      const imagePageUrl =
-        imageData.imagePageUrl ||
-        imageData.publicPageUrl ||
-        imageData.shareUrl ||
-        imageUrl;
-
-      const reply =
-        imageData.reply?.trim() ||
-        imageData.message?.trim() ||
-        (imageUrl
-          ? "Imagem gerada com sucesso. Exibindo no chat."
-          : "Recebi seu pedido de imagem, mas não consegui gerar agora.");
-
-      return jsonNoStore(
-        {
-          reply,
-          imageUrl,
-          imagePageUrl,
-          imageSaved: Boolean(imageData.savedToDatabase),
-          imageSavedId: null,
-          imageSaveError: imageData.databaseError || imageData.error || null,
-        },
-        {
-          status: imageResult.ok ? 200 : 500,
-        }
-      );
-    } catch (error) {
-      const readableError =
-        error instanceof Error && error.name === "AbortError"
-          ? "Tempo excedido ao gerar imagem."
-          : getReadableError(error);
-
-      console.error("Aurora IA: erro ao chamar /api/image pelo chat:", error);
-
-      return jsonNoStore(
-        {
-          reply: `Recebi seu pedido de imagem, mas não consegui gerar agora. Motivo: ${readableError}`,
-          error: readableError,
-          imageUrl: null,
-          imagePageUrl: null,
-          imageSaved: false,
-          imageSavedId: null,
-          imageSaveError: readableError,
-        },
-        { status: 500 }
-      );
-    }
+    return NextResponse.json({
+      ok: true,
+      reply,
+      leadSaved: Boolean(leadResult?.saved),
+      leadResult,
+      detectedIntent: currentIntent,
+      previousIntent,
+      lastImageRequest,
+    });
   } catch (error) {
-    const readableError = getReadableError(error);
+    console.error("Erro em /api/chat:", error);
 
-    console.error("Aurora IA: erro em /api/chat:", error);
-
-    return jsonNoStore(
+    return NextResponse.json(
       {
-        reply: `Recebi sua mensagem, mas ocorreu um erro interno no chat. Motivo: ${readableError}`,
-        error: readableError,
-        imageUrl: null,
-        imagePageUrl: null,
-        imageSaved: false,
-        imageSavedId: null,
-        imageSaveError: readableError,
+        ok: false,
+        error: "Erro interno no chat.",
       },
       { status: 500 }
     );
