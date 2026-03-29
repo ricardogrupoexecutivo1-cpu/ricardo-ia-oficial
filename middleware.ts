@@ -40,7 +40,6 @@ export function middleware(request: NextRequest) {
     "/agro/cadastro": "/agro/cadastrar",
     "/agro/imoveis": "/agro",
 
-    "/locadora": "/cadastro-veiculos",
     "/locadora/veiculos": "/cadastro-veiculos",
     "/locadora/cadastro-veiculos": "/cadastro-veiculos",
     "/veiculos": "/cadastro-veiculos",
@@ -98,11 +97,6 @@ export function middleware(request: NextRequest) {
 
   if (pathname.startsWith("/veiculos/") && !pathname.startsWith("/cadastro-veiculos/")) {
     url.pathname = pathname.replace("/veiculos/", "/cadastro-veiculos/");
-    return NextResponse.redirect(url, 308);
-  }
-
-  if (pathname.startsWith("/locadora/") && pathname !== "/locadora/veiculos") {
-    url.pathname = "/cadastro-veiculos";
     return NextResponse.redirect(url, 308);
   }
 

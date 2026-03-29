@@ -32,7 +32,7 @@ export default function LocadoraPage() {
             marginBottom: 20,
           }}
         >
-          Aurora Locadoras
+          Aurora Locadora
         </div>
 
         <h1
@@ -45,7 +45,7 @@ export default function LocadoraPage() {
           }}
         >
           Gestão comercial e cadastros da
-          <span style={{ color: "#22c55e" }}> Aurora Locadoras</span>
+          <span style={{ color: "#22c55e" }}> Aurora Locadora</span>
         </h1>
 
         <p
@@ -62,7 +62,6 @@ export default function LocadoraPage() {
           constante atualização e pode haver momentos de instabilidade.
         </p>
 
-        {/* BOTÕES PRINCIPAIS */}
         <div
           style={{
             display: "flex",
@@ -76,7 +75,7 @@ export default function LocadoraPage() {
           </Link>
 
           <Link href="/locadora/clientes" style={primaryButton}>
-            📋 Ver clientes cadastrados
+            Ver clientes cadastrados
           </Link>
 
           <Link href="/locadora/admin" style={secondaryButton}>
@@ -84,11 +83,10 @@ export default function LocadoraPage() {
           </Link>
 
           <Link href="/" style={secondaryButton}>
-            Voltar para home
+            Voltar para Home
           </Link>
         </div>
 
-        {/* AÇÕES RÁPIDAS */}
         <div
           style={{
             display: "flex",
@@ -98,7 +96,7 @@ export default function LocadoraPage() {
           }}
         >
           <Link href="/locadora/seminovos" style={primaryButton}>
-            🚗 Ver Seminovos
+            Ver seminovos
           </Link>
 
           <a
@@ -107,15 +105,14 @@ export default function LocadoraPage() {
             rel="noreferrer"
             style={whatsButton}
           >
-            📲 Locação / Comercial
+            Locação / Comercial
           </a>
 
           <Link href="/locadora/transporte" style={secondaryButton}>
-            🚛 Transporte
+            Transporte
           </Link>
         </div>
 
-        {/* CARDS */}
         <section style={{ marginTop: 42 }}>
           <div
             style={{
@@ -135,7 +132,7 @@ export default function LocadoraPage() {
               </article>
             </Link>
 
-            <Link href="/locadora/cadastros?tipo=clientes" style={card}>
+            <Link href="/locadora/cadastros?tipo=clientes" style={cardLink}>
               <article style={card}>
                 <div style={emojiBox}>👤</div>
                 <h2 style={title}>Cadastrar clientes</h2>
@@ -170,7 +167,6 @@ export default function LocadoraPage() {
           </div>
         </section>
 
-        {/* FLUXO */}
         <section
           style={{
             marginTop: 46,
@@ -257,6 +253,7 @@ const whatsButton = {
 };
 
 const cardLink = {
+  display: "block",
   textDecoration: "none",
   color: "inherit",
 };
@@ -265,6 +262,8 @@ const card = {
   padding: 22,
   borderRadius: 22,
   background: "rgba(15,23,42,0.92)",
+  border: "1px solid rgba(148,163,184,0.14)",
+  minHeight: 220,
 };
 
 const emojiBox = {
@@ -273,12 +272,15 @@ const emojiBox = {
 };
 
 const title = {
+  margin: "0 0 10px",
   fontSize: 22,
   fontWeight: 800,
 };
 
 const text = {
+  margin: "0 0 14px",
   color: "#cbd5e1",
+  lineHeight: 1.6,
 };
 
 const actionGreen = {
@@ -290,4 +292,5 @@ const stepBox = {
   padding: 16,
   borderRadius: 16,
   background: "rgba(2,6,23,0.72)",
+  border: "1px solid rgba(148,163,184,0.10)",
 };
