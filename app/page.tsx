@@ -33,6 +33,24 @@ const quickLinks: QuickLink[] = [
     icon: "🛡️",
   },
   {
+    href: "/agro",
+    title: "AGRO",
+    subtitle: "Área para produtores, fornecedores, compradores, serviços e operação do agro.",
+    icon: "🌱",
+  },
+  {
+    href: "/imobiliarias",
+    title: "Imobiliárias",
+    subtitle: "Área comercial para imobiliárias, corretores, anúncios e operação imobiliária.",
+    icon: "🏢",
+  },
+  {
+    href: "/imoveis",
+    title: "Imóveis",
+    subtitle: "Área pública de imóveis, busca, cadastros e expansão do setor imobiliário.",
+    icon: "🏠",
+  },
+  {
     href: "/mineracao",
     title: "Mineração",
     subtitle: "Área dedicada ao setor mineral, fornecedores e oportunidades.",
@@ -80,7 +98,7 @@ const pillars = [
 const highlights = [
   "Home reorganizada para acesso rápido às áreas estratégicas.",
   "Botão Viral visível logo na entrada da plataforma.",
-  "Atalhos diretos para Mineração, App Builder, Cadastro Geral, Guardião e Locadora.",
+  "Atalhos diretos para AGRO, Imobiliárias, Mineração, App Builder, Cadastro Geral, Guardião e Locadora.",
   "Blocos claros para reduzir confusão e acelerar operação.",
 ];
 
@@ -176,9 +194,10 @@ export default function HomePage() {
                 }}
               >
                 Plataforma em expansão para cadastro geral, operação real, app
-                builder, leitura pública protegida, mineração, locadora,
-                crescimento e divulgação. Estamos em constante atualização e pode
-                haver momentos de instabilidade.
+                builder, leitura pública protegida, agro, imobiliárias,
+                imóveis, mineração, locadora, crescimento e divulgação.
+                Estamos em constante atualização e pode haver momentos de
+                instabilidade.
               </p>
             </div>
 
@@ -192,6 +211,14 @@ export default function HomePage() {
             >
               <Link href="/cadastro" style={ctaGreen}>
                 Entrar no Cadastro Geral
+              </Link>
+
+              <Link href="/agro" style={ctaBlue}>
+                Abrir AGRO
+              </Link>
+
+              <Link href="/imobiliarias" style={ctaBlue}>
+                Abrir Imobiliárias
               </Link>
 
               <Link href="/locadora" style={ctaBlue}>
@@ -479,12 +506,16 @@ export default function HomePage() {
                 Ver planos
               </Link>
 
-              <Link href="/locadora" style={ctaBlueSoft}>
-                Entrar na Locadora
+              <Link href="/agro" style={ctaBlueSoft}>
+                Entrar no AGRO
               </Link>
 
-              <Link href="/cadastro-veiculos" style={ctaDarkSoft}>
-                Abrir Cadastro de Veículos
+              <Link href="/imobiliarias" style={ctaBlueSoft}>
+                Entrar em Imobiliárias
+              </Link>
+
+              <Link href="/locadora" style={ctaBlueSoft}>
+                Entrar na Locadora
               </Link>
             </div>
           </aside>
