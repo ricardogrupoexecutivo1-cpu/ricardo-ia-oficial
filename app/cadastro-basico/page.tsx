@@ -117,8 +117,9 @@ export default function CadastroBasicoPage() {
           `Welcome, ${data.nome || nome.trim()}! Your initial access has been successfully enabled.`
       );
 
+      // 🔥 ALTERAÇÃO PRINCIPAL AQUI
       router.push(
-        `/chat?welcome=1&name=${nomeSafe}&email=${emailSafe}&welcomePt=${welcomePtSafe}&welcomeEn=${welcomeEnSafe}`
+        `/?welcome=1&name=${nomeSafe}&email=${emailSafe}&welcomePt=${welcomePtSafe}&welcomeEn=${welcomeEnSafe}`
       );
     } catch (error) {
       const message = getErrorMessage(error);
@@ -228,12 +229,7 @@ export default function CadastroBasicoPage() {
           </div>
 
           <form onSubmit={handleSubmit} style={{ marginTop: 24 }}>
-            <div
-              style={{
-                display: "grid",
-                gap: 16,
-              }}
-            >
+            <div style={{ display: "grid", gap: 16 }}>
               <div style={fieldWrap}>
                 <label style={labelStyle}>Nome</label>
                 <input
@@ -242,7 +238,6 @@ export default function CadastroBasicoPage() {
                   onChange={(e) => setNome(e.target.value)}
                   placeholder="Ex.: Ricardo Leonardo Moreira"
                   style={inputStyle}
-                  autoComplete="name"
                 />
               </div>
 
@@ -254,20 +249,16 @@ export default function CadastroBasicoPage() {
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="Ex.: ricardogrupoexecutivo1@gmail.com"
                   style={inputStyle}
-                  autoComplete="email"
-                  inputMode="email"
                 />
               </div>
             </div>
 
-            {feedback ? (
+            {feedback && (
               <div
                 style={{
                   marginTop: 18,
                   borderRadius: 16,
                   padding: 16,
-                  lineHeight: 1.7,
-                  whiteSpace: "pre-wrap",
                   border:
                     feedbackType === "error"
                       ? "1px solid rgba(239,68,68,0.35)"
@@ -281,16 +272,9 @@ export default function CadastroBasicoPage() {
               >
                 {feedback}
               </div>
-            ) : null}
+            )}
 
-            <div
-              style={{
-                display: "flex",
-                flexWrap: "wrap",
-                gap: 14,
-                marginTop: 24,
-              }}
-            >
+            <div style={{ display: "flex", gap: 14, marginTop: 24 }}>
               <button type="submit" style={primaryButton} disabled={saving}>
                 {saving ? "Salvando..." : "🚀 ENTRAR AGORA"}
               </button>
@@ -300,17 +284,6 @@ export default function CadastroBasicoPage() {
               </Link>
             </div>
           </form>
-
-          <div
-            style={{
-              marginTop: 22,
-              fontSize: 14,
-              color: "#86efac",
-              fontWeight: 700,
-            }}
-          >
-            🔒 Plataforma protegida com bloqueio de atividades maliciosas e ações suspeitas.
-          </div>
         </section>
       </div>
     </main>
@@ -348,35 +321,25 @@ const inputStyle: React.CSSProperties = {
   background: "rgba(2,6,23,0.55)",
   color: "#ffffff",
   padding: "14px 16px",
-  outline: "none",
-  fontSize: 15,
 };
 
 const primaryButton: React.CSSProperties = {
-  display: "inline-flex",
-  alignItems: "center",
-  justifyContent: "center",
   minHeight: 54,
   padding: "0 22px",
   borderRadius: 16,
   background: "linear-gradient(135deg, #22c55e 0%, #14b8a6 100%)",
   color: "#03130d",
-  textDecoration: "none",
   fontWeight: 900,
   border: "none",
   cursor: "pointer",
 };
 
 const secondaryButton: React.CSSProperties = {
-  display: "inline-flex",
-  alignItems: "center",
-  justifyContent: "center",
   minHeight: 54,
   padding: "0 22px",
   borderRadius: 16,
   background: "rgba(15,23,42,0.72)",
   color: "#f8fafc",
-  textDecoration: "none",
   fontWeight: 900,
   border: "1px solid rgba(148,163,184,0.18)",
 };
