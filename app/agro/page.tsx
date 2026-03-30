@@ -6,221 +6,217 @@ export default function AgroPage() {
       style={{
         minHeight: "100vh",
         background:
-          "radial-gradient(circle at top, rgba(34,197,94,0.18), transparent 30%), #050816",
-        color: "#e5eef8",
-        padding: "32px 16px 80px",
+          "radial-gradient(circle at top, rgba(34,197,94,0.18), transparent 24%), linear-gradient(180deg, #07111f 0%, #08101a 35%, #05080f 100%)",
+        color: "#f8fafc",
+        padding: "32px 18px 80px",
       }}
     >
-      <div style={{ maxWidth: 1100, margin: "0 auto" }}>
+      <div
+        style={{
+          maxWidth: 1180,
+          margin: "0 auto",
+        }}
+      >
         <div
           style={{
             display: "flex",
-            gap: 12,
             flexWrap: "wrap",
-            marginBottom: 16,
+            gap: 12,
+            marginBottom: 18,
           }}
         >
-          <Link
-            href="/"
-            style={{
-              color: "#93c5fd",
-              textDecoration: "none",
-              border: "1px solid rgba(147,197,253,0.25)",
-              borderRadius: 999,
-              padding: "10px 14px",
-            }}
-          >
+          <Link href="/" style={navStyle("#93c5fd")}>
             Voltar à Home
           </Link>
-
-          <Link
-            href="/app-builder"
-            style={{
-              color: "#86efac",
-              textDecoration: "none",
-              border: "1px solid rgba(134,239,172,0.25)",
-              borderRadius: 999,
-              padding: "10px 14px",
-            }}
-          >
-            Ir para o App Builder
+          <Link href="/cadastro-basico" style={navStyle("#86efac")}>
+            Cadastro básico
           </Link>
-
-          <Link
-            href="/guardiao"
-            style={{
-              color: "#facc15",
-              textDecoration: "none",
-              border: "1px solid rgba(250,204,21,0.25)",
-              borderRadius: 999,
-              padding: "10px 14px",
-            }}
-          >
-            Ir para o Guardião
+          <Link href="/chat" style={navStyle("#c4b5fd")}>
+            Ir para o Chat
           </Link>
         </div>
 
         <section
           style={{
-            border: "1px solid rgba(148,163,184,0.18)",
-            background: "rgba(15,23,42,0.72)",
-            backdropFilter: "blur(10px)",
-            borderRadius: 24,
-            padding: 24,
-            boxShadow: "0 20px 80px rgba(0,0,0,0.35)",
-            marginBottom: 24,
+            borderRadius: 28,
+            padding: 28,
+            background: "rgba(8,15,28,0.88)",
+            border: "1px solid rgba(148,163,184,0.16)",
+            boxShadow: "0 25px 70px rgba(0,0,0,0.25)",
           }}
         >
           <div
             style={{
               display: "inline-flex",
-              padding: "8px 12px",
+              alignItems: "center",
+              gap: 10,
+              padding: "8px 14px",
               borderRadius: 999,
-              background: "rgba(34,197,94,0.14)",
-              border: "1px solid rgba(34,197,94,0.25)",
-              color: "#86efac",
+              background: "rgba(34,197,94,0.12)",
+              border: "1px solid rgba(34,197,94,0.26)",
+              color: "#bbf7d0",
+              fontWeight: 800,
               fontSize: 13,
-              fontWeight: 700,
-              letterSpacing: 0.3,
-              marginBottom: 14,
+              marginBottom: 16,
             }}
           >
-            Aurora AGRO
+            🌱 AGRO • AURORA IA
           </div>
 
           <h1
             style={{
-              fontSize: 36,
-              lineHeight: 1.05,
               margin: 0,
+              fontSize: "clamp(2rem, 5vw, 4rem)",
+              lineHeight: 1.05,
+              fontWeight: 900,
+              letterSpacing: "-0.04em",
             }}
           >
-            Plataforma AGRO em atualização
+            Aurora AGRO
           </h1>
 
           <p
             style={{
-              color: "#94a3b8",
-              marginTop: 14,
-              maxWidth: 820,
-              fontSize: 16,
-              lineHeight: 1.7,
+              marginTop: 18,
+              maxWidth: 860,
+              color: "#cbd5e1",
+              fontSize: 17,
+              lineHeight: 1.8,
             }}
           >
-            Esta área da Aurora está em evolução para atender produtores,
-            fornecedores, compradores, logística, oportunidades comerciais e
-            operação do setor agro. Estamos em constante atualização e pode haver
-            momentos de instabilidade.
+            Cadastro, negócios, vitrine e conexão do agro brasileiro.
+            Esta área foi colocada no ar para eliminar rota quebrada,
+            abrir entrada comercial e permitir crescimento com segurança.
           </p>
-        </section>
-
-        <section
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-            gap: 16,
-            marginBottom: 24,
-          }}
-        >
-          <div
-            style={{
-              borderRadius: 20,
-              padding: 18,
-              background: "rgba(15,23,42,0.72)",
-              border: "1px solid rgba(148,163,184,0.16)",
-            }}
-          >
-            <div style={{ fontSize: 12, color: "#94a3b8" }}>Status atual</div>
-            <div style={{ fontWeight: 800, fontSize: 20, marginTop: 8 }}>
-              Página ativa
-            </div>
-            <p style={{ color: "#cbd5e1", marginTop: 10, marginBottom: 0 }}>
-              O 404 desta rota foi eliminado e a área já está preparada para
-              crescer.
-            </p>
-          </div>
-
-          <div
-            style={{
-              borderRadius: 20,
-              padding: 18,
-              background: "rgba(15,23,42,0.72)",
-              border: "1px solid rgba(148,163,184,0.16)",
-            }}
-          >
-            <div style={{ fontSize: 12, color: "#94a3b8" }}>Objetivo</div>
-            <div style={{ fontWeight: 800, fontSize: 20, marginTop: 8 }}>
-              Expansão do AGRO
-            </div>
-            <p style={{ color: "#cbd5e1", marginTop: 10, marginBottom: 0 }}>
-              Estruturar cadastro, oportunidades, fornecedores e operação real
-              dentro da Aurora.
-            </p>
-          </div>
-
-          <div
-            style={{
-              borderRadius: 20,
-              padding: 18,
-              background: "rgba(15,23,42,0.72)",
-              border: "1px solid rgba(148,163,184,0.16)",
-            }}
-          >
-            <div style={{ fontSize: 12, color: "#94a3b8" }}>Próximo passo</div>
-            <div style={{ fontWeight: 800, fontSize: 20, marginTop: 8 }}>
-              Estrutura comercial
-            </div>
-            <p style={{ color: "#cbd5e1", marginTop: 10, marginBottom: 0 }}>
-              Criar páginas internas, busca real, cadastro e integração com a
-              operação do projeto.
-            </p>
-          </div>
-        </section>
-
-        <section
-          style={{
-            borderRadius: 24,
-            padding: 24,
-            background: "rgba(15,23,42,0.72)",
-            border: "1px solid rgba(148,163,184,0.18)",
-            boxShadow: "0 20px 80px rgba(0,0,0,0.35)",
-          }}
-        >
-          <h2 style={{ fontSize: 24, marginTop: 0 }}>Áreas previstas</h2>
 
           <div
             style={{
               display: "grid",
               gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-              gap: 14,
-              marginTop: 18,
+              gap: 16,
+              marginTop: 24,
             }}
           >
-            {[
-              "Cadastro de produtores",
-              "Cadastro de fornecedores",
-              "Oportunidades comerciais",
-              "Logística e operação",
-              "Painel gerencial",
-              "Contato e captação",
-            ].map((item) => (
-              <div
-                key={item}
-                style={{
-                  borderRadius: 16,
-                  padding: 16,
-                  background: "rgba(2,6,23,0.45)",
-                  border: "1px solid rgba(148,163,184,0.14)",
-                  color: "#e2e8f0",
-                  fontWeight: 700,
-                }}
-              >
-                {item}
-              </div>
-            ))}
+            <InfoCard
+              title="Objetivo"
+              text="Atrair produtores, fornecedores, compradores e parceiros do AGRO."
+            />
+            <InfoCard
+              title="Entrada rápida"
+              text="Comece pelo cadastro básico e complete o resto depois."
+            />
+            <InfoCard
+              title="Expansão"
+              text="Área em constante atualização, pronta para crescer por região e segmento."
+            />
+          </div>
+
+          <div
+            style={{
+              display: "flex",
+              flexWrap: "wrap",
+              gap: 14,
+              marginTop: 28,
+            }}
+          >
+            <Link href="/cadastro-basico" style={primaryButton}>
+              🚀 ENTRAR NO AGRO AGORA
+            </Link>
+
+            <Link href="/chat" style={secondaryButton}>
+              💬 FALAR COM A AURORA
+            </Link>
+          </div>
+
+          <div
+            style={{
+              marginTop: 22,
+              fontSize: 14,
+              color: "#86efac",
+              fontWeight: 700,
+            }}
+          >
+            🔒 Plataforma protegida com bloqueio de atividades maliciosas e ações suspeitas.
           </div>
         </section>
       </div>
     </main>
   );
 }
+
+function InfoCard({
+  title,
+  text,
+}: {
+  title: string;
+  text: string;
+}) {
+  return (
+    <div
+      style={{
+        borderRadius: 20,
+        padding: 18,
+        background: "rgba(15,23,42,0.72)",
+        border: "1px solid rgba(148,163,184,0.14)",
+      }}
+    >
+      <div
+        style={{
+          fontWeight: 800,
+          fontSize: 17,
+          marginBottom: 10,
+        }}
+      >
+        {title}
+      </div>
+      <div
+        style={{
+          color: "#cbd5e1",
+          lineHeight: 1.7,
+          fontSize: 15,
+        }}
+      >
+        {text}
+      </div>
+    </div>
+  );
+}
+
+function navStyle(color: string): React.CSSProperties {
+  return {
+    color,
+    textDecoration: "none",
+    border: `1px solid ${color}33`,
+    borderRadius: 999,
+    padding: "10px 14px",
+    fontWeight: 700,
+    background: "rgba(15,23,42,0.45)",
+  };
+}
+
+const primaryButton: React.CSSProperties = {
+  display: "inline-flex",
+  alignItems: "center",
+  justifyContent: "center",
+  minHeight: 54,
+  padding: "0 22px",
+  borderRadius: 16,
+  background: "linear-gradient(135deg, #22c55e 0%, #14b8a6 100%)",
+  color: "#03130d",
+  textDecoration: "none",
+  fontWeight: 900,
+};
+
+const secondaryButton: React.CSSProperties = {
+  display: "inline-flex",
+  alignItems: "center",
+  justifyContent: "center",
+  minHeight: 54,
+  padding: "0 22px",
+  borderRadius: 16,
+  background: "rgba(15,23,42,0.72)",
+  color: "#f8fafc",
+  textDecoration: "none",
+  fontWeight: 900,
+  border: "1px solid rgba(148,163,184,0.18)",
+};
