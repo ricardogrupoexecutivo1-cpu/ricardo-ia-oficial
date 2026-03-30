@@ -1,82 +1,104 @@
 "use client";
 
-import { track } from "@vercel/analytics";
-
-type Primitive = string | number | boolean | null | undefined;
-type EventProperties = Record<string, Primitive>;
-
-export function trackEvent(
-  name: string,
-  properties?: EventProperties
-) {
-  try {
-    track(name, properties);
-  } catch (error) {
-    console.warn("Analytics error:", error);
+declare global {
+  interface Window {
+    gtag?: (...args: unknown[]) => void;
+    dataLayer?: unknown[];
   }
 }
 
-// =========================
-// CHAT
-// =========================
+function safeGtag(...args: unknown[]) {
+  if (typeof window === "undefined") return;
 
-export function trackChatOpened(...args: any[]) {
-  const [source] = args;
+  try {
+    if (typeof window.gtag === "function") {
+      window.gtag(...args);
+      return;
+    }
 
-  trackEvent("chat_opened", {
-    source,
+    if (Array.isArray(window.dataLayer)) {
+      window.dataLayer.push(args);
+    }
+  } catch (error) {
+    console.error("Erro no analytics:", error);
+  }
+}
+
+function safeEvent(eventName: string, params?: Record<string, unknown>) {
+  safeGtag("event", eventName, params || {});
+}
+
+export function trackChatOpened(origin = "chat-page") {
+  safeEvent("chat_opened", { origin });
+}
+
+export function trackChatMessageSent(
+  origin = "chat-page",
+  hasEmail = false,
+  messageLength = 0
+) {
+  safeEvent("chat_message_sent", {
+    origin,
+    has_email: hasEmail,
+    message_length: messageLength,
   });
 }
 
-export function trackChatMessageSent(...args: any[]) {
-  const [source, hasEmail, length] = args;
-
-  trackEvent("chat_message_sent", {
-    source,
-    hasEmail,
-    length,
+export function trackImageGenerationRequested(
+  origin = "chat-page",
+  hasEmail = false,
+  promptLength = 0
+) {
+  safeEvent("image_generation_requested", {
+    origin,
+    has_email: hasEmail,
+    prompt_length: promptLength,
   });
 }
 
-// =========================
-// IMAGENS
-// =========================
-
-export function trackImageGenerationRequested(...args: any[]) {
-  const [source, hasEmail, length] = args;
-
-  trackEvent("image_generation_requested", {
-    source,
-    hasEmail,
-    length,
+export function trackImageGenerationSucceeded(
+  origin = "chat-page",
+  provider = "unknown"
+) {
+  safeEvent("image_generation_succeeded", {
+    origin,
+    provider,
   });
 }
 
-export function trackImageGenerationSucceeded(...args: any[]) {
-  const [source] = args;
-
-  trackEvent("image_generation_succeeded", {
-    source,
+export function trackImageGenerationFailed(
+  origin = "chat-page",
+  reason = "unknown"
+) {
+  safeEvent("image_generation_failed", {
+    origin,
+    reason,
   });
 }
 
-export function trackImageGenerationFailed(...args: any[]) {
-  const [error, source] = args;
+export function trackReferralLinkCopied(origin = "chat-page") {
+  safeEvent("referral_link_copied", { origin });
+}
 
-  trackEvent("image_generation_failed", {
-    error,
-    source,
+export function trackCadastroBasicoClick(origin = "unknown") {
+  safeEvent("cadastro_basico_click", { origin });
+}
+
+export function trackCadastroGeralSaved(origin = "cadastro-geral") {
+  safeEvent("cadastro_geral_saved", { origin });
+}
+
+export function trackSegmentClick(segment = "unknown", origin = "home") {
+  safeEvent("segment_click", {
+    segment,
+    origin,
   });
 }
 
-// =========================
-// REFERRAL
-// =========================
+export function trackBankPartnerClick(origin = "home") {
+  safeEvent("bank_partner_click", { origin });
+}
 
-export function trackReferralLinkCopied(...args: any[]) {
-  const [source] = args;
-
-  trackEvent("referral_link_copied", {
-    source,
-  });
+export function trackChatCtaClick(origin = "home") {
+  safeEvent("chat_cta_click", { origin });
 }
