@@ -1,105 +1,49 @@
 import Link from "next/link";
 
-type QuickLink = {
-  href: string;
-  title: string;
-  subtitle: string;
-  icon: string;
-};
-
-const quickLinks: QuickLink[] = [
+const quickCards = [
   {
+    title: "Crie seu próprio aplicativo",
+    text: "Monte seu app na Aurora IA mesmo sem programar e comece sua operação digital agora.",
     href: "/chat",
-    title: "Aurora Responde",
-    subtitle: "Converse, peça ideias, campanhas, imagens e apoio comercial.",
-    icon: "💬",
+    cta: "Criar meu app agora",
+    icon: "📱",
   },
   {
-    href: "/app-builder",
-    title: "App Builder",
-    subtitle: "Monte novos apps, estruturas e páginas para clientes ou uso interno.",
-    icon: "🛠️",
-  },
-  {
-    href: "/cadastro",
-    title: "Cadastro Geral",
-    subtitle: "Base principal para empresas, profissionais, parceiros e operações.",
-    icon: "📋",
-  },
-  {
-    href: "/guardiao",
-    title: "Guardião",
-    subtitle: "Leitura, controle e edição da camada pública dos cadastros reais.",
-    icon: "🛡️",
-  },
-  {
-    href: "/agro",
-    title: "AGRO",
-    subtitle: "Área para produtores, fornecedores, compradores, serviços e operação do agro.",
-    icon: "🌱",
-  },
-  {
-    href: "/imobiliarias",
-    title: "Imobiliárias",
-    subtitle: "Área comercial para imobiliárias, corretores, anúncios e operação imobiliária.",
-    icon: "🏢",
-  },
-  {
-    href: "/imoveis",
-    title: "Imóveis",
-    subtitle: "Área pública de imóveis, busca, cadastros e expansão do setor imobiliário.",
-    icon: "🏠",
-  },
-  {
-    href: "/mineracao",
-    title: "Mineração",
-    subtitle: "Área dedicada ao setor mineral, fornecedores e oportunidades.",
-    icon: "⛏️",
-  },
-  {
-    href: "/locadora",
-    title: "Aurora Locadora",
-    subtitle: "Área comercial para locadoras, veículos, clientes e operação.",
-    icon: "🚗",
-  },
-  {
-    href: "/cadastro-veiculos",
-    title: "Cadastro de Veículos",
-    subtitle: "Módulo real para cadastrar, listar e organizar veículos.",
-    icon: "📄",
-  },
-  {
-    href: "/viral",
-    title: "Viral",
-    subtitle: "Área visível para tráfego, crescimento, compartilhamento e divulgação.",
+    title: "Entre rápido com cadastro básico",
+    text: "Preencha apenas nome e e-mail para entrar. O cadastro completo pode ser concluído depois, sem travar interesse.",
+    href: "/cadastro-basico",
+    cta: "Fazer cadastro básico",
     icon: "🚀",
   },
-];
-
-const pillars = [
   {
-    title: "Cadastro sério e completo",
-    text: "Estrutura preparada para nível Brasil, estadual, regional, municipal, local ou multilocal, com espaço para crescer junto com a plataforma.",
+    title: "Consiga clientes e oportunidades",
+    text: "Use a plataforma para gerar negócios reais, divulgar sua empresa e atrair novos contatos.",
+    href: "/chat",
+    cta: "Entrar e começar",
+    icon: "💰",
   },
   {
-    title: "Sistema super editável",
-    text: "Segmentos, profissões, produtos e serviços precisam poder evoluir sem travar a operação nem obrigar retrabalho.",
-  },
-  {
-    title: "Privacidade por padrão",
-    text: "Dados pessoais e dados sensíveis não devem ficar públicos. A camada pública mostra apenas o que for seguro e publicável.",
-  },
-  {
-    title: "Mobile-first real",
-    text: "A navegação principal foi organizada para funcionar bem no celular, que é onde boa parte do tráfego já acontece.",
+    title: "Motoristas, fornecedores e empresas",
+    text: "Cadastre-se para aparecer, vender, trabalhar e participar do ecossistema da Aurora IA.",
+    href: "/cadastro-basico",
+    cta: "Começar agora",
+    icon: "🌍",
   },
 ];
 
-const highlights = [
-  "Home reorganizada para acesso rápido às áreas estratégicas.",
-  "Botão Viral visível logo na entrada da plataforma.",
-  "Atalhos diretos para AGRO, Imobiliárias, Mineração, App Builder, Cadastro Geral, Guardião e Locadora.",
-  "Blocos claros para reduzir confusão e acelerar operação.",
+const highlightCards = [
+  {
+    title: "Entrada rápida",
+    text: "Cadastro em menos de 2 minutos para começar agora e completar os dados depois.",
+  },
+  {
+    title: "Sem programação",
+    text: "A plataforma foi feita para colocar mais gente para dentro com velocidade e baixa fricção.",
+  },
+  {
+    title: "Crescimento real",
+    text: "Usuários já estão entrando no Brasil e no exterior, com tráfego vindo de redes sociais e busca.",
+  },
 ];
 
 export default function HomePage() {
@@ -108,487 +52,640 @@ export default function HomePage() {
       style={{
         minHeight: "100vh",
         background:
-          "radial-gradient(circle at top, rgba(22,163,74,0.18), transparent 28%), linear-gradient(180deg, #06110b 0%, #08140f 35%, #07110c 100%)",
-        color: "#e5fff1",
+          "radial-gradient(circle at top, rgba(16,185,129,0.22), transparent 22%), linear-gradient(180deg, #07111f 0%, #08101a 35%, #05080f 100%)",
+        color: "#f8fafc",
       }}
     >
       <section
         style={{
-          maxWidth: 1180,
+          maxWidth: 1240,
           margin: "0 auto",
-          padding: "20px 16px 48px",
+          padding: "32px 20px 88px",
         }}
       >
         <header
           style={{
-            position: "relative",
-            overflow: "hidden",
-            border: "1px solid rgba(74, 222, 128, 0.18)",
-            background:
-              "linear-gradient(180deg, rgba(11, 26, 18, 0.96) 0%, rgba(8, 19, 13, 0.98) 100%)",
-            borderRadius: 24,
-            padding: "18px 16px 24px",
-            boxShadow: "0 20px 60px rgba(0,0,0,0.35)",
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            gap: 16,
+            flexWrap: "wrap",
+            marginBottom: 32,
           }}
         >
-          <div
-            aria-hidden="true"
-            style={{
-              position: "absolute",
-              inset: 0,
-              pointerEvents: "none",
-              background:
-                "linear-gradient(135deg, rgba(34,197,94,0.10), transparent 28%, transparent 72%, rgba(59,130,246,0.10))",
-            }}
-          />
-
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              gap: 16,
-              position: "relative",
-              zIndex: 1,
-            }}
-          >
+          <div>
             <div
               style={{
                 display: "inline-flex",
-                width: "fit-content",
                 alignItems: "center",
-                gap: 8,
-                padding: "8px 12px",
+                gap: 10,
+                padding: "8px 14px",
                 borderRadius: 999,
-                border: "1px solid rgba(74, 222, 128, 0.25)",
-                background: "rgba(20, 40, 29, 0.72)",
-                color: "#b8ffd2",
+                background: "rgba(15, 23, 42, 0.72)",
+                border: "1px solid rgba(148, 163, 184, 0.18)",
+                fontSize: 13,
+                color: "#cbd5e1",
+                marginBottom: 14,
+              }}
+            >
+              <span>🚀</span>
+              <span>AURORA IA</span>
+            </div>
+
+            <h1
+              style={{
+                margin: 0,
+                fontSize: "clamp(2.2rem, 6vw, 4.5rem)",
+                lineHeight: 1.02,
+                fontWeight: 900,
+                letterSpacing: "-0.04em",
+                maxWidth: 840,
+              }}
+            >
+              Crie seu próprio aplicativo em minutos
+            </h1>
+
+            <p
+              style={{
+                marginTop: 18,
+                marginBottom: 0,
+                maxWidth: 780,
+                fontSize: "clamp(1rem, 2.2vw, 1.18rem)",
+                lineHeight: 1.7,
+                color: "#dbeafe",
+              }}
+            >
+              Empresas, motoristas, fornecedores e novos segmentos já estão
+              entrando. Comece grátis agora, entre com cadastro básico e
+              complete seus dados depois.
+            </p>
+
+            <div
+              style={{
+                marginTop: 14,
+                color: "#93c5fd",
+                fontSize: 14,
+                fontWeight: 700,
+              }}
+            >
+              🌍 Available worldwide • Create apps, campaigns and business ideas
+            </div>
+
+            <div
+              style={{
+                marginTop: 10,
+                color: "#86efac",
                 fontSize: 13,
                 fontWeight: 700,
               }}
             >
-              <span>⚡</span>
-              <span>Aurora IA Beta — novas funções sendo lançadas diariamente</span>
+              🔒 Plataforma protegida com bloqueio de atividades maliciosas e ações suspeitas
             </div>
 
-            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-              <h1
+            <div
+              style={{
+                display: "flex",
+                flexWrap: "wrap",
+                gap: 14,
+                marginTop: 24,
+              }}
+            >
+              <Link
+                href="/cadastro-basico"
                 style={{
-                  margin: 0,
-                  fontSize: "clamp(32px, 7vw, 64px)",
-                  lineHeight: 1.02,
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  minHeight: 56,
+                  padding: "0 22px",
+                  borderRadius: 16,
+                  background:
+                    "linear-gradient(135deg, #22c55e 0%, #14b8a6 100%)",
+                  color: "#03130d",
                   fontWeight: 900,
-                  letterSpacing: "-0.03em",
-                  color: "#f3fff8",
+                  fontSize: 16,
+                  textDecoration: "none",
+                  boxShadow: "0 20px 50px rgba(20,184,166,0.28)",
                 }}
               >
-                Aurora IA
-              </h1>
+                🚀 ENTRAR COM CADASTRO BÁSICO
+              </Link>
 
-              <p
+              <Link
+                href="/chat"
                 style={{
-                  margin: 0,
-                  maxWidth: 820,
-                  fontSize: "clamp(15px, 3.4vw, 20px)",
-                  lineHeight: 1.6,
-                  color: "rgba(229,255,241,0.82)",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  minHeight: 56,
+                  padding: "0 22px",
+                  borderRadius: 16,
+                  background: "rgba(15, 23, 42, 0.88)",
+                  color: "#f8fafc",
+                  fontWeight: 900,
+                  fontSize: 16,
+                  textDecoration: "none",
+                  border: "1px solid rgba(148, 163, 184, 0.18)",
                 }}
               >
-                Plataforma em expansão para cadastro geral, operação real, app
-                builder, leitura pública protegida, agro, imobiliárias,
-                imóveis, mineração, locadora, crescimento e divulgação.
-                Estamos em constante atualização e pode haver momentos de
-                instabilidade.
-              </p>
+                💬 ENTRAR NO CHAT
+              </Link>
             </div>
 
             <div
               style={{
                 display: "grid",
-                gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-                gap: 12,
-                marginTop: 6,
+                gap: 10,
+                marginTop: 18,
+                color: "#e2e8f0",
+                fontSize: 14,
               }}
             >
-              <Link href="/cadastro" style={ctaGreen}>
-                Entrar no Cadastro Geral
-              </Link>
+              <div>⚡ Cadastro em menos de 2 minutos</div>
+              <div>🔥 Nome + e-mail primeiro, resto depois</div>
+              <div>💰 Taxa de manutenção de R$ 15/mês em breve</div>
+            </div>
 
-              <Link href="/agro" style={ctaBlue}>
-                Abrir AGRO
-              </Link>
-
-              <Link href="/imobiliarias" style={ctaBlue}>
-                Abrir Imobiliárias
-              </Link>
-
-              <Link href="/locadora" style={ctaBlue}>
-                Abrir Locadora
-              </Link>
-
-              <Link href="/guardiao" style={ctaDark}>
-                Abrir Guardião
-              </Link>
-
-              <Link href="/app-builder" style={ctaDark}>
-                Abrir App Builder
-              </Link>
-
-              <Link href="/viral" style={ctaBlue}>
-                VIRAL
-              </Link>
+            <div
+              style={{
+                marginTop: 22,
+                textAlign: "left",
+                color: "#86efac",
+                fontSize: 14,
+                fontWeight: 700,
+              }}
+            >
+              ↓ Role para baixo e veja tudo que você pode fazer na Aurora IA
             </div>
           </div>
-        </header>
 
-        <section style={{ marginTop: 18 }}>
           <div
             style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
-              gap: 14,
-            }}
-          >
-            {quickLinks.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                style={{
-                  textDecoration: "none",
-                  color: "inherit",
-                  borderRadius: 22,
-                  padding: 18,
-                  border: "1px solid rgba(74, 222, 128, 0.15)",
-                  background:
-                    "linear-gradient(180deg, rgba(10, 20, 14, 0.96) 0%, rgba(7, 14, 10, 0.98) 100%)",
-                  boxShadow: "0 12px 30px rgba(0,0,0,0.20)",
-                }}
-              >
-                <div
-                  style={{
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: 10,
-                  }}
-                >
-                  <div
-                    style={{
-                      display: "inline-flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      width: 46,
-                      height: 46,
-                      borderRadius: 14,
-                      background: "rgba(22, 163, 74, 0.14)",
-                      border: "1px solid rgba(74, 222, 128, 0.18)",
-                      fontSize: 24,
-                    }}
-                  >
-                    <span aria-hidden="true">{item.icon}</span>
-                  </div>
-
-                  <div>
-                    <h2
-                      style={{
-                        margin: 0,
-                        fontSize: 20,
-                        lineHeight: 1.2,
-                        fontWeight: 800,
-                        color: "#f4fff8",
-                      }}
-                    >
-                      {item.title}
-                    </h2>
-
-                    <p
-                      style={{
-                        margin: "8px 0 0",
-                        fontSize: 14,
-                        lineHeight: 1.6,
-                        color: "rgba(229,255,241,0.72)",
-                      }}
-                    >
-                      {item.subtitle}
-                    </p>
-                  </div>
-                </div>
-              </Link>
-            ))}
-          </div>
-        </section>
-
-        <section
-          style={{
-            marginTop: 18,
-            display: "grid",
-            gridTemplateColumns: "1.2fr 0.8fr",
-            gap: 16,
-          }}
-        >
-          <div
-            style={{
-              borderRadius: 24,
-              padding: 18,
-              border: "1px solid rgba(74, 222, 128, 0.15)",
-              background:
-                "linear-gradient(180deg, rgba(10, 20, 14, 0.96) 0%, rgba(7, 14, 10, 0.98) 100%)",
+              minWidth: 280,
+              maxWidth: 380,
+              flex: "1 1 320px",
+              borderRadius: 28,
+              padding: 22,
+              background: "rgba(7, 14, 25, 0.86)",
+              border: "1px solid rgba(34, 197, 94, 0.22)",
+              boxShadow: "0 30px 80px rgba(0,0,0,0.28)",
             }}
           >
             <div
               style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: 8,
-                padding: "8px 12px",
-                borderRadius: 999,
-                background: "rgba(22,163,74,0.10)",
-                border: "1px solid rgba(74, 222, 128, 0.18)",
-                color: "#b8ffd2",
                 fontSize: 13,
+                color: "#86efac",
                 fontWeight: 800,
+                letterSpacing: "0.05em",
+                textTransform: "uppercase",
               }}
             >
-              <span>📌</span>
-              <span>Direção principal da plataforma</span>
+              ricardoiaoficial.com
+            </div>
+
+            <div
+              style={{
+                marginTop: 14,
+                fontSize: 28,
+                fontWeight: 900,
+                lineHeight: 1.1,
+              }}
+            >
+              Entre agora sem travar seu interesse
+            </div>
+
+            <p
+              style={{
+                marginTop: 14,
+                marginBottom: 0,
+                color: "#cbd5e1",
+                lineHeight: 1.65,
+                fontSize: 15,
+              }}
+            >
+              Primeiro o usuário entra rápido. Depois ele conclui o cadastro com
+              calma. Essa é a forma mais forte de acelerar conversão.
+            </p>
+
+            <div
+              style={{
+                marginTop: 18,
+                padding: 16,
+                borderRadius: 18,
+                background: "rgba(34,197,94,0.08)",
+                border: "1px solid rgba(34,197,94,0.18)",
+              }}
+            >
+              <div
+                style={{
+                  fontSize: 14,
+                  fontWeight: 800,
+                  color: "#bbf7d0",
+                  marginBottom: 8,
+                }}
+              >
+                Cadastro básico visível
+              </div>
+
+              <div
+                style={{
+                  color: "#e2e8f0",
+                  lineHeight: 1.65,
+                  fontSize: 14,
+                }}
+              >
+                Nome + e-mail para começar agora.
+                Depois o sistema mostra:
+                <strong> conclua seu cadastro em até 30 dias.</strong>
+              </div>
+            </div>
+
+            <Link
+              href="/cadastro-basico"
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+                width: "100%",
+                marginTop: 18,
+                minHeight: 54,
+                borderRadius: 16,
+                background:
+                  "linear-gradient(135deg, #22c55e 0%, #14b8a6 100%)",
+                color: "#03130d",
+                fontWeight: 900,
+                fontSize: 16,
+                textDecoration: "none",
+                boxShadow: "0 20px 50px rgba(20,184,166,0.28)",
+              }}
+            >
+              🚀 COMEÇAR AGORA
+            </Link>
+          </div>
+        </header>
+
+        <section
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
+            gap: 18,
+            marginBottom: 54,
+          }}
+        >
+          {quickCards.map((item) => (
+            <div
+              key={item.title}
+              style={{
+                borderRadius: 24,
+                padding: 22,
+                background: "rgba(8, 15, 28, 0.82)",
+                border: "1px solid rgba(148, 163, 184, 0.15)",
+                boxShadow: "0 20px 60px rgba(0,0,0,0.18)",
+              }}
+            >
+              <div
+                style={{
+                  width: 54,
+                  height: 54,
+                  borderRadius: 16,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  fontSize: 24,
+                  background: "rgba(34, 197, 94, 0.14)",
+                  marginBottom: 16,
+                }}
+              >
+                {item.icon}
+              </div>
+
+              <h2
+                style={{
+                  margin: 0,
+                  fontSize: 22,
+                  lineHeight: 1.2,
+                }}
+              >
+                {item.title}
+              </h2>
+
+              <p
+                style={{
+                  marginTop: 12,
+                  marginBottom: 0,
+                  color: "#cbd5e1",
+                  lineHeight: 1.7,
+                  fontSize: 15,
+                }}
+              >
+                {item.text}
+              </p>
+
+              <Link
+                href={item.href}
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  marginTop: 18,
+                  minHeight: 46,
+                  padding: "0 16px",
+                  borderRadius: 14,
+                  textDecoration: "none",
+                  color: "#f8fafc",
+                  background: "rgba(15, 23, 42, 0.88)",
+                  border: "1px solid rgba(34, 197, 94, 0.24)",
+                  fontWeight: 800,
+                }}
+              >
+                {item.cta}
+              </Link>
+            </div>
+          ))}
+        </section>
+
+        <section
+          style={{
+            display: "grid",
+            gridTemplateColumns: "1.2fr 0.8fr",
+            gap: 20,
+            marginBottom: 54,
+          }}
+        >
+          <div
+            style={{
+              borderRadius: 28,
+              padding: 28,
+              background:
+                "linear-gradient(180deg, rgba(8,15,28,0.95) 0%, rgba(5,10,18,0.95) 100%)",
+              border: "1px solid rgba(148, 163, 184, 0.14)",
+            }}
+          >
+            <div
+              style={{
+                fontSize: 13,
+                fontWeight: 900,
+                color: "#86efac",
+                textTransform: "uppercase",
+                letterSpacing: "0.08em",
+              }}
+            >
+              O que você pode fazer na Aurora IA
             </div>
 
             <h3
               style={{
-                margin: "14px 0 10px",
-                fontSize: "clamp(22px, 4vw, 32px)",
-                lineHeight: 1.15,
-                color: "#f4fff8",
+                marginTop: 12,
+                marginBottom: 0,
+                fontSize: "clamp(1.6rem, 3vw, 2.5rem)",
+                lineHeight: 1.08,
               }}
             >
-              Base definitiva para operação séria, editável e escalável
+              Entre rápido agora e complete seus dados depois
             </h3>
 
             <p
               style={{
-                margin: 0,
-                color: "rgba(229,255,241,0.78)",
-                fontSize: 15,
-                lineHeight: 1.7,
+                marginTop: 14,
+                marginBottom: 0,
+                maxWidth: 760,
+                color: "#cbd5e1",
+                lineHeight: 1.75,
+                fontSize: 16,
               }}
             >
-              A Aurora precisa aceitar empresas, profissionais, fornecedores,
-              compradores, parceiros e operações em vários níveis de cobertura,
-              sem engessar categorias. O sistema deve permitir crescimento real
-              de produtos, serviços e segmentos, com leitura pública protegida,
-              edição segura e módulos comerciais prontos para expansão.
+              O foco da home agora é converter mais. Primeiro a pessoa entra
+              com cadastro básico. Depois do acesso inicial, ela clica para
+              continuar e completa os dados de forma organizada.
             </p>
 
             <div
               style={{
                 display: "grid",
                 gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-                gap: 12,
-                marginTop: 16,
+                gap: 14,
+                marginTop: 22,
               }}
             >
-              {pillars.map((item) => (
+              {highlightCards.map((item) => (
                 <div
                   key={item.title}
                   style={{
                     borderRadius: 18,
-                    padding: 14,
-                    border: "1px solid rgba(74, 222, 128, 0.12)",
-                    background: "rgba(255,255,255,0.02)",
+                    padding: 18,
+                    background: "rgba(15, 23, 42, 0.72)",
+                    border: "1px solid rgba(148, 163, 184, 0.14)",
                   }}
                 >
-                  <strong
+                  <div
                     style={{
-                      display: "block",
-                      fontSize: 15,
-                      color: "#f3fff8",
-                      marginBottom: 8,
+                      fontWeight: 800,
+                      marginBottom: 10,
+                      fontSize: 16,
                     }}
                   >
                     {item.title}
-                  </strong>
-                  <span
+                  </div>
+                  <div
                     style={{
+                      color: "#cbd5e1",
+                      lineHeight: 1.65,
                       fontSize: 14,
-                      lineHeight: 1.6,
-                      color: "rgba(229,255,241,0.72)",
                     }}
                   >
                     {item.text}
-                  </span>
+                  </div>
                 </div>
               ))}
             </div>
           </div>
 
-          <aside
+          <div
             style={{
-              borderRadius: 24,
-              padding: 18,
-              border: "1px solid rgba(74, 222, 128, 0.15)",
-              background:
-                "linear-gradient(180deg, rgba(10, 20, 14, 0.96) 0%, rgba(7, 14, 10, 0.98) 100%)",
+              borderRadius: 28,
+              padding: 28,
+              background: "rgba(8,15,28,0.85)",
+              border: "1px solid rgba(148, 163, 184, 0.14)",
             }}
           >
             <div
               style={{
+                fontSize: 13,
+                fontWeight: 900,
+                color: "#93c5fd",
+                textTransform: "uppercase",
+                letterSpacing: "0.08em",
+              }}
+            >
+              Prova social
+            </div>
+
+            <div
+              style={{
+                marginTop: 12,
+                fontSize: 30,
+                fontWeight: 900,
+                lineHeight: 1.1,
+              }}
+            >
+              Usuários já entrando no Brasil e no exterior
+            </div>
+
+            <p
+              style={{
+                marginTop: 14,
+                marginBottom: 0,
+                color: "#cbd5e1",
+                lineHeight: 1.75,
+                fontSize: 15,
+              }}
+            >
+              A Aurora IA já está recebendo acessos por redes sociais, busca e
+              tráfego direto. O objetivo agora é acelerar a entrada e deixar a
+              plataforma ainda mais forte.
+            </p>
+
+            <div
+              style={{
+                display: "grid",
+                gap: 12,
+                marginTop: 22,
+                fontSize: 15,
+                color: "#e2e8f0",
+              }}
+            >
+              <div>🇧🇷 Brasil</div>
+              <div>🇺🇸 Estados Unidos</div>
+              <div>🇸🇪 Suécia</div>
+              <div>🇨🇭 Suíça</div>
+              <div>🇮🇪 Irlanda</div>
+            </div>
+
+            <Link
+              href="/cadastro-basico"
+              style={{
                 display: "inline-flex",
                 alignItems: "center",
-                gap: 8,
-                padding: "8px 12px",
-                borderRadius: 999,
-                background: "rgba(59,130,246,0.12)",
-                border: "1px solid rgba(96,165,250,0.18)",
-                color: "#dcecff",
+                justifyContent: "center",
+                marginTop: 22,
+                width: "100%",
+                minHeight: 50,
+                borderRadius: 16,
+                textDecoration: "none",
+                color: "#03130d",
+                background: "#22c55e",
+                border: "1px solid rgba(34, 197, 94, 0.38)",
+                fontWeight: 900,
+              }}
+            >
+              👉 ENTRAR AGORA
+            </Link>
+          </div>
+        </section>
+
+        <section
+          style={{
+            borderRadius: 32,
+            padding: "30px 24px",
+            background:
+              "linear-gradient(135deg, rgba(34,197,94,0.18) 0%, rgba(15,23,42,0.88) 60%, rgba(8,15,28,0.96) 100%)",
+            border: "1px solid rgba(34, 197, 94, 0.24)",
+            boxShadow: "0 30px 80px rgba(0,0,0,0.22)",
+          }}
+        >
+          <div
+            style={{
+              maxWidth: 980,
+            }}
+          >
+            <div
+              style={{
                 fontSize: 13,
-                fontWeight: 800,
+                fontWeight: 900,
+                color: "#bbf7d0",
+                textTransform: "uppercase",
+                letterSpacing: "0.08em",
               }}
             >
-              <span>🚦</span>
-              <span>Status atual</span>
+              Quem entra primeiro sai na frente
             </div>
 
-            <h3
+            <h2
               style={{
-                margin: "14px 0 10px",
-                fontSize: 24,
-                lineHeight: 1.2,
-                color: "#f4fff8",
+                marginTop: 10,
+                marginBottom: 0,
+                fontSize: "clamp(1.8rem, 4vw, 3.2rem)",
+                lineHeight: 1.05,
+                fontWeight: 900,
               }}
             >
-              O que esta Home já resolve
-            </h3>
+              Entre agora, use cadastro básico e comece a estruturar seu negócio
+              com a Aurora IA
+            </h2>
 
-            <div
+            <p
               style={{
-                display: "flex",
-                flexDirection: "column",
-                gap: 10,
+                marginTop: 14,
+                marginBottom: 0,
+                maxWidth: 900,
+                color: "#ecfeff",
+                lineHeight: 1.8,
+                fontSize: 16,
               }}
             >
-              {highlights.map((text) => (
-                <div
-                  key={text}
-                  style={{
-                    display: "flex",
-                    alignItems: "flex-start",
-                    gap: 10,
-                    borderRadius: 16,
-                    padding: "12px 12px",
-                    background: "rgba(255,255,255,0.02)",
-                    border: "1px solid rgba(74, 222, 128, 0.10)",
-                  }}
-                >
-                  <span style={{ fontSize: 18, lineHeight: 1 }}>✓</span>
-                  <span
-                    style={{
-                      fontSize: 14,
-                      lineHeight: 1.6,
-                      color: "rgba(229,255,241,0.78)",
-                    }}
-                  >
-                    {text}
-                  </span>
-                </div>
-              ))}
-            </div>
+              Acesse <strong>ricardoiaoficial.com</strong>, entre com nome e
+              e-mail, use a plataforma e depois conclua o cadastro com calma.
+              Isso reduz travamento, aumenta conversão e acelera crescimento.
+            </p>
+          </div>
 
-            <div
+          <div
+            style={{
+              display: "flex",
+              flexWrap: "wrap",
+              gap: 14,
+              marginTop: 24,
+            }}
+          >
+            <Link
+              href="/cadastro-basico"
               style={{
-                marginTop: 16,
-                display: "grid",
-                gap: 10,
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+                minHeight: 54,
+                padding: "0 22px",
+                borderRadius: 16,
+                background: "#f8fafc",
+                color: "#05131d",
+                textDecoration: "none",
+                fontWeight: 900,
               }}
             >
-              <Link href="/explorar" style={ctaGreenSoft}>
-                Explorar plataforma
-              </Link>
+              🚀 CADASTRO BÁSICO AGORA
+            </Link>
 
-              <Link href="/planos" style={ctaDarkSoft}>
-                Ver planos
-              </Link>
-
-              <Link href="/agro" style={ctaBlueSoft}>
-                Entrar no AGRO
-              </Link>
-
-              <Link href="/imobiliarias" style={ctaBlueSoft}>
-                Entrar em Imobiliárias
-              </Link>
-
-              <Link href="/locadora" style={ctaBlueSoft}>
-                Entrar na Locadora
-              </Link>
-            </div>
-          </aside>
+            <Link
+              href="/chat"
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+                minHeight: 54,
+                padding: "0 22px",
+                borderRadius: 16,
+                background: "transparent",
+                color: "#f8fafc",
+                textDecoration: "none",
+                fontWeight: 900,
+                border: "1px solid rgba(248,250,252,0.28)",
+              }}
+            >
+              💬 ENTRAR NO CHAT
+            </Link>
+          </div>
         </section>
       </section>
     </main>
   );
 }
-
-const ctaGreen = {
-  textDecoration: "none",
-  borderRadius: 18,
-  padding: "14px 16px",
-  background:
-    "linear-gradient(180deg, rgba(22,163,74,0.22), rgba(22,163,74,0.10))",
-  border: "1px solid rgba(74, 222, 128, 0.28)",
-  color: "#f4fff8",
-  fontWeight: 800,
-  textAlign: "center" as const,
-};
-
-const ctaBlue = {
-  textDecoration: "none",
-  borderRadius: 18,
-  padding: "14px 16px",
-  background:
-    "linear-gradient(180deg, rgba(59,130,246,0.22), rgba(59,130,246,0.10))",
-  border: "1px solid rgba(96, 165, 250, 0.28)",
-  color: "#eef6ff",
-  fontWeight: 900,
-  textAlign: "center" as const,
-};
-
-const ctaDark = {
-  textDecoration: "none",
-  borderRadius: 18,
-  padding: "14px 16px",
-  background: "rgba(12, 25, 18, 0.95)",
-  border: "1px solid rgba(74, 222, 128, 0.22)",
-  color: "#d7ffe6",
-  fontWeight: 800,
-  textAlign: "center" as const,
-};
-
-const ctaGreenSoft = {
-  textDecoration: "none",
-  padding: "14px 16px",
-  borderRadius: 16,
-  textAlign: "center" as const,
-  fontWeight: 800,
-  color: "#f4fff8",
-  background: "rgba(22,163,74,0.16)",
-  border: "1px solid rgba(74, 222, 128, 0.18)",
-};
-
-const ctaBlueSoft = {
-  textDecoration: "none",
-  padding: "14px 16px",
-  borderRadius: 16,
-  textAlign: "center" as const,
-  fontWeight: 800,
-  color: "#eef6ff",
-  background: "rgba(59,130,246,0.14)",
-  border: "1px solid rgba(96,165,250,0.18)",
-};
-
-const ctaDarkSoft = {
-  textDecoration: "none",
-  padding: "14px 16px",
-  borderRadius: 16,
-  textAlign: "center" as const,
-  fontWeight: 800,
-  color: "#d7ffe6",
-  background: "rgba(255,255,255,0.03)",
-  border: "1px solid rgba(74, 222, 128, 0.12)",
-};
