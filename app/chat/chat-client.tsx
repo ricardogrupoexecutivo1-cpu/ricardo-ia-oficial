@@ -65,7 +65,7 @@ const EMAIL_STORAGE_KEY = "aurora-user-email";
 const INITIAL_MESSAGE: Message = {
   role: "assistant",
   content:
-    "Olá! Eu sou a Aurora IA. Posso conversar com você, criar campanhas, sugerir ideias de negócio e gerar imagens.",
+    "Olá! Eu sou a Aurora IA. Posso conversar com você, criar campanhas, sugerir ideias de negócio e gerar imagens.\n\nHello! I am Aurora IA. I can help you create apps, campaigns, business ideas and premium images.\n\n👉 O que você quer fazer agora?\n👉 What do you want to do now?",
 };
 
 function isImagePrompt(text: string) {
@@ -97,7 +97,7 @@ function resolveAssistantText(data: ChatResponse, imageUrl: string | null) {
     "";
 
   if (raw) return raw;
-  if (imageUrl) return "Imagem gerada com sucesso.";
+  if (imageUrl) return "Imagem gerada com sucesso. / Image generated successfully.";
   if (data.error?.trim()) return data.error.trim();
 
   if (data.imageSaveError?.trim()) {
@@ -467,41 +467,65 @@ export default function ChatClient() {
             <h1>Chat da Aurora</h1>
             <p>
               Converse, crie imagens e segure atenção com cara de app real.
-              A Aurora está pronta para responder, gerar ideias e entregar
-              visual melhor para retenção e conversão.
+              A Aurora está pronta para responder, gerar ideias, criar aplicativos,
+              entregar campanhas e melhorar retenção e conversão.
             </p>
+
+            <div
+              style={{
+                marginTop: 12,
+                marginBottom: 10,
+                color: "#93c5fd",
+                fontSize: 14,
+                fontWeight: 700,
+              }}
+            >
+              🌍 Available worldwide • Create apps, campaigns and business ideas
+            </div>
+
+            <div
+              style={{
+                marginTop: 10,
+                marginBottom: 14,
+                color: "#86efac",
+                fontSize: 13,
+                fontWeight: 700,
+              }}
+            >
+              🔒 Plataforma protegida com bloqueio de atividades maliciosas e ações suspeitas
+            </div>
 
             <div className="aurora-chat-app__quickActions">
               <button
                 type="button"
                 className="aurora-chat-app__quickButton"
-                onClick={() => setInput("Criar campanha para Instagram")}
+                onClick={() => setInput("Criar campanha que vende no Instagram")}
               >
-                Criar campanha para Instagram
+                💰 Criar campanha que vende
               </button>
 
               <button
                 type="button"
                 className="aurora-chat-app__quickButton"
-                onClick={() => setInput("Gerar imagem premium para anúncio")}
+                onClick={() => setInput("Criar imagem premium para anúncio")}
               >
-                Gerar imagem premium para anúncio
+                🎨 Criar imagem para anúncio
               </button>
 
               <button
                 type="button"
                 className="aurora-chat-app__quickButton"
-                onClick={() => setInput("Ideia de negócio com IA")}
+                onClick={() => setInput("Gerar ideia lucrativa com IA")}
               >
-                Ideia de negócio com IA
+                🚀 Gerar ideia lucrativa
               </button>
 
               <button
                 type="button"
                 className="aurora-chat-app__quickButton"
-                onClick={() => setInput("Criar texto de vendas")}
+                onClick={() => setInput("Criar texto de vendas que converte")}
               >
-                Criar texto de vendas
+                📢 Criar texto que converte
               </button>
             </div>
           </div>
@@ -595,14 +619,81 @@ export default function ChatClient() {
           <div>
             <h2>Chat Aurora IA</h2>
             <p>
-              {messages.length > 1
-                ? "Converse normalmente ou peça imagens, campanhas e ideias."
-                : "Converse normalmente ou peça imagens, campanhas e ideias."}
+              Converse normalmente ou peça imagens, campanhas, ideias e criação de app.
             </p>
           </div>
 
           <span className="aurora-chat-app__livePill">online</span>
         </div>
+
+        {userEmail.trim() ? (
+          <div
+            style={{
+              marginTop: 16,
+              marginBottom: 16,
+              padding: "16px 18px",
+              borderRadius: 16,
+              border: "1px solid rgba(34,197,94,0.34)",
+              background:
+                "linear-gradient(135deg, rgba(34,197,94,0.14), rgba(20,184,166,0.08))",
+            }}
+          >
+            <strong style={{ display: "block", marginBottom: 8, fontSize: 16 }}>
+              ✅ Conclua seu cadastro
+            </strong>
+
+            <p style={{ margin: 0, lineHeight: 1.7 }}>
+              Seu acesso já está ativo com cadastro básico. Complete seu cadastro em até
+              <strong> 30 dias</strong> para liberar melhor organização, presença na plataforma
+              e mais recursos.
+            </p>
+
+            <div
+              style={{
+                display: "flex",
+                flexWrap: "wrap",
+                gap: 12,
+                marginTop: 14,
+              }}
+            >
+              <Link
+                href="/cadastro"
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  minHeight: 46,
+                  padding: "0 16px",
+                  borderRadius: 12,
+                  textDecoration: "none",
+                  background: "#22c55e",
+                  color: "#03130d",
+                  fontWeight: 900,
+                }}
+              >
+                👉 CONCLUIR CADASTRO AGORA
+              </Link>
+
+              <Link
+                href="/cadastro-basico"
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  minHeight: 46,
+                  padding: "0 16px",
+                  borderRadius: 12,
+                  textDecoration: "none",
+                  border: "1px solid rgba(255,255,255,0.18)",
+                  color: "#f8fafc",
+                  fontWeight: 800,
+                }}
+              >
+                Ver cadastro básico
+              </Link>
+            </div>
+          </div>
+        ) : null}
 
         <div
           style={{
@@ -629,6 +720,15 @@ export default function ChatClient() {
             conteúdo incompleto. Sempre confira informações importantes antes de
             usar comercialmente, financeiramente, juridicamente ou em decisões
             sensíveis.
+          </p>
+
+          <p style={{ margin: "8px 0 0", lineHeight: 1.6 }}>
+            🔒 Sistema com bloqueio de atividades maliciosas e ações suspeitas para
+            proteger a plataforma.
+          </p>
+
+          <p style={{ margin: "8px 0 0", lineHeight: 1.6, color: "#bfdbfe" }}>
+            🌍 English support available for international visitors.
           </p>
         </div>
 
@@ -711,7 +811,7 @@ export default function ChatClient() {
                 </div>
 
                 <div className="aurora-chat-app__bubble">
-                  <p>{message.content}</p>
+                  <p style={{ whiteSpace: "pre-wrap" }}>{message.content}</p>
 
                   {message.imageUrl ? (
                     <div className="aurora-chat-app__imageWrap aurora-chat-app__imageWrap--premium">
@@ -861,6 +961,18 @@ export default function ChatClient() {
 
         <p className="aurora-chat-app__composerHint">
           Enter envia. Shift + Enter quebra linha.
+        </p>
+
+        <p
+          style={{
+            marginTop: 8,
+            fontSize: 13,
+            color: "#86efac",
+            textAlign: "center",
+            fontWeight: 700,
+          }}
+        >
+          🔥 Crie seu app • Cadastre sua empresa • Gere negócios
         </p>
       </section>
     </main>
