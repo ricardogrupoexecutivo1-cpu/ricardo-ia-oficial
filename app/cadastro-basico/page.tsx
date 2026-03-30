@@ -58,6 +58,9 @@ export default function CadastroBasicoPage() {
         throw new Error("Preencha o e-mail.");
       }
 
+      const prazo = new Date();
+      prazo.setDate(prazo.getDate() + 30);
+
       const payload = {
         user_id: user.id,
         nome_responsavel: nome.trim(),
@@ -65,6 +68,11 @@ export default function CadastroBasicoPage() {
         status: "rascunho",
         is_public: false,
         origem: "cadastro_basico",
+
+        cadastro_tipo: "basico",
+        cadastro_completo: false,
+        prazo_conclusao: prazo.toISOString(),
+        bloqueado: false,
       };
 
       const { error } = await supabase.from("cadastros_gerais").insert(payload);
