@@ -13,6 +13,7 @@ type CoverageType =
   | "multilocal";
 
 type AttendanceType = "todos" | "especificos";
+type TipoPessoa = "" | "fisica" | "juridica";
 
 const PERFIS_BASE = [
   "Empresa",
@@ -103,6 +104,10 @@ function slugifyTerm(value: string) {
   return value.trim().replace(/\s+/g, " ");
 }
 
+function onlyDigits(value: string) {
+  return value.replace(/\D/g, "");
+}
+
 export default function CadastroGeralPage() {
   const router = useRouter();
 
@@ -112,6 +117,9 @@ export default function CadastroGeralPage() {
   const [email, setEmail] = useState("");
   const [site, setSite] = useState("");
   const [instagram, setInstagram] = useState("");
+
+  const [tipoPessoa, setTipoPessoa] = useState<TipoPessoa>("");
+  const [documentoPrivado, setDocumentoPrivado] = useState("");
 
   const [perfisSelecionados, setPerfisSelecionados] = useState<string[]>([]);
   const [coverageType, setCoverageType] = useState<CoverageType>("brasil");
@@ -166,6 +174,20 @@ export default function CadastroGeralPage() {
         return "Cobertura";
     }
   }, [coverageType]);
+
+  const exigeDocumentoPrivado = useMemo(() => {
+    return perfisSelecionados.some((perfil) =>
+      ["Empresa", "Fornecedor", "Prestador de serviço", "Autônomo"].includes(
+        perfil
+      )
+    );
+  }, [perfisSelecionados]);
+
+  const labelDocumento = tipoPessoa === "juridica" ? "CNPJ" : "CPF";
+  const placeholderDocumento =
+    tipoPessoa === "juridica"
+      ? "Ex.: 12.345.678/0001-99"
+      : "Ex.: 123.456.789-00";
 
   function togglePerfil(perfil: string) {
     setPerfisSelecionados((prev) =>
@@ -225,6 +247,8 @@ export default function CadastroGeralPage() {
     setEmail("");
     setSite("");
     setInstagram("");
+    setTipoPessoa("");
+    setDocumentoPrivado("");
     setPerfisSelecionados([]);
     setCoverageType("brasil");
     setEstadoBase("");
@@ -306,6 +330,30 @@ export default function CadastroGeralPage() {
         );
       }
 
+      if (exigeDocumentoPrivado) {
+        if (!tipoPessoa) {
+          throw new Error(
+            "Selecione se o cadastro é pessoa física ou pessoa jurídica."
+          );
+        }
+
+        if (!documentoPrivado.trim()) {
+          throw new Error(
+            `Preencha o ${labelDocumento} privado para este tipo de perfil.`
+          );
+        }
+
+        const documentoNumeros = onlyDigits(documentoPrivado);
+
+        if (tipoPessoa === "fisica" && documentoNumeros.length !== 11) {
+          throw new Error("CPF inválido. Digite os 11 números do CPF.");
+        }
+
+        if (tipoPessoa === "juridica" && documentoNumeros.length !== 14) {
+          throw new Error("CNPJ inválido. Digite os 14 números do CNPJ.");
+        }
+      }
+
       const perfisLimpos = perfisSelecionados.map(slugifyTerm).filter(Boolean);
       const segmentosLimpos = segmentos.map(slugifyTerm).filter(Boolean);
       const produtosLimpos = produtos.map(slugifyTerm).filter(Boolean);
@@ -321,6 +369,10 @@ export default function CadastroGeralPage() {
         email: email.trim() || null,
         site: site.trim() || null,
         instagram: instagram.trim() || null,
+        tipo_pessoa: exigeDocumentoPrivado ? tipoPessoa || null : null,
+        documento_privado: exigeDocumentoPrivado
+          ? onlyDigits(documentoPrivado) || null
+          : null,
         coverage_type: coverageType,
         estado_base: estadoBase || null,
         regiao_base: regiaoBase.trim() || null,
@@ -438,15 +490,13 @@ export default function CadastroGeralPage() {
       setCadastroIdSalvo(cadastroId);
       setFeedbackType("success");
       setFeedback(
-        "Cadastro real salvo no Supabase com privacidade por padrão. Os campos públicos próprios também foram gravados."
+        "Cadastro real salvo no Supabase com privacidade por padrão. Os campos públicos próprios e o documento privado também foram gravados."
       );
 
       const emailSafe = encodeURIComponent(email.trim() || "");
       clearForm();
 
-      router.push(
-        `/cadastro/sucesso?next=/chat&email=${emailSafe}`
-      );
+      router.push(`/cadastro/sucesso?next=/chat&email=${emailSafe}`);
     } catch (error) {
       const message =
         error instanceof Error
@@ -543,6 +593,68 @@ export default function CadastroGeralPage() {
               value={instagram}
               onChange={setInstagram}
             />
+          </div>
+
+          <div style={styles.dividerSoft} />
+
+          <SectionTitle
+            title="1.1 Validação privada"
+            text="CPF/CNPJ fica oculto do público e só aparece para perfis que exigem mais confiança: empresa, fornecedor, prestador de serviço e autônomo."
+          />
+
+          <div
+            style={{
+              ...styles.infoAlert,
+              ...(exigeDocumentoPrivado ? styles.infoAlertActive : {}),
+            }}
+          >
+            {exigeDocumentoPrivado
+              ? "Este cadastro exige CPF/CNPJ privado porque um dos perfis selecionados pede mais confiança interna."
+              : "Se você selecionar Empresa, Fornecedor, Prestador de serviço ou Autônomo, o campo privado de CPF/CNPJ será liberado abaixo."}
+          </div>
+
+          <div style={styles.grid2}>
+            <div style={styles.fieldWrap}>
+              <label style={styles.label}>Tipo de pessoa</label>
+              <div style={styles.choiceGridInline}>
+                <button
+                  type="button"
+                  onClick={() => setTipoPessoa("fisica")}
+                  style={{
+                    ...styles.choiceButton,
+                    ...(tipoPessoa === "fisica" ? styles.choiceButtonActive : {}),
+                  }}
+                >
+                  Pessoa física
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setTipoPessoa("juridica")}
+                  style={{
+                    ...styles.choiceButton,
+                    ...(tipoPessoa === "juridica" ? styles.choiceButtonActive : {}),
+                  }}
+                >
+                  Pessoa jurídica
+                </button>
+              </div>
+            </div>
+
+            <div style={styles.fieldWrap}>
+              <label style={styles.label}>
+                {labelDocumento} privado {exigeDocumentoPrivado ? "(obrigatório)" : "(opcional por enquanto)"}
+              </label>
+              <input
+                value={documentoPrivado}
+                onChange={(e) => setDocumentoPrivado(e.target.value)}
+                placeholder={placeholderDocumento}
+                style={styles.input}
+              />
+              <div style={styles.helperText}>
+                🔒 Este dado é interno, protegido e não será exibido publicamente.
+              </div>
+            </div>
           </div>
 
           <SectionDivider />
@@ -919,6 +1031,14 @@ export default function CadastroGeralPage() {
               <ResumeItem label="Segmentos cadastrados" value={segmentos.length} />
               <ResumeItem label="Produtos/serviços" value={produtos.length} />
               <ResumeItem
+                label="Documento privado"
+                value={
+                  exigeDocumentoPrivado
+                    ? `${labelDocumento} interno`
+                    : "Não exigido neste perfil"
+                }
+              />
+              <ResumeItem
                 label="Modelo de atendimento"
                 value={
                   atendimentoTipo === "todos"
@@ -1238,6 +1358,11 @@ const styles: Record<string, React.CSSProperties> = {
     background: "rgba(148,163,184,0.14)",
     margin: "28px 0",
   },
+  dividerSoft: {
+    height: 1,
+    background: "rgba(148,163,184,0.10)",
+    margin: "22px 0 26px",
+  },
   grid2: {
     display: "grid",
     gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",
@@ -1258,6 +1383,26 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: 14,
     fontWeight: 700,
     color: "#dbeafe",
+  },
+  helperText: {
+    fontSize: 12,
+    color: "#94a3b8",
+    lineHeight: 1.5,
+  },
+  infoAlert: {
+    borderRadius: 16,
+    border: "1px solid rgba(59,130,246,0.22)",
+    background: "rgba(59,130,246,0.10)",
+    color: "#bfdbfe",
+    padding: "14px 16px",
+    marginBottom: 16,
+    lineHeight: 1.6,
+    fontWeight: 600,
+  },
+  infoAlertActive: {
+    border: "1px solid rgba(16,185,129,0.28)",
+    background: "rgba(16,185,129,0.10)",
+    color: "#bbf7d0",
   },
   input: {
     width: "100%",
@@ -1305,6 +1450,11 @@ const styles: Record<string, React.CSSProperties> = {
   choiceGrid: {
     display: "grid",
     gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+    gap: 12,
+  },
+  choiceGridInline: {
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
     gap: 12,
   },
   choiceButton: {
