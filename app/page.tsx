@@ -5,28 +5,32 @@ const quickCards = [
     title: "Crie seu próprio aplicativo",
     text: "Monte seu app na Aurora IA mesmo sem programar e comece sua operação digital agora.",
     href: "/chat",
-    cta: "Criar meu app agora",
+    ctaPt: "Criar meu app agora",
+    ctaEn: "Create my app now",
     icon: "📱",
   },
   {
     title: "Entre rápido com cadastro básico",
     text: "Preencha apenas nome e e-mail para entrar. O cadastro completo pode ser concluído depois, sem travar interesse.",
     href: "/cadastro-basico",
-    cta: "Fazer cadastro básico",
+    ctaPt: "Fazer cadastro básico",
+    ctaEn: "Basic registration",
     icon: "🚀",
   },
   {
     title: "Consiga clientes e oportunidades",
     text: "Use a plataforma para gerar negócios reais, divulgar sua empresa e atrair novos contatos.",
     href: "/chat",
-    cta: "Entrar e começar",
+    ctaPt: "Entrar e começar",
+    ctaEn: "Enter and start",
     icon: "💰",
   },
   {
     title: "Motoristas, fornecedores e empresas",
     text: "Cadastre-se para aparecer, vender, trabalhar e participar do ecossistema da Aurora IA.",
     href: "/cadastro-basico",
-    cta: "Começar agora",
+    ctaPt: "Começar agora",
+    ctaEn: "Start now",
     icon: "🌍",
   },
 ];
@@ -168,7 +172,12 @@ export default function HomePage() {
                   boxShadow: "0 20px 50px rgba(20,184,166,0.28)",
                 }}
               >
-                🚀 ENTRAR COM CADASTRO BÁSICO
+                <span style={{ display: "flex", flexDirection: "column", lineHeight: 1.2 }}>
+                  <span>🚀 ENTRAR COM CADASTRO BÁSICO</span>
+                  <span style={{ fontSize: 12, fontWeight: 600 }}>
+                    Start with basic registration
+                  </span>
+                </span>
               </Link>
 
               <Link
@@ -188,7 +197,12 @@ export default function HomePage() {
                   border: "1px solid rgba(148, 163, 184, 0.18)",
                 }}
               >
-                💬 ENTRAR NO CHAT
+                <span style={{ display: "flex", flexDirection: "column", lineHeight: 1.2 }}>
+                  <span>💬 ENTRAR NO CHAT</span>
+                  <span style={{ fontSize: 12, fontWeight: 600 }}>
+                    Open chat
+                  </span>
+                </span>
               </Link>
             </div>
 
@@ -319,7 +333,12 @@ export default function HomePage() {
                 boxShadow: "0 20px 50px rgba(20,184,166,0.28)",
               }}
             >
-              🚀 COMEÇAR AGORA
+              <span style={{ display: "flex", flexDirection: "column", lineHeight: 1.2 }}>
+                <span>🚀 COMEÇAR AGORA</span>
+                <span style={{ fontSize: 12, fontWeight: 600 }}>
+                  Start now
+                </span>
+              </span>
             </Link>
           </div>
         </header>
@@ -398,7 +417,12 @@ export default function HomePage() {
                   fontWeight: 800,
                 }}
               >
-                {item.cta}
+                <span style={{ display: "flex", flexDirection: "column", lineHeight: 1.2 }}>
+                  <span>{item.ctaPt}</span>
+                  <span style={{ fontSize: 12, fontWeight: 600 }}>
+                    {item.ctaEn}
+                  </span>
+                </span>
               </Link>
             </div>
           ))}
@@ -578,7 +602,12 @@ export default function HomePage() {
                 fontWeight: 900,
               }}
             >
-              👉 ENTRAR AGORA
+              <span style={{ display: "flex", flexDirection: "column", lineHeight: 1.2 }}>
+                <span>👉 ENTRAR AGORA</span>
+                <span style={{ fontSize: 12, fontWeight: 600 }}>
+                  Enter now
+                </span>
+              </span>
             </Link>
           </div>
         </section>
@@ -662,7 +691,12 @@ export default function HomePage() {
                 fontWeight: 900,
               }}
             >
-              🚀 CADASTRO BÁSICO AGORA
+              <span style={{ display: "flex", flexDirection: "column", lineHeight: 1.2 }}>
+                <span>🚀 CADASTRO BÁSICO AGORA</span>
+                <span style={{ fontSize: 12, fontWeight: 600 }}>
+                  Start basic registration now
+                </span>
+              </span>
             </Link>
 
             <Link
@@ -681,7 +715,12 @@ export default function HomePage() {
                 border: "1px solid rgba(248,250,252,0.28)",
               }}
             >
-              💬 ENTRAR NO CHAT
+              <span style={{ display: "flex", flexDirection: "column", lineHeight: 1.2 }}>
+                <span>💬 ENTRAR NO CHAT</span>
+                <span style={{ fontSize: 12, fontWeight: 600 }}>
+                  Open chat
+                </span>
+              </span>
             </Link>
           </div>
         </section>
