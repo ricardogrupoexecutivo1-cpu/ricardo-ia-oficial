@@ -2,20 +2,51 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
-import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import { useEffect, useRef, useState } from "react";
 
-function getSupabaseBrowserClient(): SupabaseClient | null {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+type CadastroBasicoApiResponse = {
+  ok?: boolean;
+  id?: string;
+  email?: string;
+  nome?: string;
+  welcomePt?: string;
+  welcomeEn?: string;
+  error?: string;
+};
 
-  if (!url || !anonKey) return null;
+function getErrorMessage(error: unknown) {
+  if (!error) return "Falha ao salvar cadastro básico.";
 
-  return createClient(url, anonKey);
+  if (typeof error === "string") return error;
+
+  if (error instanceof Error) return error.message;
+
+  if (typeof error === "object") {
+    const err = error as {
+      message?: string;
+      details?: string;
+      hint?: string;
+      code?: string;
+      error?: string;
+    };
+
+    const parts = [
+      err.error,
+      err.message,
+      err.details,
+      err.hint,
+      err.code,
+    ].filter(Boolean);
+
+    if (parts.length > 0) return parts.join(" | ");
+  }
+
+  return "Falha ao salvar cadastro básico.";
 }
 
 export default function CadastroBasicoPage() {
   const router = useRouter();
+  const mountedAtRef = useRef<number>(Date.now());
 
   const [nome, setNome] = useState("");
   const [email, setEmail] = useState("");
@@ -25,31 +56,16 @@ export default function CadastroBasicoPage() {
     "info"
   );
 
+  useEffect(() => {
+    mountedAtRef.current = Date.now();
+  }, []);
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setSaving(true);
     setFeedback("");
 
     try {
-      const supabase = getSupabaseBrowserClient();
-
-      if (!supabase) {
-        throw new Error(
-          "Variáveis NEXT_PUBLIC_SUPABASE_URL e NEXT_PUBLIC_SUPABASE_ANON_KEY não configuradas."
-        );
-      }
-
-      const {
-        data: { user },
-        error: userError,
-      } = await supabase.auth.getUser();
-
-      if (userError) throw userError;
-
-      if (!user) {
-        throw new Error("Você precisa estar logado para salvar o cadastro básico.");
-      }
-
       if (!nome.trim()) {
         throw new Error("Preencha o nome.");
       }
@@ -58,38 +74,55 @@ export default function CadastroBasicoPage() {
         throw new Error("Preencha o e-mail.");
       }
 
-      const prazo = new Date();
-      prazo.setDate(prazo.getDate() + 30);
+      const emailNormalizado = email.trim().toLowerCase();
 
-      const payload = {
-        user_id: user.id,
-        nome_responsavel: nome.trim(),
-        email: email.trim(),
-        status: "rascunho",
-        is_public: false,
-        origem: "cadastro_basico",
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(emailNormalizado)) {
+        throw new Error("Digite um e-mail válido.");
+      }
 
-        cadastro_tipo: "basico",
-        cadastro_completo: false,
-        prazo_conclusao: prazo.toISOString(),
-        bloqueado: false,
-      };
+      const elapsedMs = Date.now() - mountedAtRef.current;
+      if (elapsedMs < 1200) {
+        throw new Error("Aguarde um instante e tente novamente.");
+      }
 
-      const { error } = await supabase.from("cadastros_gerais").insert(payload);
+      const response = await fetch("/api/cadastro-basico", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          nome: nome.trim(),
+          email: emailNormalizado,
+        }),
+      });
 
-      if (error) throw error;
+      const data: CadastroBasicoApiResponse = await response.json();
+
+      if (!response.ok || !data?.ok) {
+        throw new Error(data?.error || "Falha ao salvar cadastro básico.");
+      }
 
       setFeedbackType("success");
       setFeedback("Cadastro básico salvo com sucesso.");
 
-      const emailSafe = encodeURIComponent(email.trim());
+      const nomeSafe = encodeURIComponent(data.nome || nome.trim());
+      const emailSafe = encodeURIComponent(data.email || emailNormalizado);
+      const welcomePtSafe = encodeURIComponent(
+        data.welcomePt ||
+          `Bem-vindo, ${data.nome || nome.trim()}! Seu acesso inicial foi liberado com sucesso.`
+      );
+      const welcomeEnSafe = encodeURIComponent(
+        data.welcomeEn ||
+          `Welcome, ${data.nome || nome.trim()}! Your initial access has been successfully enabled.`
+      );
 
       router.push(
-        `/cadastro/sucesso?next=/cadastro&email=${emailSafe}&basic=1`
+        `/chat?welcome=1&name=${nomeSafe}&email=${emailSafe}&welcomePt=${welcomePtSafe}&welcomeEn=${welcomeEnSafe}`
       );
     } catch (error) {
-      const message =
-        error instanceof Error ? error.message : "Falha ao salvar cadastro básico.";
+      const message = getErrorMessage(error);
+      console.error("Erro real do cadastro básico:", error);
       setFeedbackType("error");
       setFeedback(message);
     } finally {
@@ -204,20 +237,25 @@ export default function CadastroBasicoPage() {
               <div style={fieldWrap}>
                 <label style={labelStyle}>Nome</label>
                 <input
+                  type="text"
                   value={nome}
                   onChange={(e) => setNome(e.target.value)}
                   placeholder="Ex.: Ricardo Leonardo Moreira"
                   style={inputStyle}
+                  autoComplete="name"
                 />
               </div>
 
               <div style={fieldWrap}>
                 <label style={labelStyle}>E-mail</label>
                 <input
+                  type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="Ex.: ricardogrupoexecutivo1@gmail.com"
                   style={inputStyle}
+                  autoComplete="email"
+                  inputMode="email"
                 />
               </div>
             </div>
@@ -229,6 +267,7 @@ export default function CadastroBasicoPage() {
                   borderRadius: 16,
                   padding: 16,
                   lineHeight: 1.7,
+                  whiteSpace: "pre-wrap",
                   border:
                     feedbackType === "error"
                       ? "1px solid rgba(239,68,68,0.35)"
@@ -237,8 +276,7 @@ export default function CadastroBasicoPage() {
                     feedbackType === "error"
                       ? "rgba(239,68,68,0.10)"
                       : "rgba(34,197,94,0.10)",
-                  color:
-                    feedbackType === "error" ? "#fecaca" : "#bbf7d0",
+                  color: feedbackType === "error" ? "#fecaca" : "#bbf7d0",
                 }}
               >
                 {feedback}
