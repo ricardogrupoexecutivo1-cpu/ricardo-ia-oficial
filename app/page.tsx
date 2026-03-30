@@ -1,8 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo } from "react";
-import { useSearchParams } from "next/navigation";
+import { useEffect, useState } from "react";
 
 const segmentos = [
   {
@@ -77,34 +76,41 @@ const destaques = [
   },
 ];
 
-function getSafeParam(
-  value: string | string[] | null | undefined,
-  fallback = ""
-) {
-  if (Array.isArray(value)) return value[0] || fallback;
-  return value || fallback;
-}
+type WelcomeState = {
+  active: boolean;
+  name: string;
+  email: string;
+  welcomePt: string;
+};
 
 export default function HomePage() {
-  const searchParams = useSearchParams();
+  const [welcomeData, setWelcomeData] = useState<WelcomeState>({
+    active: false,
+    name: "",
+    email: "",
+    welcomePt: "",
+  });
 
-  const welcomeData = useMemo(() => {
-    const welcome = getSafeParam(searchParams.get("welcome"));
-    const name = getSafeParam(searchParams.get("name"));
-    const welcomePt = getSafeParam(searchParams.get("welcomePt"));
-    const email = getSafeParam(searchParams.get("email"));
+  useEffect(() => {
+    if (typeof window === "undefined") return;
 
-    return {
+    const params = new URLSearchParams(window.location.search);
+    const welcome = params.get("welcome") || "";
+    const name = params.get("name") || "";
+    const email = params.get("email") || "";
+    const welcomePt =
+      params.get("welcomePt") ||
+      (name
+        ? `Bem-vindo, ${name}! Seu acesso inicial foi liberado com sucesso.`
+        : "Bem-vindo! Seu acesso inicial foi liberado com sucesso.");
+
+    setWelcomeData({
       active: welcome === "1",
       name,
       email,
-      welcomePt:
-        welcomePt ||
-        (name
-          ? `Bem-vindo, ${name}! Seu acesso inicial foi liberado com sucesso.`
-          : "Bem-vindo! Seu acesso inicial foi liberado com sucesso."),
-    };
-  }, [searchParams]);
+      welcomePt,
+    });
+  }, []);
 
   return (
     <main
