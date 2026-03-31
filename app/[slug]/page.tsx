@@ -44,6 +44,11 @@ function prettyTitle(value: string) {
     .join(" ");
 }
 
+function containsAny(slug: string, terms: string[]) {
+  const normalized = slug.toLowerCase();
+  return terms.some((term) => normalized.includes(term));
+}
+
 async function getModuleBySlug(slug: string): Promise<ModuleRow | null> {
   const supabase = getSupabaseAdmin();
   if (!supabase) return null;
@@ -128,8 +133,14 @@ export default async function DynamicModulePage({
           </div>
         </section>
 
+        <SmartModuleRenderer
+          slug={slug}
+          moduleName={moduleName}
+          payload={payload}
+        />
+
         <section style={styles.contentCard}>
-          <h2 style={styles.sectionTitle}>Resumo do módulo</h2>
+          <h2 style={styles.sectionTitle}>Resumo técnico do módulo</h2>
 
           <div style={styles.summaryGrid}>
             <SummaryItem
@@ -186,6 +197,297 @@ export default async function DynamicModulePage({
   );
 }
 
+function SmartModuleRenderer({
+  slug,
+  moduleName,
+  payload,
+}: {
+  slug: string;
+  moduleName: string;
+  payload: any;
+}) {
+  if (
+    containsAny(slug, ["cliente", "clientes", "comprador", "compradores"])
+  ) {
+    return <ClientsModule moduleName={moduleName} payload={payload} />;
+  }
+
+  if (
+    containsAny(slug, [
+      "cadastro",
+      "cadastrar",
+      "formulario",
+      "formulario",
+      "registro",
+      "watzap",
+      "whatsapp",
+    ])
+  ) {
+    return <RegisterModule moduleName={moduleName} payload={payload} />;
+  }
+
+  if (
+    containsAny(slug, [
+      "veiculo",
+      "veiculos",
+      "carro",
+      "carros",
+      "frota",
+      "motorista",
+      "motoristas",
+    ])
+  ) {
+    return <FleetModule moduleName={moduleName} payload={payload} />;
+  }
+
+  if (
+    containsAny(slug, [
+      "servico",
+      "servicos",
+      "home",
+      "painel",
+      "dashboard",
+    ])
+  ) {
+    return <ServiceModule moduleName={moduleName} payload={payload} />;
+  }
+
+  if (
+    containsAny(slug, [
+      "despesa",
+      "despesas",
+      "adiantamento",
+      "adiantamentos",
+      "fechamento",
+      "cobranca",
+      "cobranca",
+      "vale",
+      "vales",
+      "diaria",
+      "diarias",
+    ])
+  ) {
+    return <FinanceModule moduleName={moduleName} payload={payload} />;
+  }
+
+  return <GenericModule moduleName={moduleName} payload={payload} />;
+}
+
+function ClientsModule({
+  moduleName,
+  payload,
+}: {
+  moduleName: string;
+  payload: any;
+}) {
+  return (
+    <section style={styles.realCard}>
+      <div style={styles.realBadge}>Módulo inteligente</div>
+      <h2 style={styles.sectionTitle}>{moduleName}</h2>
+      <p style={styles.textSoft}>
+        Tela inicial preparada para gestão de clientes, compradores ou contatos.
+      </p>
+
+      <div style={styles.summaryGrid}>
+        <SummaryItem title="Objetivo" value="Organizar clientes e contatos" />
+        <SummaryItem
+          title="App"
+          value={text(payload?.appName) || "Aurora App"}
+        />
+        <SummaryItem
+          title="Público"
+          value={text(payload?.targetAudience) || "Não informado"}
+        />
+      </div>
+
+      <div style={styles.fakeTable}>
+        <div style={styles.fakeTableHeader}>
+          <span>Nome</span>
+          <span>Telefone</span>
+          <span>Status</span>
+        </div>
+        <div style={styles.fakeTableRow}>
+          <span>Cliente exemplo 1</span>
+          <span>(31) 99999-0001</span>
+          <span>Ativo</span>
+        </div>
+        <div style={styles.fakeTableRow}>
+          <span>Cliente exemplo 2</span>
+          <span>(31) 99999-0002</span>
+          <span>Em contato</span>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function RegisterModule({
+  moduleName,
+  payload,
+}: {
+  moduleName: string;
+  payload: any;
+}) {
+  return (
+    <section style={styles.realCard}>
+      <div style={styles.realBadge}>Módulo inteligente</div>
+      <h2 style={styles.sectionTitle}>{moduleName}</h2>
+      <p style={styles.textSoft}>
+        Tela inicial preparada para cadastro e entrada de dados operacionais.
+      </p>
+
+      <div style={styles.formGrid}>
+        <FakeInput label="Nome" placeholder="Digite o nome" />
+        <FakeInput label="Telefone" placeholder="Digite o telefone" />
+        <FakeInput
+          label="E-mail"
+          placeholder={text(payload?.contactEmail) || "Digite o e-mail"}
+        />
+        <FakeInput label="Observação" placeholder="Digite uma observação" />
+      </div>
+
+      <div style={styles.actions}>
+        <button style={styles.primaryButtonHtml}>Salvar cadastro</button>
+        <button style={styles.secondaryButtonHtml}>Limpar</button>
+      </div>
+    </section>
+  );
+}
+
+function FleetModule({
+  moduleName,
+  payload,
+}: {
+  moduleName: string;
+  payload: any;
+}) {
+  return (
+    <section style={styles.realCard}>
+      <div style={styles.realBadge}>Módulo inteligente</div>
+      <h2 style={styles.sectionTitle}>{moduleName}</h2>
+      <p style={styles.textSoft}>
+        Tela inicial preparada para veículos, motoristas, frota e operação.
+      </p>
+
+      <div style={styles.summaryGrid}>
+        <SummaryItem title="Base" value="Gestão operacional" />
+        <SummaryItem
+          title="Tipo do app"
+          value={text(payload?.appType) || "Não informado"}
+        />
+        <SummaryItem
+          title="Objetivo"
+          value={text(payload?.businessGoal) || "Não informado"}
+        />
+      </div>
+
+      <div style={styles.fakeTable}>
+        <div style={styles.fakeTableHeader}>
+          <span>Placa</span>
+          <span>Modelo</span>
+          <span>Status</span>
+        </div>
+        <div style={styles.fakeTableRow}>
+          <span>ABC-1234</span>
+          <span>Hilux</span>
+          <span>Liberado</span>
+        </div>
+        <div style={styles.fakeTableRow}>
+          <span>XYZ-9876</span>
+          <span>Tracker</span>
+          <span>Em operação</span>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function ServiceModule({
+  moduleName,
+  payload,
+}: {
+  moduleName: string;
+  payload: any;
+}) {
+  return (
+    <section style={styles.realCard}>
+      <div style={styles.realBadge}>Módulo inteligente</div>
+      <h2 style={styles.sectionTitle}>{moduleName}</h2>
+      <p style={styles.textSoft}>
+        Tela inicial preparada para home, serviços, painel ou visão principal.
+      </p>
+
+      <div style={styles.heroModule}>
+        <h3 style={{ margin: 0 }}>
+          {text(payload?.appName) || "Aurora App"}
+        </h3>
+        <p style={{ marginTop: 10, lineHeight: 1.7 }}>
+          {text(payload?.brandDescription) ||
+            "Descrição da marca ainda não informada."}
+        </p>
+      </div>
+    </section>
+  );
+}
+
+function FinanceModule({
+  moduleName,
+  payload,
+}: {
+  moduleName: string;
+  payload: any;
+}) {
+  return (
+    <section style={styles.realCard}>
+      <div style={styles.realBadge}>Módulo inteligente</div>
+      <h2 style={styles.sectionTitle}>{moduleName}</h2>
+      <p style={styles.textSoft}>
+        Tela inicial preparada para despesas, adiantamentos, diárias e fechamento.
+      </p>
+
+      <div style={styles.summaryGrid}>
+        <SummaryItem title="Lançamentos" value="12" />
+        <SummaryItem title="Em aberto" value="3" />
+        <SummaryItem title="Fechamento" value="Em andamento" />
+      </div>
+    </section>
+  );
+}
+
+function GenericModule({
+  moduleName,
+  payload,
+}: {
+  moduleName: string;
+  payload: any;
+}) {
+  return (
+    <section style={styles.realCard}>
+      <div style={styles.realBadge}>Módulo inteligente</div>
+      <h2 style={styles.sectionTitle}>{moduleName}</h2>
+      <p style={styles.textSoft}>
+        Este módulo já abre como página real e pode ser evoluído para layout específico
+        conforme o tipo de uso.
+      </p>
+
+      <div style={styles.summaryGrid}>
+        <SummaryItem
+          title="Nome do app"
+          value={text(payload?.appName) || "Não informado"}
+        />
+        <SummaryItem
+          title="Objetivo"
+          value={text(payload?.businessGoal) || "Não informado"}
+        />
+        <SummaryItem
+          title="Público"
+          value={text(payload?.targetAudience) || "Não informado"}
+        />
+      </div>
+    </section>
+  );
+}
+
 function InfoCard({ label, value }: { label: string; value: string }) {
   return (
     <div style={styles.infoCard}>
@@ -200,6 +502,21 @@ function SummaryItem({ title, value }: { title: string; value: string }) {
     <div style={styles.summaryCard}>
       <div style={styles.summaryTitle}>{title}</div>
       <div style={styles.summaryValue}>{value}</div>
+    </div>
+  );
+}
+
+function FakeInput({
+  label,
+  placeholder,
+}: {
+  label: string;
+  placeholder: string;
+}) {
+  return (
+    <div style={styles.fieldWrap}>
+      <label style={styles.label}>{label}</label>
+      <input style={styles.input} placeholder={placeholder} />
     </div>
   );
 }
@@ -247,6 +564,15 @@ const styles: Record<string, React.CSSProperties> = {
     padding: 24,
     boxShadow: "0 20px 80px rgba(0,0,0,0.35)",
   },
+  realCard: {
+    border: "1px solid rgba(34,197,94,0.22)",
+    background: "rgba(15,23,42,0.82)",
+    backdropFilter: "blur(10px)",
+    borderRadius: 24,
+    padding: 24,
+    boxShadow: "0 20px 80px rgba(0,0,0,0.35)",
+    marginBottom: 24,
+  },
   badge: {
     display: "inline-flex",
     padding: "8px 12px",
@@ -256,6 +582,18 @@ const styles: Record<string, React.CSSProperties> = {
     color: "#86efac",
     fontSize: 13,
     fontWeight: 700,
+    letterSpacing: 0.3,
+    marginBottom: 14,
+  },
+  realBadge: {
+    display: "inline-flex",
+    padding: "8px 12px",
+    borderRadius: 999,
+    background: "rgba(250,204,21,0.12)",
+    border: "1px solid rgba(250,204,21,0.25)",
+    color: "#fde68a",
+    fontSize: 13,
+    fontWeight: 800,
     letterSpacing: 0.3,
     marginBottom: 14,
   },
@@ -269,6 +607,12 @@ const styles: Record<string, React.CSSProperties> = {
     marginTop: 14,
     maxWidth: 940,
     fontSize: 16,
+    lineHeight: 1.7,
+  },
+  textSoft: {
+    color: "#cbd5e1",
+    marginTop: 10,
+    fontSize: 15,
     lineHeight: 1.7,
   },
   infoGrid: {
@@ -375,5 +719,81 @@ const styles: Record<string, React.CSSProperties> = {
     textDecoration: "none",
     fontWeight: 900,
     border: "1px solid rgba(148,163,184,0.18)",
+  },
+  primaryButtonHtml: {
+    minHeight: 48,
+    padding: "0 18px",
+    borderRadius: 14,
+    background: "linear-gradient(135deg, #22c55e 0%, #14b8a6 100%)",
+    color: "#03130d",
+    fontWeight: 900,
+    border: "none",
+    cursor: "pointer",
+  },
+  secondaryButtonHtml: {
+    minHeight: 48,
+    padding: "0 18px",
+    borderRadius: 14,
+    background: "rgba(15,23,42,0.72)",
+    color: "#f8fafc",
+    fontWeight: 900,
+    border: "1px solid rgba(148,163,184,0.18)",
+    cursor: "pointer",
+  },
+  fakeTable: {
+    marginTop: 18,
+    borderRadius: 18,
+    overflow: "hidden",
+    border: "1px solid rgba(148,163,184,0.16)",
+  },
+  fakeTableHeader: {
+    display: "grid",
+    gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
+    gap: 12,
+    padding: 14,
+    background: "rgba(16,185,129,0.12)",
+    fontWeight: 800,
+  },
+  fakeTableRow: {
+    display: "grid",
+    gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
+    gap: 12,
+    padding: 14,
+    borderTop: "1px solid rgba(148,163,184,0.14)",
+    background: "rgba(2,6,23,0.35)",
+  },
+  heroModule: {
+    marginTop: 18,
+    borderRadius: 20,
+    padding: 20,
+    background:
+      "linear-gradient(135deg, rgba(16,185,129,0.14), rgba(59,130,246,0.10))",
+    border: "1px solid rgba(16,185,129,0.18)",
+  },
+  formGrid: {
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
+    gap: 16,
+    marginTop: 18,
+  },
+  fieldWrap: {
+    display: "flex",
+    flexDirection: "column",
+    gap: 8,
+  },
+  label: {
+    fontSize: 14,
+    fontWeight: 700,
+    color: "#dbeafe",
+  },
+  input: {
+    width: "100%",
+    borderRadius: 14,
+    border: "1px solid rgba(148,163,184,0.18)",
+    background: "rgba(2,6,23,0.55)",
+    color: "#ffffff",
+    padding: "14px 16px",
+    outline: "none",
+    fontSize: 15,
   },
 };
