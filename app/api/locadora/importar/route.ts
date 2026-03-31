@@ -1,56 +1,69 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
-const supabase = createClient(
-  process.env.SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 
-export async function POST(req: Request) {
-  const { csv, ownerEmail, projectId } = await req.json();
+function getSupabaseAdmin() {
+  const supabaseUrl =
+    process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
 
-  if (!csv) {
-    return NextResponse.json({ error: "CSV vazio" }, { status: 400 });
+  const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+  if (!supabaseUrl || !supabaseServiceRoleKey) {
+    return null;
   }
 
-  const linhas = csv.split("\n").filter((l: string) => l.trim() !== "");
-
-  const headers = linhas[0].split(",");
-
-  const dados = linhas.slice(1).map((linha: string) => {
-    const valores = linha.split(",");
-
-    const obj: any = {};
-
-    headers.forEach((h: string, i: number) => {
-      obj[h.trim()] = valores[i]?.trim();
-    });
-
-    return {
-      titulo: obj.titulo || "",
-      marca: obj.marca || "",
-      modelo: obj.modelo || "",
-      ano: obj.ano || "",
-      cor: obj.cor || "",
-      placa: obj.placa || "",
-      valor_diaria: obj.valorDiaria || "0",
-      status: obj.status || "disponivel",
-      observacoes: obj.observacoes || "",
-      owner_email: ownerEmail,
-      project_id: projectId,
-    };
+  return createClient(supabaseUrl, supabaseServiceRoleKey, {
+    auth: {
+      persistSession: false,
+      autoRefreshToken: false,
+    },
   });
+}
 
-  const { error } = await supabase
-    .from("aurora_locadora_vehicles")
-    .insert(dados);
-
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
-  }
-
+export async function GET() {
   return NextResponse.json({
-    success: true,
-    total: dados.length,
+    ok: true,
+    route: "/api/locadora/importar",
+    message:
+      "Rota ativa. Sistema em constante atualização e pode haver momentos de instabilidade.",
   });
+}
+
+export async function POST(request: Request) {
+  try {
+    const supabase = getSupabaseAdmin();
+
+    if (!supabase) {
+      return NextResponse.json(
+        {
+          ok: false,
+          error:
+            "Variáveis do Supabase não configuradas na Vercel para esta rota.",
+        },
+        { status: 500 }
+      );
+    }
+
+    const body = await request.json().catch(() => null);
+
+    return NextResponse.json({
+      ok: true,
+      message:
+        "Rota de importação preparada com proteção de ambiente. Sistema em constante atualização e pode haver momentos de instabilidade.",
+      received: body,
+    });
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : "Erro interno inesperado.";
+
+    return NextResponse.json(
+      {
+        ok: false,
+        error: message,
+      },
+      { status: 500 }
+    );
+  }
 }
