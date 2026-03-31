@@ -121,7 +121,6 @@ type FinanceDashboardResponse = {
   userId: string;
   profile: {
     id: string;
-    company_id: string | null;
     email: string | null;
     role: string | null;
   };
@@ -153,6 +152,16 @@ type FinanceApiError = {
   details?: unknown;
 };
 
+function getStoredUserEmail() {
+  if (typeof window === "undefined") return "";
+  return (
+    localStorage.getItem("user_email") ||
+    localStorage.getItem("aurora_user_email") ||
+    localStorage.getItem("email") ||
+    ""
+  ).trim();
+}
+
 function getFinanceContent(locale: string) {
   const isEnglish = locale === "en-US";
   const isSpanish = locale === "es-ES";
@@ -168,13 +177,17 @@ function getFinanceContent(locale: string) {
       newEntry: "New entry",
       businessArea: "Business area",
       financialVision: "Real financial vision",
-      privateByCompanyDesc: "Private company environment with authenticated access and protected data.",
+      privateByCompanyDesc:
+        "Private company environment with authenticated access and protected data.",
       editableCategories: "Editable categories",
-      editableCategoriesDesc: "Company data is loaded from the real backend whenever categories exist.",
+      editableCategoriesDesc:
+        "Company data is loaded from the real backend whenever categories exist.",
       editableActivities: "Editable activities",
-      editableActivitiesDesc: "Activities and structures can grow by company without locking the client.",
+      editableActivitiesDesc:
+        "Activities and structures can grow by company without locking the client.",
       premiumReports: "Premium reports",
-      premiumReportsDesc: "Strong visual layout with real dashboard, entries and future reports.",
+      premiumReportsDesc:
+        "Strong visual layout with real dashboard, entries and future reports.",
       monthlyRevenue: "Monthly revenue",
       monthlyExpenses: "Monthly expenses",
       monthlyBalance: "Monthly balance",
@@ -211,9 +224,9 @@ function getFinanceContent(locale: string) {
       account: "Account",
       loading: "Loading financial data...",
       loadingAuth:
-        "If this stays blocked, log in and open /financeiro again.",
+        "If this stays blocked, enter your email on Aurora and open /financeiro again.",
       authError:
-        "User not authenticated. Log in first to load the private finance module.",
+        "User not authenticated or without fallback email. Enter your email first in Aurora.",
       genericError: "Could not load the finance module.",
       successCreated: "Real entry created successfully.",
       noCategories: "No categories registered yet.",
@@ -228,6 +241,7 @@ function getFinanceContent(locale: string) {
       connectedBackend: "Connected backend",
       connectedBackendDesc: "This page is loading data from /api/financeiro.",
       chooseOption: "Select",
+      saving: "Saving...",
     };
   }
 
@@ -238,17 +252,21 @@ function getFinanceContent(locale: string) {
         "Finanzas privadas por empresa con categorías editables, actividades, documentos reales y control premium.",
       heroTitle: "Finanzas empresariales editables con backend real.",
       heroDescription:
-        "Esta pantalla ahora está conectada a la API financiera real de Aurora y puede cargar los datos financieros de la empresa logueada.",
+        "Esta pantalla ahora está conectada a la API financiera real de Aurora y puede cargar los datos financieros de la empresa identificada.",
       newEntry: "Nuevo registro",
       businessArea: "Área empresarial",
       financialVision: "Visión financiera real",
-      privateByCompanyDesc: "Entorno privado por empresa con acceso autenticado y datos protegidos.",
+      privateByCompanyDesc:
+        "Entorno privado por empresa con acceso protegido y datos organizados.",
       editableCategories: "Categorías editables",
-      editableCategoriesDesc: "Los datos de la empresa se cargan desde el backend real cuando existan categorías.",
+      editableCategoriesDesc:
+        "Los datos de la empresa se cargan desde el backend real cuando existan categorías.",
       editableActivities: "Actividades editables",
-      editableActivitiesDesc: "Las actividades y estructuras pueden crecer por empresa sin bloquear al cliente.",
+      editableActivitiesDesc:
+        "Las actividades y estructuras pueden crecer por empresa sin bloquear al cliente.",
       premiumReports: "Informes premium",
-      premiumReportsDesc: "Visual fuerte con dashboard real, registros e informes futuros.",
+      premiumReportsDesc:
+        "Visual fuerte con dashboard real, registros e informes futuros.",
       monthlyRevenue: "Ingresos del mes",
       monthlyExpenses: "Gastos del mes",
       monthlyBalance: "Saldo del mes",
@@ -259,7 +277,7 @@ function getFinanceContent(locale: string) {
       settledEntries: "Cobrado / pagado",
       quickCreateTitle: "Creación real",
       quickCreateDescription:
-        "Crea un registro real para la empresa logueada usando la API financiera.",
+        "Crea un registro real para la empresa identificada usando la API financiera.",
       entryName: "Nombre del registro",
       entryType: "Tipo",
       income: "Ingreso",
@@ -285,9 +303,9 @@ function getFinanceContent(locale: string) {
       account: "Cuenta",
       loading: "Cargando datos financieros...",
       loadingAuth:
-        "Si esto queda bloqueado, inicia sesión y vuelve a abrir /financeiro.",
+        "Si esto se bloquea, informa tu correo en Aurora y vuelve a abrir /financeiro.",
       authError:
-        "Usuario no autenticado. Inicia sesión primero para cargar el módulo financiero privado.",
+        "Usuario no autenticado o sin correo de respaldo. Informa tu correo primero en Aurora.",
       genericError: "No fue posible cargar el módulo financiero.",
       successCreated: "Registro real creado con éxito.",
       noCategories: "Aún no hay categorías registradas.",
@@ -302,6 +320,7 @@ function getFinanceContent(locale: string) {
       connectedBackend: "Backend conectado",
       connectedBackendDesc: "Esta página está cargando datos desde /api/financeiro.",
       chooseOption: "Seleccionar",
+      saving: "Guardando...",
     };
   }
 
@@ -311,17 +330,21 @@ function getFinanceContent(locale: string) {
       "Financeiro privado por empresa com categorias editáveis, atividades, documentos reais e controle premium.",
     heroTitle: "Financeiro empresarial editável com backend real.",
     heroDescription:
-      "Esta tela agora está conectada à API financeira real da Aurora e pode carregar os dados financeiros da empresa logada.",
+      "Esta tela agora está conectada à API financeira real da Aurora e pode carregar os dados financeiros da empresa identificada.",
     newEntry: "Novo lançamento",
     businessArea: "Área empresarial",
     financialVision: "Visão financeira real",
-    privateByCompanyDesc: "Ambiente privado por empresa com acesso autenticado e dados protegidos.",
+    privateByCompanyDesc:
+      "Ambiente privado por empresa com acesso protegido e dados organizados.",
     editableCategories: "Categorias editáveis",
-    editableCategoriesDesc: "Os dados da empresa são carregados do backend real quando existirem categorias.",
+    editableCategoriesDesc:
+      "Os dados da empresa são carregados do backend real quando existirem categorias.",
     editableActivities: "Atividades editáveis",
-    editableActivitiesDesc: "As atividades e estruturas podem crescer por empresa sem travar o cliente.",
+    editableActivitiesDesc:
+      "As atividades e estruturas podem crescer por empresa sem travar o cliente.",
     premiumReports: "Relatórios premium",
-    premiumReportsDesc: "Visual forte com dashboard real, lançamentos e futuros relatórios.",
+    premiumReportsDesc:
+      "Visual forte com dashboard real, lançamentos e futuros relatórios.",
     monthlyRevenue: "Receitas do mês",
     monthlyExpenses: "Despesas do mês",
     monthlyBalance: "Saldo do mês",
@@ -332,7 +355,7 @@ function getFinanceContent(locale: string) {
     settledEntries: "Recebido / pago",
     quickCreateTitle: "Criação real",
     quickCreateDescription:
-      "Crie um lançamento real para a empresa logada usando a API financeira.",
+      "Crie um lançamento real para a empresa identificada usando a API financeira.",
     entryName: "Nome do lançamento",
     entryType: "Tipo",
     income: "Entrada",
@@ -358,9 +381,9 @@ function getFinanceContent(locale: string) {
     account: "Conta",
     loading: "Carregando dados financeiros...",
     loadingAuth:
-      "Se isso ficar travado, faça login e abra /financeiro novamente.",
+      "Se isso ficar travado, informe seu e-mail na Aurora e abra /financeiro novamente.",
     authError:
-      "Usuário não autenticado. Faça login primeiro para carregar o módulo financeiro privado.",
+      "Usuário não autenticado ou sem e-mail de fallback. Informe o e-mail primeiro na Aurora.",
     genericError: "Não foi possível carregar o módulo financeiro.",
     successCreated: "Lançamento real criado com sucesso.",
     noCategories: "Ainda não existem categorias cadastradas.",
@@ -375,6 +398,7 @@ function getFinanceContent(locale: string) {
     connectedBackend: "Backend conectado",
     connectedBackendDesc: "Esta página está carregando dados de /api/financeiro.",
     chooseOption: "Selecionar",
+    saving: "Salvando...",
   };
 }
 
@@ -449,10 +473,12 @@ function formatDate(value: string | null, locale: string) {
 
 function getErrorMessage(error: unknown, fallback: string) {
   if (typeof error === "string") return error;
+
   if (error && typeof error === "object" && "error" in error) {
     const maybeError = (error as { error?: unknown }).error;
     if (typeof maybeError === "string") return maybeError;
   }
+
   return fallback;
 }
 
@@ -465,6 +491,7 @@ export default function FinanceiroPage() {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [dashboardData, setDashboardData] = useState<FinanceDashboardResponse | null>(null);
+  const [userEmail, setUserEmail] = useState("");
 
   const [entryName, setEntryName] = useState("");
   const [entryType, setEntryType] = useState<FinanceEntryType>("expense");
@@ -483,17 +510,24 @@ export default function FinanceiroPage() {
   const [paymentMethod, setPaymentMethod] = useState("");
   const [unit, setUnit] = useState("");
 
+  useEffect(() => {
+    setUserEmail(getStoredUserEmail());
+  }, []);
+
   const loadDashboard = useCallback(async () => {
     setLoading(true);
     setLoadError(null);
 
     try {
       const response = await fetch("/api/financeiro", {
-        method: "GET",
+        method: "POST",
         credentials: "include",
         headers: {
           "Content-Type": "application/json",
         },
+        body: JSON.stringify({
+          email: userEmail || null,
+        }),
         cache: "no-store",
       });
 
@@ -511,11 +545,18 @@ export default function FinanceiroPage() {
     } finally {
       setLoading(false);
     }
-  }, [content.genericError]);
+  }, [content.genericError, userEmail]);
 
   useEffect(() => {
+    if (!userEmail) {
+      setLoading(false);
+      setLoadError("Usuário não autenticado ou sem e-mail de fallback.");
+      setDashboardData(null);
+      return;
+    }
+
     void loadDashboard();
-  }, [loadDashboard]);
+  }, [loadDashboard, userEmail]);
 
   const settings = dashboardData?.dashboard.settings ?? null;
   const categories = dashboardData?.dashboard.categories ?? [];
@@ -540,13 +581,13 @@ export default function FinanceiroPage() {
 
   const selectedCategory = useMemo(
     () => categories.find((item) => item.id === categoryId) ?? null,
-    [categories, categoryId],
+    [categories, categoryId]
   );
 
   const filteredActivities = useMemo(() => {
     if (!selectedCategory) return activities;
     return activities.filter(
-      (item) => !item.category_id || item.category_id === selectedCategory.id,
+      (item) => !item.category_id || item.category_id === selectedCategory.id
     );
   }, [activities, selectedCategory]);
 
@@ -565,6 +606,11 @@ export default function FinanceiroPage() {
       return;
     }
 
+    if (!userEmail) {
+      setLoadError(content.authError);
+      return;
+    }
+
     setSubmitting(true);
     setLoadError(null);
 
@@ -576,6 +622,7 @@ export default function FinanceiroPage() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
+          email: userEmail,
           account_id: accountId || null,
           category_id: categoryId || null,
           activity_id: activityId || null,
@@ -597,14 +644,30 @@ export default function FinanceiroPage() {
       });
 
       const json = (await response.json()) as
-        | (FinanceDashboardResponse & { entry?: FinanceEntryViewRow; message?: string })
+        | (FinanceDashboardResponse & {
+            entry?: FinanceEntryViewRow;
+            message?: string;
+            companyId?: string;
+            userId?: string;
+            profile?: FinanceDashboardResponse["profile"];
+            dashboard?: FinanceDashboardResponse["dashboard"];
+          })
         | (FinanceApiError & { message?: string });
 
       if (!response.ok || !json.ok) {
         throw new Error(getErrorMessage(json, content.genericError));
       }
 
-      setDashboardData(json as FinanceDashboardResponse);
+      if ("dashboard" in json && json.dashboard) {
+        setDashboardData({
+          ok: true,
+          companyId: json.companyId || dashboardData?.companyId || "",
+          userId: json.userId || dashboardData?.userId || "",
+          profile: json.profile || dashboardData?.profile || { id: "", email: userEmail, role: "user" },
+          dashboard: json.dashboard,
+        });
+      }
+
       setSuccessMessage((json as { message?: string }).message || content.successCreated);
 
       setEntryName("");
@@ -765,6 +828,23 @@ export default function FinanceiroPage() {
               </button>
             </div>
 
+            {userEmail ? (
+              <div
+                style={{
+                  borderRadius: 18,
+                  border: "1px solid rgba(34,197,94,0.18)",
+                  background: "rgba(20,83,45,0.22)",
+                  padding: "14px",
+                  color: "#bbf7d0",
+                  fontSize: 14,
+                  lineHeight: 1.6,
+                  fontWeight: 700,
+                }}
+              >
+                E-mail em uso no fallback: {userEmail}
+              </div>
+            ) : null}
+
             {loading ? (
               <div
                 style={{
@@ -799,7 +879,9 @@ export default function FinanceiroPage() {
                   fontWeight: 700,
                 }}
               >
-                {loadError === "Usuário não autenticado."
+                {loadError.includes("não autenticado") ||
+                loadError.includes("fallback") ||
+                loadError.includes("not authenticated")
                   ? content.authError
                   : loadError}
               </div>
@@ -1045,8 +1127,8 @@ export default function FinanceiroPage() {
                       locale === "en-US"
                         ? "Ex.: Field support"
                         : locale === "es-ES"
-                          ? "Ej.: Apoyo de campo"
-                          : "Ex.: Apoio de campo"
+                        ? "Ej.: Apoyo de campo"
+                        : "Ex.: Apoio de campo"
                     }
                     style={{
                       width: "100%",
@@ -1524,7 +1606,7 @@ export default function FinanceiroPage() {
                     boxShadow: "0 18px 40px rgba(34,197,94,0.18)",
                   }}
                 >
-                  {submitting ? "Salvando..." : content.saveEntry}
+                  {submitting ? content.saving : content.saveEntry}
                 </button>
               </div>
             </div>
@@ -1802,9 +1884,7 @@ export default function FinanceiroPage() {
                                 textTransform: "uppercase",
                               }}
                             >
-                              {item.entry_type === "income"
-                                ? content.income
-                                : content.expense}
+                              {item.entry_type === "income" ? content.income : content.expense}
                             </span>
 
                             <span

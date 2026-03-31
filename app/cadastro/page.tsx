@@ -73,9 +73,10 @@ export default function CadastroPage() {
     empresa: string;
     responsavel: string;
     abrangencia: string;
+    email: string;
   }>(null);
 
-  function update(field: string, value: any) {
+  function update(field: keyof typeof initialForm, value: string | string[]) {
     setForm((prev) => ({ ...prev, [field]: value }));
   }
 
@@ -91,6 +92,15 @@ export default function CadastroPage() {
       field,
       atual.filter((i: string) => i !== item)
     );
+  }
+
+  function persistUserEmail(email: string) {
+    const safeEmail = email.trim();
+    if (!safeEmail || typeof window === "undefined") return;
+
+    localStorage.setItem("user_email", safeEmail);
+    localStorage.setItem("aurora_user_email", safeEmail);
+    localStorage.setItem("email", safeEmail);
   }
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -120,10 +130,13 @@ export default function CadastroPage() {
         return;
       }
 
+      persistUserEmail(form.email);
+
       setSuccessData({
         empresa: form.empresa || "Sua empresa",
         responsavel: form.responsavel || "Responsável",
         abrangencia: form.abrangencia || "Abrangência não informada",
+        email: form.email || "",
       });
 
       setForm(initialForm);
@@ -190,6 +203,26 @@ export default function CadastroPage() {
             {" • "}
             <span>{successData.abrangencia}</span>
           </p>
+
+          {successData.email ? (
+            <div
+              style={{
+                marginTop: 16,
+                padding: 14,
+                borderRadius: 14,
+                background: "rgba(0,255,136,0.08)",
+                border: "1px solid rgba(0,255,136,0.18)",
+                color: "#bbf7d0",
+                fontSize: 14,
+                lineHeight: 1.6,
+                fontWeight: 700,
+              }}
+            >
+              E-mail salvo para identificação da Aurora:
+              <br />
+              <span style={{ fontWeight: 800 }}>{successData.email}</span>
+            </div>
+          ) : null}
 
           <div
             style={{
@@ -285,6 +318,32 @@ export default function CadastroPage() {
                 <br />
                 <span style={{ fontSize: 12, opacity: 0.72 }}>
                   Continue exploring
+                </span>
+              </span>
+            </a>
+
+            <a
+              href="/financeiro"
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                minHeight: 56,
+                borderRadius: 14,
+                textDecoration: "none",
+                border: "1px solid rgba(103,232,249,0.25)",
+                background: "rgba(103,232,249,0.08)",
+                color: "#cffafe",
+                fontWeight: 800,
+                padding: "14px 18px",
+                textAlign: "center",
+              }}
+            >
+              <span>
+                Ir para o financeiro
+                <br />
+                <span style={{ fontSize: 12, opacity: 0.72 }}>
+                  Open finance
                 </span>
               </span>
             </a>
