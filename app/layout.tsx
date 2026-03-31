@@ -1,16 +1,23 @@
-import "./globals.css";
 import type { Metadata } from "next";
-import PwaInstallPrompt from "../components/PwaInstallPrompt";
+import "./globals.css";
+import { AuroraGlobalProvider } from "@/components/aurora-global-provider";
 
 export const metadata: Metadata = {
-  title: "Aurora IA",
-  description: "Aurora IA em constante evolução.",
+  title: "Aurora IA | Plataforma global",
+  description:
+    "Aurora IA é uma plataforma global para chat, imagens, cadastros, operações e financeiro empresarial editável por empresa.",
   applicationName: "Aurora IA",
-  appleWebApp: {
-    capable: true,
-    statusBarStyle: "default",
-    title: "Aurora IA",
-  },
+  keywords: [
+    "Aurora IA",
+    "financeiro empresarial",
+    "ERP editável",
+    "cadastro global",
+    "plataforma multilíngue",
+    "multimoeda",
+    "chat com IA",
+    "gerador de imagens",
+    "Aurora Finance",
+  ],
 };
 
 export default function RootLayout({
@@ -19,10 +26,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="pt-BR">
-      <body>
-        {children}
-        <PwaInstallPrompt />
+    <html lang="pt-BR" suppressHydrationWarning>
+      <body suppressHydrationWarning>
+        <AuroraGlobalProvider initialLocale="pt-BR" initialCurrency="BRL">
+          {children}
+        </AuroraGlobalProvider>
       </body>
     </html>
   );
