@@ -1,223 +1,251 @@
+"use client";
+
 import Link from "next/link";
 
-export default function ImobiliariasCadastrarPage() {
+export default function CadastroImobiliariasPage() {
   return (
     <main
       style={{
         minHeight: "100vh",
         background:
-          "radial-gradient(circle at top, rgba(99,102,241,0.18), transparent 30%), #050816",
-        color: "#e5eef8",
-        padding: "32px 16px 80px",
+          "radial-gradient(circle at top, rgba(16,185,129,0.14), transparent 24%), linear-gradient(180deg, #07111f 0%, #08101a 35%, #05080f 100%)",
+        color: "#f8fafc",
+        padding: "32px 18px 80px",
       }}
     >
-      <div style={{ maxWidth: 1100, margin: "0 auto" }}>
+      <div
+        style={{
+          maxWidth: 980,
+          margin: "0 auto",
+        }}
+      >
         <div
           style={{
             display: "flex",
-            gap: 12,
             flexWrap: "wrap",
-            marginBottom: 16,
+            gap: 12,
+            marginBottom: 18,
           }}
         >
-          <Link
-            href="/"
-            style={{
-              color: "#93c5fd",
-              textDecoration: "none",
-              border: "1px solid rgba(147,197,253,0.25)",
-              borderRadius: 999,
-              padding: "10px 14px",
-            }}
-          >
+          <Link href="/" style={navStyle("#93c5fd")}>
             Voltar à Home
           </Link>
 
-          <Link
-            href="/imobiliarias"
-            style={{
-              color: "#86efac",
-              textDecoration: "none",
-              border: "1px solid rgba(134,239,172,0.25)",
-              borderRadius: 999,
-              padding: "10px 14px",
-            }}
-          >
+          <Link href="/imobiliarias" style={navStyle("#c4b5fd")}>
             Ir para Imobiliárias
           </Link>
 
-          <Link
-            href="/app-builder"
-            style={{
-              color: "#facc15",
-              textDecoration: "none",
-              border: "1px solid rgba(250,204,21,0.25)",
-              borderRadius: 999,
-              padding: "10px 14px",
-            }}
-          >
-            Ir para o App Builder
+          <Link href="/cadastro" style={navStyle("#facc15")}>
+            Ir para o Cadastro Geral
           </Link>
         </div>
 
         <section
           style={{
-            border: "1px solid rgba(148,163,184,0.18)",
-            background: "rgba(15,23,42,0.72)",
-            backdropFilter: "blur(10px)",
-            borderRadius: 24,
-            padding: 24,
-            boxShadow: "0 20px 80px rgba(0,0,0,0.35)",
-            marginBottom: 24,
+            borderRadius: 28,
+            padding: 28,
+            background: "rgba(8,15,28,0.88)",
+            border: "1px solid rgba(148,163,184,0.16)",
+            boxShadow: "0 25px 70px rgba(0,0,0,0.25)",
           }}
         >
           <div
             style={{
               display: "inline-flex",
-              padding: "8px 12px",
+              alignItems: "center",
+              gap: 10,
+              padding: "8px 14px",
               borderRadius: 999,
-              background: "rgba(99,102,241,0.14)",
-              border: "1px solid rgba(99,102,241,0.25)",
-              color: "#c7d2fe",
+              background: "rgba(34,197,94,0.12)",
+              border: "1px solid rgba(34,197,94,0.26)",
+              color: "#bbf7d0",
+              fontWeight: 800,
               fontSize: 13,
-              fontWeight: 700,
-              letterSpacing: 0.3,
-              marginBottom: 14,
+              marginBottom: 16,
             }}
           >
-            Cadastro Imobiliárias
+            🏡 CADASTRO IMOBILIÁRIAS • AURORA
           </div>
 
           <h1
             style={{
-              fontSize: 36,
-              lineHeight: 1.05,
               margin: 0,
+              fontSize: "clamp(2rem, 5vw, 3.3rem)",
+              lineHeight: 1.05,
+              fontWeight: 900,
             }}
           >
-            Cadastro de imobiliárias em atualização
+            Cadastro de imobiliárias integrado ao cadastro geral
           </h1>
 
           <p
             style={{
-              color: "#94a3b8",
-              marginTop: 14,
+              marginTop: 18,
+              color: "#cbd5e1",
+              fontSize: 17,
+              lineHeight: 1.8,
               maxWidth: 820,
-              fontSize: 16,
-              lineHeight: 1.7,
             }}
           >
-            Esta rota foi ativada para eliminar erros 404 e preparar a entrada
-            de imobiliárias, corretores, parceiros e operação comercial do setor
-            dentro da Aurora. Estamos em constante atualização e pode haver
-            momentos de instabilidade.
+            A Aurora está sendo estruturada com um cadastro principal único.
+            Isso evita retrabalho, fluxos duplicados e perda de dados.
+            Imobiliárias, corretores, parceiros e outros segmentos entram pela
+            base central e depois o sistema usa essas informações conforme a
+            área necessária.
           </p>
-        </section>
-
-        <section
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-            gap: 16,
-            marginBottom: 24,
-          }}
-        >
-          <div
-            style={{
-              borderRadius: 20,
-              padding: 18,
-              background: "rgba(15,23,42,0.72)",
-              border: "1px solid rgba(148,163,184,0.16)",
-            }}
-          >
-            <div style={{ fontSize: 12, color: "#94a3b8" }}>Status atual</div>
-            <div style={{ fontWeight: 800, fontSize: 20, marginTop: 8 }}>
-              Cadastro ativo
-            </div>
-            <p style={{ color: "#cbd5e1", marginTop: 10, marginBottom: 0 }}>
-              O 404 desta rota foi eliminado e a base do fluxo já está pronta.
-            </p>
-          </div>
-
-          <div
-            style={{
-              borderRadius: 20,
-              padding: 18,
-              background: "rgba(15,23,42,0.72)",
-              border: "1px solid rgba(148,163,184,0.16)",
-            }}
-          >
-            <div style={{ fontSize: 12, color: "#94a3b8" }}>Objetivo</div>
-            <div style={{ fontWeight: 800, fontSize: 20, marginTop: 8 }}>
-              Entrada profissional
-            </div>
-            <p style={{ color: "#cbd5e1", marginTop: 10, marginBottom: 0 }}>
-              Organizar o cadastro de imobiliárias e corretores no ecossistema.
-            </p>
-          </div>
-
-          <div
-            style={{
-              borderRadius: 20,
-              padding: 18,
-              background: "rgba(15,23,42,0.72)",
-              border: "1px solid rgba(148,163,184,0.16)",
-            }}
-          >
-            <div style={{ fontSize: 12, color: "#94a3b8" }}>Próximo passo</div>
-            <div style={{ fontWeight: 800, fontSize: 20, marginTop: 8 }}>
-              Formulário real
-            </div>
-            <p style={{ color: "#cbd5e1", marginTop: 10, marginBottom: 0 }}>
-              Ligar o cadastro ao banco e abrir o fluxo comercial imobiliário.
-            </p>
-          </div>
-        </section>
-
-        <section
-          style={{
-            borderRadius: 24,
-            padding: 24,
-            background: "rgba(15,23,42,0.72)",
-            border: "1px solid rgba(148,163,184,0.18)",
-            boxShadow: "0 20px 80px rgba(0,0,0,0.35)",
-          }}
-        >
-          <h2 style={{ fontSize: 24, marginTop: 0 }}>Entradas previstas</h2>
 
           <div
             style={{
               display: "grid",
               gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
               gap: 14,
-              marginTop: 18,
+              marginTop: 24,
             }}
           >
-            {[
-              "Cadastro de imobiliárias",
-              "Cadastro de corretores",
-              "Captação de imóveis",
-              "Leads e propostas",
-              "Contato comercial",
-              "Painel administrativo",
-            ].map((item) => (
-              <div
-                key={item}
-                style={{
-                  borderRadius: 16,
-                  padding: 16,
-                  background: "rgba(2,6,23,0.45)",
-                  border: "1px solid rgba(148,163,184,0.14)",
-                  color: "#e2e8f0",
-                  fontWeight: 700,
-                }}
-              >
-                {item}
+            <div style={infoCard}>
+              <div style={infoTitle}>Base única</div>
+              <div style={infoText}>
+                O cadastro principal fica centralizado para toda a plataforma.
               </div>
-            ))}
+            </div>
+
+            <div style={infoCard}>
+              <div style={infoTitle}>Sem duplicidade</div>
+              <div style={infoText}>
+                O segmento imobiliário não precisa criar uma base paralela agora.
+              </div>
+            </div>
+
+            <div style={infoCard}>
+              <div style={infoTitle}>Expansão segura</div>
+              <div style={infoText}>
+                Depois a Aurora puxa os dados para imóveis, leads e operação comercial.
+              </div>
+            </div>
+          </div>
+
+          <div
+            style={{
+              marginTop: 26,
+              padding: 18,
+              borderRadius: 18,
+              background: "rgba(59,130,246,0.10)",
+              border: "1px solid rgba(59,130,246,0.22)",
+            }}
+          >
+            <div
+              style={{
+                fontSize: 15,
+                fontWeight: 800,
+                color: "#bfdbfe",
+                marginBottom: 8,
+              }}
+            >
+              Como funciona agora
+            </div>
+
+            <div
+              style={{
+                color: "#dbeafe",
+                lineHeight: 1.75,
+                fontSize: 14,
+              }}
+            >
+              1. A empresa entra pelo cadastro geral. <br />
+              2. O cadastro fica salvo na base principal da Aurora. <br />
+              3. Depois o sistema usa esses dados no segmento de imóveis quando necessário.
+            </div>
+          </div>
+
+          <div
+            style={{
+              display: "flex",
+              flexWrap: "wrap",
+              gap: 14,
+              marginTop: 26,
+            }}
+          >
+            <Link href="/cadastro" style={primaryButton}>
+              🚀 IR PARA O CADASTRO GERAL
+            </Link>
+
+            <Link href="/imobiliarias" style={secondaryButton}>
+              Voltar para Imobiliárias
+            </Link>
+          </div>
+
+          <div
+            style={{
+              marginTop: 22,
+              fontSize: 14,
+              color: "#86efac",
+              fontWeight: 700,
+            }}
+          >
+            🔒 Sistema em constante atualização. Podem ocorrer instabilidades durante ajustes de integração.
           </div>
         </section>
       </div>
     </main>
   );
 }
+
+function navStyle(color: string): React.CSSProperties {
+  return {
+    color,
+    textDecoration: "none",
+    border: `1px solid ${color}33`,
+    borderRadius: 999,
+    padding: "10px 14px",
+    fontWeight: 700,
+    background: "rgba(15,23,42,0.45)",
+  };
+}
+
+const infoCard: React.CSSProperties = {
+  borderRadius: 18,
+  padding: 18,
+  background: "rgba(15,23,42,0.72)",
+  border: "1px solid rgba(148,163,184,0.14)",
+};
+
+const infoTitle: React.CSSProperties = {
+  fontSize: 16,
+  fontWeight: 800,
+  marginBottom: 8,
+  color: "#f8fafc",
+};
+
+const infoText: React.CSSProperties = {
+  fontSize: 14,
+  lineHeight: 1.7,
+  color: "#cbd5e1",
+};
+
+const primaryButton: React.CSSProperties = {
+  display: "inline-flex",
+  alignItems: "center",
+  justifyContent: "center",
+  minHeight: 54,
+  padding: "0 22px",
+  borderRadius: 16,
+  background: "linear-gradient(135deg, #22c55e 0%, #14b8a6 100%)",
+  color: "#03130d",
+  textDecoration: "none",
+  fontWeight: 900,
+  border: "none",
+};
+
+const secondaryButton: React.CSSProperties = {
+  display: "inline-flex",
+  alignItems: "center",
+  justifyContent: "center",
+  minHeight: 54,
+  padding: "0 22px",
+  borderRadius: 16,
+  background: "rgba(15,23,42,0.72)",
+  color: "#f8fafc",
+  textDecoration: "none",
+  fontWeight: 900,
+  border: "1px solid rgba(148,163,184,0.18)",
+};

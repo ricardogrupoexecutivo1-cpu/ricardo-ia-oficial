@@ -316,13 +316,16 @@ export default function ChatClient() {
     }
 
     try {
-      const response = await fetch("/api/chat", {
+      const endpoint = promptLooksLikeImage ? "/api/image" : "/api/chat";
+
+      const response = await fetch(endpoint, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
           message: text,
+          prompt: text,
           email: userEmail.trim() || undefined,
           messages: nextMessages.map((item) => ({
             role: item.role,
@@ -398,7 +401,7 @@ export default function ChatClient() {
       ]);
 
       if (imageUrl) {
-        trackImageGenerationSucceeded("chat-page", "api-chat");
+        trackImageGenerationSucceeded("chat-page", endpoint);
       } else if (promptLooksLikeImage) {
         trackImageGenerationFailed(
           "chat-page",
@@ -407,7 +410,7 @@ export default function ChatClient() {
       }
 
       if (!response.ok) {
-        console.error("Erro retornado pela API /api/chat:", data);
+        console.error(`Erro retornado pela API ${endpoint}:`, data);
       }
     } catch (error) {
       console.error("Erro ao enviar mensagem:", error);
@@ -946,7 +949,7 @@ export default function ChatClient() {
             placeholder="Digite sua mensagem ou descreva a imagem que deseja..."
             value={input}
             onChange={(event) => setInput(event.target.value)}
-            rows={4}
+            rows={2}
             disabled={loading}
           />
 

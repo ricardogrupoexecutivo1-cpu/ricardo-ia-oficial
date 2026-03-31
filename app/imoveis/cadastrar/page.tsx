@@ -1,8 +1,11 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 
 export default function CadastroImoveis() {
+  const router = useRouter();
+
   const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState("");
 
@@ -27,11 +30,19 @@ export default function CadastroImoveis() {
 
       if (json.ok) {
         setMsg("Cadastro enviado com sucesso.");
+
+        // limpa formulário
         e.target.reset();
+
+        // 🔥 REDIRECIONAMENTO SEGURO
+        setTimeout(() => {
+          router.push("/?cadastro=imoveis-sucesso");
+        }, 1200);
       } else {
         setMsg(json.error || "Erro ao cadastrar.");
       }
-    } catch {
+    } catch (err) {
+      console.error("Erro cadastro:", err);
       setMsg("Erro inesperado.");
     }
 
@@ -46,6 +57,8 @@ export default function CadastroImoveis() {
         display: "flex",
         justifyContent: "center",
         alignItems: "flex-start",
+        background: "#05080f",
+        color: "#fff",
       }}
     >
       <div
@@ -54,11 +67,11 @@ export default function CadastroImoveis() {
           maxWidth: 500,
         }}
       >
-        <h1 style={{ fontSize: 24, marginBottom: 10 }}>
-          Cadastro de Imobiliária
+        <h1 style={{ fontSize: 26, marginBottom: 10 }}>
+          🏡 Cadastro de Imobiliária
         </h1>
 
-        <p style={{ marginBottom: 20 }}>
+        <p style={{ marginBottom: 20, color: "#ccc" }}>
           Cadastre sua imobiliária e receba contatos dentro da Aurora.
         </p>
 
@@ -104,27 +117,34 @@ export default function CadastroImoveis() {
             style={inputStyle}
           />
 
-          {/* BOTÃO GARANTIDO VISÍVEL */}
           <button
             type="submit"
             disabled={loading}
-            style={{
-              height: 50,
-              borderRadius: 12,
-              border: "none",
-              background: "#16a34a",
-              color: "#fff",
-              fontWeight: "bold",
-              fontSize: 16,
-              cursor: "pointer",
-            }}
+            style={buttonStyle}
           >
-            {loading ? "Enviando..." : "Cadastrar"}
+            {loading ? "Enviando..." : "🚀 Cadastrar"}
           </button>
         </form>
 
         {msg && (
-          <p style={{ marginTop: 15, fontWeight: "bold" }}>{msg}</p>
+          <div
+            style={{
+              marginTop: 16,
+              padding: 12,
+              borderRadius: 10,
+              background:
+                msg.includes("sucesso")
+                  ? "rgba(34,197,94,0.15)"
+                  : "rgba(239,68,68,0.15)",
+              border:
+                msg.includes("sucesso")
+                  ? "1px solid rgba(34,197,94,0.4)"
+                  : "1px solid rgba(239,68,68,0.4)",
+              fontWeight: "bold",
+            }}
+          >
+            {msg}
+          </div>
         )}
 
         <p style={{ marginTop: 20, fontSize: 12, opacity: 0.6 }}>
@@ -138,7 +158,20 @@ export default function CadastroImoveis() {
 const inputStyle = {
   height: 45,
   borderRadius: 10,
-  border: "1px solid #ccc",
+  border: "1px solid #333",
   padding: "0 10px",
   fontSize: 14,
+  background: "#0b1220",
+  color: "#fff",
+};
+
+const buttonStyle = {
+  height: 50,
+  borderRadius: 12,
+  border: "none",
+  background: "linear-gradient(135deg, #22c55e, #14b8a6)",
+  color: "#03130d",
+  fontWeight: "bold",
+  fontSize: 16,
+  cursor: "pointer",
 };

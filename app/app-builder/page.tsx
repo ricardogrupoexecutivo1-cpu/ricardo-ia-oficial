@@ -49,6 +49,7 @@ export default function AppBuilderPage() {
   const [loadingProjects, setLoadingProjects] = useState(false);
   const [loadingModules, setLoadingModules] = useState(false);
   const [savingProject, setSavingProject] = useState(false);
+  const [generatingModules, setGeneratingModules] = useState(false);
   const [feedback, setFeedback] = useState("");
   const [feedbackType, setFeedbackType] = useState<"success" | "error" | "info">(
     "info"
@@ -198,6 +199,73 @@ export default function AppBuilderPage() {
     }
   }
 
+  async function handleGenerateModules() {
+    setGeneratingModules(true);
+    setFeedback("");
+
+    try {
+      if (!form.projectId.trim()) {
+        throw new Error("Selecione ou informe um Project ID.");
+      }
+
+      if (!form.appName.trim()) {
+        throw new Error("Preencha o nome do app antes de gerar módulos.");
+      }
+
+      if (!form.desiredPages.trim() && !form.desiredFeatures.trim()) {
+        throw new Error(
+          "Preencha páginas desejadas ou funcionalidades desejadas antes de gerar a estrutura técnica."
+        );
+      }
+
+      const res = await fetch("/api/app-builder/modules", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          projectId: form.projectId,
+          ownerEmail: form.ownerEmail,
+          appName: form.appName,
+          appType: form.appType,
+          targetAudience: form.targetAudience,
+          businessGoal: form.mainGoal,
+          mainColor: form.primaryColor,
+          secondaryColor: form.secondaryColor,
+          pagesText: form.desiredPages,
+          featuresText: form.desiredFeatures,
+          contactPhone: form.contactPhone,
+          contactEmail: form.contactEmail,
+          brandDescription: form.brandDescription,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok || !data?.ok) {
+        throw new Error(data?.error || "Erro ao gerar estrutura técnica.");
+      }
+
+      setFeedbackType("success");
+      setFeedback(
+        data?.message ||
+          `Estrutura técnica gerada com sucesso. Módulos criados: ${data?.created ?? 0}.`
+      );
+
+      await loadModules(form.projectId);
+      await loadProjects();
+    } catch (error) {
+      setFeedbackType("error");
+      setFeedback(
+        error instanceof Error
+          ? error.message
+          : "Erro inesperado ao gerar módulos."
+      );
+    } finally {
+      setGeneratingModules(false);
+    }
+  }
+
   useEffect(() => {
     loadProjects();
   }, []);
@@ -236,7 +304,7 @@ export default function AppBuilderPage() {
             <MiniInfo
               title="Projeto ativo"
               value={form.projectId || "-"}
-              text="ID atual selecionado para leitura de módulos."
+              text="ID atual selecionado para leitura e geração de módulos."
             />
             <MiniInfo
               title="Módulos"
@@ -283,6 +351,7 @@ export default function AppBuilderPage() {
                 <option value="erp">ERP</option>
                 <option value="crm">CRM</option>
                 <option value="institucional">Institucional</option>
+                <option value="locadora">Locadora</option>
               </select>
             </div>
             <Field
@@ -360,7 +429,9 @@ export default function AppBuilderPage() {
                 ...styles.feedbackBox,
                 ...(feedbackType === "success"
                   ? styles.feedbackSuccess
-                  : styles.feedbackError),
+                  : feedbackType === "error"
+                  ? styles.feedbackError
+                  : styles.feedbackInfo),
               }}
             >
               {feedback}
@@ -375,6 +446,17 @@ export default function AppBuilderPage() {
               disabled={savingProject}
             >
               {savingProject ? "Salvando projeto..." : "Salvar projeto"}
+            </button>
+
+            <button
+              type="button"
+              style={styles.primaryButtonStrong}
+              onClick={handleGenerateModules}
+              disabled={generatingModules}
+            >
+              {generatingModules
+                ? "Gerando estrutura técnica..."
+                : "Gerar estrutura técnica"}
             </button>
 
             <button
@@ -628,6 +710,7 @@ const styles: Record<string, React.CSSProperties> = {
     fontWeight: 800,
     fontSize: 20,
     marginTop: 8,
+    wordBreak: "break-word",
   },
   miniText: {
     color: "#cbd5e1",
@@ -734,6 +817,17 @@ const styles: Record<string, React.CSSProperties> = {
     padding: "14px 18px",
     fontSize: 15,
   },
+  primaryButtonStrong: {
+    borderRadius: 14,
+    border: "1px solid rgba(250,204,21,0.35)",
+    background:
+      "linear-gradient(135deg, rgba(250,204,21,0.24), rgba(16,185,129,0.18))",
+    color: "#fefce8",
+    fontWeight: 900,
+    cursor: "pointer",
+    padding: "14px 18px",
+    fontSize: 15,
+  },
   secondaryButton: {
     borderRadius: 14,
     border: "1px solid rgba(148,163,184,0.2)",
@@ -797,6 +891,11 @@ const styles: Record<string, React.CSSProperties> = {
     background: "rgba(239,68,68,0.12)",
     border: "1px solid rgba(239,68,68,0.35)",
     color: "#fecaca",
+  },
+  feedbackInfo: {
+    background: "rgba(59,130,246,0.12)",
+    border: "1px solid rgba(59,130,246,0.35)",
+    color: "#bfdbfe",
   },
   mutedText: {
     color: "#94a3b8",

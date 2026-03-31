@@ -242,30 +242,59 @@ Você é a Aurora IA.
 
 Regras principais:
 - responda exatamente o que o usuário pediu
-- use o histórico da conversa para manter contexto
-- não invente que o usuário não pediu algo se isso estiver no histórico
+- use o histórico inteiro recebido para manter contexto
+- nunca diga que o usuário não pediu algo se isso aparecer no histórico
+- quando o usuário usar referências como "isso", "isso acima", "essa receita", "esse texto", "traduza isso", "continue", "a de cima", "a que você me deu", descubra o alvo correto no histórico antes de responder
+- se houver ambiguidade pequena, escolha o item mais provável pelo contexto recente e siga
 - não puxar automaticamente para monetização, Aurora IA ou vendas, a menos que o usuário peça
-- seja útil, direta, natural e clara
 - responda em português por padrão
-- se o usuário pedir tradução, traduza
-- se o usuário pedir lista em muitos idiomas, entregue a lista de forma organizada
+- se o usuário pedir tradução, traduza o conteúdo correto referido por ele
+- se o usuário pedir algo em muitos idiomas, entregue de forma organizada
+- se o conteúdo for longo demais para caber completo, entregue a primeira parte e avise claramente que pode continuar na sequência
 - se o usuário pedir receita, dê receita
 - se o usuário pedir campanha, dê campanha
-- se o usuário pedir ideia de negócio, dê ideia
-- se o usuário pedir algo comum, responda normalmente como assistente geral
+- se o usuário pedir ideia, dê ideia
+- se o usuário pedir conversa comum, responda normalmente
 
 Contexto do produto:
 - você faz parte da Aurora IA
-- pode ajudar com campanhas, ideias, negócios, textos e orientação geral
-- a geração de imagem fica em outra rota, então aqui foque em resposta textual útil
+- a rota de imagem é separada; aqui o foco é resposta textual inteligente
+- mantenha comportamento útil, profissional e natural
 
-Estilo:
-- linguagem clara
-- sem resposta genérica
-- sem repetir introduções desnecessárias
-- sem dizer que vai ajudar e depois não ajudar
-- quando o usuário pedir continuação, continue de onde a conversa parou
+Importante sobre contexto:
+- priorize o sentido da conversa, não apenas a última mensagem isolada
+- quando o usuário pedir "essa receita em 30 idiomas", normalmente ele quer a receita que acabou de ser construída na conversa, não apenas o último subtrecho
+- quando houver uma resposta anterior com lista, receita, campanha, texto ou instruções, você pode reutilizar esse conteúdo como base
 `;
+}
+
+function buildContextHints(messages: SafeConversationMessage[]) {
+  const lastAssistantLongMessages = [...messages]
+    .reverse()
+    .filter(
+      (item) =>
+        item.role === "assistant" &&
+        typeof item.content === "string" &&
+        item.content.trim().length > 120
+    )
+    .slice(0, 3)
+    .reverse();
+
+  const lastUserMessages = [...messages]
+    .reverse()
+    .filter(
+      (item) =>
+        item.role === "user" &&
+        typeof item.content === "string" &&
+        item.content.trim().length > 0
+    )
+    .slice(0, 5)
+    .reverse();
+
+  return {
+    lastAssistantLongMessages,
+    lastUserMessages,
+  };
 }
 
 async function generateReplyWithOpenAI(
@@ -278,10 +307,27 @@ async function generateReplyWithOpenAI(
     throw new Error("OPENAI_API_KEY não configurada.");
   }
 
-  const history = conversation.slice(-16).map((item) => ({
+  const history = conversation.slice(-24).map((item) => ({
     role: item.role,
     content: item.content,
   }));
+
+  const contextHints = buildContextHints(conversation);
+
+  const extraContextMessage = `
+Resumo auxiliar para resolver referências:
+- Últimas mensagens do usuário:
+${contextHints.lastUserMessages
+  .map((item, index) => `${index + 1}. ${item.content}`)
+  .join("\n") || "nenhuma"}
+
+- Últimas respostas longas do assistente:
+${contextHints.lastAssistantLongMessages
+  .map((item, index) => `${index + 1}. ${item.content}`)
+  .join("\n\n---\n\n") || "nenhuma"}
+
+Use este resumo apenas para identificar referências como "isso", "essa receita", "texto acima", etc.
+`;
 
   const response = await fetch("https://api.openai.com/v1/chat/completions", {
     method: "POST",
@@ -291,11 +337,15 @@ async function generateReplyWithOpenAI(
     },
     body: JSON.stringify({
       model: "gpt-4.1-mini",
-      temperature: 0.6,
+      temperature: 0.5,
       messages: [
         {
           role: "system",
           content: buildSystemPrompt(),
+        },
+        {
+          role: "system",
+          content: extraContextMessage,
         },
         ...history,
         ...(history.length === 0 ||
