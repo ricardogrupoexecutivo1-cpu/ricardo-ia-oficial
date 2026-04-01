@@ -1,18 +1,15 @@
 import type { NextConfig } from "next";
-import path from "path";
 
 const nextConfig: NextConfig = {
-  turbopack: {
-    root: path.join(__dirname),
-  },
-  images: {
-    remotePatterns: [
+  async redirects() {
+    return [
+      // 🔥 FORÇAR TUDO PARA O CADASTRO GERAL (REGRA ÚNICA)
       {
-        protocol: "https",
-        hostname: "xcmtcowgwcvfdcugimmk.supabase.co",
-        pathname: "/storage/v1/object/public/**",
+        source: "/cadastro",
+        destination: "/cadastro-geral",
+        permanent: false,
       },
-    ],
+    ];
   },
 };
 

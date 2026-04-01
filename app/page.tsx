@@ -1,5 +1,7 @@
 import Link from "next/link";
 
+const GENERAL_SIGNUP_HREF = "/cadastro-geral";
+
 export default function HomePage() {
   return (
     <main
@@ -78,8 +80,8 @@ export default function HomePage() {
             <Link href="/planos" style={navLinkStyle}>
               Planos
             </Link>
-            <Link href="/cadastro" style={ctaSmallStyle}>
-              Cadastrar grátis
+            <Link href={GENERAL_SIGNUP_HREF} style={ctaSmallStyle}>
+              Cadastro geral grátis
             </Link>
           </nav>
         </header>
@@ -118,7 +120,7 @@ export default function HomePage() {
                 fontWeight: 800,
               }}
             >
-              Cadastre-se gratuitamente
+              Cadastro livre • sem obrigatoriedade para entrar
             </div>
 
             <div style={{ display: "grid", gap: 10 }}>
@@ -130,23 +132,57 @@ export default function HomePage() {
                   letterSpacing: "-0.03em",
                 }}
               >
-                Cadastre e busque negócios no Brasil e no mundo
+                Entre, explore e cadastre sua empresa quando quiser
               </h1>
 
               <p
                 style={{
                   margin: 0,
-                  color: "rgba(236,253,245,0.80)",
+                  color: "rgba(236,253,245,0.82)",
                   fontSize: 18,
                   lineHeight: 1.7,
-                  maxWidth: 840,
+                  maxWidth: 860,
                 }}
               >
-                A <strong>ricardoiaoficial.com</strong> é uma plataforma
-                internacional para conectar empresas, profissionais, fornecedores,
-                locadoras, agro, mercado imobiliário, serviços e futuras operações
-                financeiras em um ecossistema sério, moderno e pronto para crescer.
+                A Aurora permite que o usuário conheça o ecossistema livremente e,
+                quando fizer sentido, entre no <strong>cadastro geral real</strong>
+                para salvar empresa, fornecedor, operação, marca, serviço ou
+                oportunidade no banco de dados.
               </p>
+
+              <p
+                style={{
+                  margin: 0,
+                  color: "rgba(236,253,245,0.70)",
+                  fontSize: 15,
+                  lineHeight: 1.7,
+                  maxWidth: 920,
+                }}
+              >
+                O cadastro não deve bloquear a entrada no site. Ele fica disponível
+                de forma clara, forte e estratégica para o momento em que o usuário
+                quiser se cadastrar.
+              </p>
+            </div>
+
+            <div
+              style={{
+                display: "flex",
+                gap: 12,
+                flexWrap: "wrap",
+              }}
+            >
+              <Link href={GENERAL_SIGNUP_HREF} style={primaryBigButtonStyle}>
+                Cadastrar empresa agora
+              </Link>
+
+              <Link href="/explorar" style={secondaryBigButtonStyle}>
+                Explorar antes de cadastrar
+              </Link>
+
+              <Link href="/chat" style={secondaryBigButtonStyle}>
+                Abrir Aurora IA
+              </Link>
             </div>
 
             <div
@@ -157,12 +193,12 @@ export default function HomePage() {
               }}
             >
               {[
+                "Empresas",
+                "Fornecedores",
                 "Agro",
                 "Locadoras",
-                "Bancos",
                 "Mercado imobiliário",
-                "Serviços",
-                "Ecossistema internacional",
+                "Serviços e negócios",
               ].map((item) => (
                 <div
                   key={item}
@@ -182,22 +218,6 @@ export default function HomePage() {
 
             <div
               style={{
-                display: "flex",
-                gap: 12,
-                flexWrap: "wrap",
-              }}
-            >
-              <Link href="/cadastro" style={primaryBigButtonStyle}>
-                Cadastrar agora gratuitamente
-              </Link>
-
-              <Link href="/explorar" style={secondaryBigButtonStyle}>
-                Explorar oportunidades
-              </Link>
-            </div>
-
-            <div
-              style={{
                 display: "grid",
                 gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
                 gap: 12,
@@ -205,16 +225,16 @@ export default function HomePage() {
             >
               {[
                 {
-                  title: "Entrada simples",
-                  text: "Usuários podem entrar, escolher sua área e se cadastrar rapidamente.",
+                  title: "Entrada livre",
+                  text: "O visitante pode navegar sem ser obrigado a preencher cadastro para conhecer a plataforma.",
                 },
                 {
-                  title: "Busca séria",
-                  text: "Estrutura para encontrar empresas, serviços, oportunidades e negócios.",
+                  title: "Cadastro estratégico",
+                  text: "Quando quiser se posicionar no ecossistema, ele entra no cadastro geral real e salva seus dados.",
                 },
                 {
-                  title: "Escala global",
-                  text: "Base criada para crescer no Brasil e no mundo com visão estratégica.",
+                  title: "Conversão melhor",
+                  text: "Menos bloqueio na entrada e mais clareza aumentam confiança, permanência e chance de cadastro.",
                 },
               ].map((item) => (
                 <div
@@ -287,7 +307,7 @@ export default function HomePage() {
                   lineHeight: 1.15,
                 }}
               >
-                Sign up for free
+                Explore freely and register when you want
               </div>
 
               <div
@@ -297,13 +317,26 @@ export default function HomePage() {
                   fontSize: 15,
                 }}
               >
-                Global business platform for agro, rentals, banks, real estate,
-                services and strategic opportunities in Brazil and worldwide.
+                Access to the platform must stay open. Registration remains
+                available as a clear and strong option whenever the user is ready
+                to place the business inside the ecosystem.
               </div>
 
-              <Link href="/cadastro" style={languageButtonStyle}>
-                Sign up now
-              </Link>
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: 10,
+                }}
+              >
+                <Link href={GENERAL_SIGNUP_HREF} style={languageButtonStyle}>
+                  General sign up
+                </Link>
+
+                <Link href="/explorar" style={secondaryBigButtonStyle}>
+                  Explore first
+                </Link>
+              </div>
             </div>
 
             <div
@@ -337,7 +370,7 @@ export default function HomePage() {
                   lineHeight: 1.15,
                 }}
               >
-                Regístrate gratis
+                Explora libremente y regístrate cuando quieras
               </div>
 
               <div
@@ -347,13 +380,26 @@ export default function HomePage() {
                   fontSize: 15,
                 }}
               >
-                Plataforma internacional de negocios para agro, alquiler,
-                bancos, inmobiliaria, servicios y oportunidades en Brasil y en el mundo.
+                La entrada al sitio debe permanecer libre. El registro general
+                queda disponible como una opción clara para cuando la empresa
+                quiera entrar en la base real del ecosistema.
               </div>
 
-              <Link href="/cadastro" style={languageButtonStyle}>
-                Registrarse gratis
-              </Link>
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: 10,
+                }}
+              >
+                <Link href={GENERAL_SIGNUP_HREF} style={languageButtonStyle}>
+                  Registro general
+                </Link>
+
+                <Link href="/explorar" style={secondaryBigButtonStyle}>
+                  Explorar primero
+                </Link>
+              </div>
             </div>
           </aside>
         </section>
@@ -388,7 +434,7 @@ export default function HomePage() {
                 lineHeight: 1.1,
               }}
             >
-              Entre, cadastre, apareça e feche negócios
+              Entre, explore, cadastre e feche negócios
             </h2>
           </div>
 
@@ -483,7 +529,7 @@ export default function HomePage() {
               lineHeight: 1.1,
             }}
           >
-            Cadastre-se gratuitamente e comece agora
+            Cadastro geral disponível sem travar a entrada no site
           </div>
 
           <div
@@ -494,9 +540,9 @@ export default function HomePage() {
               maxWidth: 900,
             }}
           >
-            Plataforma séria, moderna e em expansão contínua. Sistema em constante
-            atualização e pode haver momentos de instabilidade durante melhorias e
-            novas liberações.
+            O botão principal da home leva direto ao cadastro geral real, mas a
+            navegação continua livre. Assim o usuário entra no site sem pressão e
+            se cadastra no momento certo.
           </div>
 
           <div
@@ -506,11 +552,11 @@ export default function HomePage() {
               flexWrap: "wrap",
             }}
           >
-            <Link href="/cadastro" style={primaryBigButtonStyle}>
-              Entrar / cadastrar gratuitamente
+            <Link href={GENERAL_SIGNUP_HREF} style={primaryBigButtonStyle}>
+              Entrar no cadastro geral
             </Link>
-            <Link href="/planos" style={secondaryBigButtonStyle}>
-              Ver planos
+            <Link href="/explorar" style={secondaryBigButtonStyle}>
+              Continuar explorando
             </Link>
           </div>
         </section>
