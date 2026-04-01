@@ -3,10 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
-import {
-  getPublicCompanyShareText,
-  getPublicCompanyUrl,
-} from "@/lib/public-links";
+import { getPublicCompanyShareText } from "@/lib/public-links";
 
 type CadastroBase = {
   id: string;
@@ -123,6 +120,33 @@ const ESTADOS_BR = [
   "TO",
 ];
 
+function normalizeSlugPart(value: string): string {
+  return value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/&/g, " e ")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .replace(/-{2,}/g, "-");
+}
+
+function buildSlug(input: {
+  name?: string | null;
+  city?: string | null;
+  state?: string | null;
+}) {
+  const base = [
+    input.name ? normalizeSlugPart(input.name) : "",
+    input.city ? normalizeSlugPart(input.city) : "",
+    input.state ? normalizeSlugPart(input.state) : "",
+  ]
+    .filter(Boolean)
+    .join("-");
+
+  return base || "empresa";
+}
+
 function getSupabaseBrowserClient(): SupabaseClient | null {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -235,7 +259,9 @@ export default function GuardiaoPage() {
       if (bases.length === 0) {
         setCadastros([]);
         setFeedbackType("info");
-        setFeedback("Nenhum cadastro encontrado ainda. O Guardião já está ligado ao banco real.");
+        setFeedback(
+          "Nenhum cadastro encontrado ainda. O Guardião já está ligado ao banco real."
+        );
         return;
       }
 
@@ -248,10 +274,22 @@ export default function GuardiaoPage() {
         segmentosAtendidosResp,
         areasResp,
       ] = await Promise.all([
-        supabase.from("cadastro_perfis").select("cadastro_id, perfil").in("cadastro_id", cadastroIds),
-        supabase.from("cadastro_segmentos").select("cadastro_id, nome").in("cadastro_id", cadastroIds),
-        supabase.from("cadastro_produtos_servicos").select("cadastro_id, nome").in("cadastro_id", cadastroIds),
-        supabase.from("cadastro_segmentos_atendidos").select("cadastro_id, nome").in("cadastro_id", cadastroIds),
+        supabase
+          .from("cadastro_perfis")
+          .select("cadastro_id, perfil")
+          .in("cadastro_id", cadastroIds),
+        supabase
+          .from("cadastro_segmentos")
+          .select("cadastro_id, nome")
+          .in("cadastro_id", cadastroIds),
+        supabase
+          .from("cadastro_produtos_servicos")
+          .select("cadastro_id, nome")
+          .in("cadastro_id", cadastroIds),
+        supabase
+          .from("cadastro_segmentos_atendidos")
+          .select("cadastro_id, nome")
+          .in("cadastro_id", cadastroIds),
         supabase
           .from("cadastro_areas_cobertura")
           .select("cadastro_id, coverage_type, pais, estado, regiao, cidade, observacao")
@@ -267,14 +305,21 @@ export default function GuardiaoPage() {
       const perfis = (perfisResp.data ?? []) as CadastroPerfil[];
       const segmentos = (segmentosResp.data ?? []) as CadastroSegmento[];
       const produtos = (produtosResp.data ?? []) as CadastroProdutoServico[];
-      const segmentosAtendidos = (segmentosAtendidosResp.data ?? []) as CadastroSegmentoAtendido[];
+      const segmentosAtendidos = (segmentosAtendidosResp.data ??
+        []) as CadastroSegmentoAtendido[];
       const areas = (areasResp.data ?? []) as CadastroAreaCobertura[];
 
       const completos: CadastroCompleto[] = bases.map((base) => ({
         ...base,
-        perfis: perfis.filter((item) => item.cadastro_id === base.id).map((item) => item.perfil),
-        segmentos: segmentos.filter((item) => item.cadastro_id === base.id).map((item) => item.nome),
-        produtos_servicos: produtos.filter((item) => item.cadastro_id === base.id).map((item) => item.nome),
+        perfis: perfis
+          .filter((item) => item.cadastro_id === base.id)
+          .map((item) => item.perfil),
+        segmentos: segmentos
+          .filter((item) => item.cadastro_id === base.id)
+          .map((item) => item.nome),
+        produtos_servicos: produtos
+          .filter((item) => item.cadastro_id === base.id)
+          .map((item) => item.nome),
         segmentos_atendidos: segmentosAtendidos
           .filter((item) => item.cadastro_id === base.id)
           .map((item) => item.nome),
@@ -556,10 +601,26 @@ export default function GuardiaoPage() {
           </p>
 
           <div style={styles.heroGrid}>
-            <MiniInfo title="Usuário atual" value={userEmail || "Carregando usuário"} text="Leitura protegida com autenticação real." />
-            <MiniInfo title="Cadastros" value={String(totais.cadastros)} text="Quantidade total carregada no Guardião." />
-            <MiniInfo title="Rascunhos" value={String(totais.rascunhos)} text="Cadastros ainda não publicados e não ativados." />
-            <MiniInfo title="Públicos" value={String(totais.publicos)} text="Cadastros marcados como públicos no banco." />
+            <MiniInfo
+              title="Usuário atual"
+              value={userEmail || "Carregando usuário"}
+              text="Leitura protegida com autenticação real."
+            />
+            <MiniInfo
+              title="Cadastros"
+              value={String(totais.cadastros)}
+              text="Quantidade total carregada no Guardião."
+            />
+            <MiniInfo
+              title="Rascunhos"
+              value={String(totais.rascunhos)}
+              text="Cadastros ainda não publicados e não ativados."
+            />
+            <MiniInfo
+              title="Públicos"
+              value={String(totais.publicos)}
+              text="Cadastros marcados como públicos no banco."
+            />
           </div>
         </section>
 
@@ -575,7 +636,11 @@ export default function GuardiaoPage() {
             }}
           >
             <strong style={{ display: "block", marginBottom: 6 }}>
-              {feedbackType === "success" ? "Sucesso" : feedbackType === "error" ? "Falha" : "Aviso"}
+              {feedbackType === "success"
+                ? "Sucesso"
+                : feedbackType === "error"
+                ? "Falha"
+                : "Aviso"}
             </strong>
             <div>{feedback}</div>
           </section>
@@ -597,7 +662,9 @@ export default function GuardiaoPage() {
         </section>
 
         {loading ? (
-          <section style={styles.loadingCard}>Carregando dados reais do Guardião...</section>
+          <section style={styles.loadingCard}>
+            Carregando dados reais do Guardião...
+          </section>
         ) : cadastros.length === 0 ? (
           <section style={styles.emptyCard}>
             Nenhum cadastro encontrado ainda. O Guardião está pronto para mostrar tudo que entrar no Supabase.
@@ -609,17 +676,19 @@ export default function GuardiaoPage() {
               const isEditing = editingId === cadastro.id;
               const state = editState[cadastro.id] ?? toPublicEditState(cadastro);
 
-              const publicUrl = getPublicCompanyUrl(
-                {
-                  publicName:
-                    cadastro.nome_publico ||
-                    cadastro.nome_empresa ||
-                    cadastro.nome_responsavel,
-                  city: cadastro.cidade_publica || cadastro.cidade_base,
-                  state: cadastro.estado_publico || cadastro.estado_base,
-                },
-                typeof window !== "undefined" ? window.location.origin : ""
-              );
+              const slug = buildSlug({
+                name:
+                  cadastro.nome_publico ||
+                  cadastro.nome_empresa ||
+                  cadastro.nome_responsavel,
+                city: cadastro.cidade_publica || cadastro.cidade_base,
+                state: cadastro.estado_publico || cadastro.estado_base,
+              });
+
+              const baseUrl =
+                typeof window !== "undefined" ? window.location.origin : "";
+
+              const publicUrl = `${baseUrl}/empresa/${slug}`;
 
               const shareText = getPublicCompanyShareText({
                 publicName:
@@ -713,7 +782,10 @@ export default function GuardiaoPage() {
                   <div style={styles.metaGrid}>
                     <InfoItem label="Responsável" value={cadastro.nome_responsavel || "-"} />
                     <InfoItem label="Empresa" value={cadastro.nome_empresa || "-"} />
-                    <InfoItem label="Cobertura" value={formatCoverageLabel(cadastro.coverage_type)} />
+                    <InfoItem
+                      label="Cobertura"
+                      value={formatCoverageLabel(cadastro.coverage_type)}
+                    />
                     <InfoItem label="Cidade-base" value={cadastro.cidade_base || "-"} />
                     <InfoItem label="Estado-base" value={cadastro.estado_base || "-"} />
                     <InfoItem
@@ -766,10 +838,16 @@ export default function GuardiaoPage() {
                     {!isEditing ? (
                       <div style={styles.metaGrid}>
                         <InfoItem label="Nome público" value={cadastro.nome_publico || "-"} />
-                        <InfoItem label="Descrição pública curta" value={cadastro.descricao_publica_curta || "-"} />
+                        <InfoItem
+                          label="Descrição pública curta"
+                          value={cadastro.descricao_publica_curta || "-"}
+                        />
                         <InfoItem label="Cidade pública" value={cadastro.cidade_publica || "-"} />
                         <InfoItem label="Estado público" value={cadastro.estado_publico || "-"} />
-                        <InfoItem label="Mostrar nome público" value={cadastro.mostrar_nome_publico ? "SIM" : "NÃO"} />
+                        <InfoItem
+                          label="Mostrar nome público"
+                          value={cadastro.mostrar_nome_publico ? "SIM" : "NÃO"}
+                        />
                         <InfoItem
                           label="Mostrar descrição pública"
                           value={cadastro.mostrar_descricao_publica ? "SIM" : "NÃO"}
@@ -797,21 +875,27 @@ export default function GuardiaoPage() {
                           <Field
                             label="Nome público"
                             value={state.nome_publico}
-                            onChange={(value) => patchEditState(cadastro.id, { nome_publico: value })}
+                            onChange={(value) =>
+                              patchEditState(cadastro.id, { nome_publico: value })
+                            }
                             placeholder="Ex.: Aurora IA Minas"
                           />
                           <Field
                             label="Descrição pública curta"
                             value={state.descricao_publica_curta}
                             onChange={(value) =>
-                              patchEditState(cadastro.id, { descricao_publica_curta: value })
+                              patchEditState(cadastro.id, {
+                                descricao_publica_curta: value,
+                              })
                             }
                             placeholder="Ex.: soluções empresariais com IA"
                           />
                           <Field
                             label="Cidade pública"
                             value={state.cidade_publica}
-                            onChange={(value) => patchEditState(cadastro.id, { cidade_publica: value })}
+                            onChange={(value) =>
+                              patchEditState(cadastro.id, { cidade_publica: value })
+                            }
                             placeholder="Ex.: Lagoa Santa"
                           />
                           <div style={styles.fieldWrap}>
@@ -819,7 +903,9 @@ export default function GuardiaoPage() {
                             <select
                               value={state.estado_publico}
                               onChange={(e) =>
-                                patchEditState(cadastro.id, { estado_publico: e.target.value })
+                                patchEditState(cadastro.id, {
+                                  estado_publico: e.target.value,
+                                })
                               }
                               style={styles.select}
                             >
@@ -848,7 +934,8 @@ export default function GuardiaoPage() {
                             active={state.mostrar_descricao_publica}
                             onClick={() =>
                               patchEditState(cadastro.id, {
-                                mostrar_descricao_publica: !state.mostrar_descricao_publica,
+                                mostrar_descricao_publica:
+                                  !state.mostrar_descricao_publica,
                               })
                             }
                           />
@@ -875,7 +962,8 @@ export default function GuardiaoPage() {
                             active={state.mostrar_segmentos_publicos}
                             onClick={() =>
                               patchEditState(cadastro.id, {
-                                mostrar_segmentos_publicos: !state.mostrar_segmentos_publicos,
+                                mostrar_segmentos_publicos:
+                                  !state.mostrar_segmentos_publicos,
                               })
                             }
                           />
@@ -884,7 +972,8 @@ export default function GuardiaoPage() {
                             active={state.mostrar_produtos_publicos}
                             onClick={() =>
                               patchEditState(cadastro.id, {
-                                mostrar_produtos_publicos: !state.mostrar_produtos_publicos,
+                                mostrar_produtos_publicos:
+                                  !state.mostrar_produtos_publicos,
                               })
                             }
                           />
@@ -974,7 +1063,9 @@ export default function GuardiaoPage() {
                             setFeedback("Mensagem de compartilhamento copiada com sucesso.");
                           } catch {
                             setFeedbackType("error");
-                            setFeedback("Não foi possível copiar a mensagem de compartilhamento.");
+                            setFeedback(
+                              "Não foi possível copiar a mensagem de compartilhamento."
+                            );
                           }
                         }}
                       >
@@ -984,8 +1075,16 @@ export default function GuardiaoPage() {
                   </div>
 
                   <div style={styles.sectionGrid}>
-                    <TagBlock title="Perfis" items={cadastro.perfis} emptyText="Nenhum perfil cadastrado." />
-                    <TagBlock title="Segmentos" items={cadastro.segmentos} emptyText="Nenhum segmento cadastrado." />
+                    <TagBlock
+                      title="Perfis"
+                      items={cadastro.perfis}
+                      emptyText="Nenhum perfil cadastrado."
+                    />
+                    <TagBlock
+                      title="Segmentos"
+                      items={cadastro.segmentos}
+                      emptyText="Nenhum segmento cadastrado."
+                    />
                     <TagBlock
                       title="Produtos e serviços"
                       items={cadastro.produtos_servicos}
@@ -1002,13 +1101,17 @@ export default function GuardiaoPage() {
                     <div style={styles.blockTitle}>Áreas de cobertura</div>
 
                     {cadastro.areas_cobertura.length === 0 ? (
-                      <div style={styles.emptyText}>Nenhuma área detalhada cadastrada.</div>
+                      <div style={styles.emptyText}>
+                        Nenhuma área detalhada cadastrada.
+                      </div>
                     ) : (
                       <div style={styles.areaList}>
                         {cadastro.areas_cobertura.map((area, index) => (
                           <div key={`${cadastro.id}-${index}`} style={styles.areaItem}>
                             <div style={styles.areaStrong}>
-                              {formatCoverageLabel(area.coverage_type as CadastroBase["coverage_type"])}
+                              {formatCoverageLabel(
+                                area.coverage_type as CadastroBase["coverage_type"]
+                              )}
                             </div>
                             <div style={styles.areaText}>
                               País: {area.pais || "Brasil"} | Estado: {area.estado || "-"} |

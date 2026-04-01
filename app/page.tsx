@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 const GENERAL_SIGNUP_HREF = "/cadastro-geral";
+const SEARCH_COMPANIES_HREF = "/cadastros";
 
 export default function HomePage() {
   return (
@@ -74,8 +75,8 @@ export default function HomePage() {
             <Link href="/chat" style={navLinkStyle}>
               Chat
             </Link>
-            <Link href="/explorar" style={navLinkStyle}>
-              Explorar
+            <Link href={SEARCH_COMPANIES_HREF} style={navLinkStyle}>
+              Pesquisar empresas
             </Link>
             <Link href="/planos" style={navLinkStyle}>
               Planos
@@ -89,7 +90,7 @@ export default function HomePage() {
         <section
           style={{
             display: "grid",
-            gridTemplateColumns: "1.15fr 0.85fr",
+            gridTemplateColumns: "1fr",
             gap: 18,
           }}
         >
@@ -132,7 +133,7 @@ export default function HomePage() {
                   letterSpacing: "-0.03em",
                 }}
               >
-                Entre, explore e cadastre sua empresa quando quiser
+                Entre, pesquise empresas e cadastre a sua quando quiser
               </h1>
 
               <p
@@ -144,9 +145,10 @@ export default function HomePage() {
                   maxWidth: 860,
                 }}
               >
-                A Aurora permite que o usuário conheça o ecossistema livremente e,
-                quando fizer sentido, entre no <strong>cadastro geral real</strong>
-                para salvar empresa, fornecedor, operação, marca, serviço ou
+                A Aurora permite que o usuário navegue livremente, pesquise
+                empresas e conheça o ecossistema com mais clareza. Quando fizer
+                sentido, ele entra no <strong>cadastro geral real</strong> para
+                salvar empresa, fornecedor, operação, marca, serviço ou
                 oportunidade no banco de dados.
               </p>
 
@@ -159,9 +161,9 @@ export default function HomePage() {
                   maxWidth: 920,
                 }}
               >
-                O cadastro não deve bloquear a entrada no site. Ele fica disponível
-                de forma clara, forte e estratégica para o momento em que o usuário
-                quiser se cadastrar.
+                O cadastro não deve bloquear a entrada no site e a home também não
+                precisa prometer exposição imediata de empresas. Assim a plataforma
+                fica mais leve, mais séria e transmite mais confiança.
               </p>
             </div>
 
@@ -176,8 +178,8 @@ export default function HomePage() {
                 Cadastrar empresa agora
               </Link>
 
-              <Link href="/explorar" style={secondaryBigButtonStyle}>
-                Explorar antes de cadastrar
+              <Link href={SEARCH_COMPANIES_HREF} style={secondaryBigButtonStyle}>
+                Pesquisar empresas
               </Link>
 
               <Link href="/chat" style={secondaryBigButtonStyle}>
@@ -229,12 +231,12 @@ export default function HomePage() {
                   text: "O visitante pode navegar sem ser obrigado a preencher cadastro para conhecer a plataforma.",
                 },
                 {
-                  title: "Cadastro estratégico",
-                  text: "Quando quiser se posicionar no ecossistema, ele entra no cadastro geral real e salva seus dados.",
+                  title: "Busca profissional",
+                  text: "A pesquisa de empresas entra como caminho direto para encontrar negócios, fornecedores e oportunidades.",
                 },
                 {
-                  title: "Conversão melhor",
-                  text: "Menos bloqueio na entrada e mais clareza aumentam confiança, permanência e chance de cadastro.",
+                  title: "Credibilidade maior",
+                  text: "Menos promessa de vitrine imediata na home e mais clareza de fluxo passam mais confiança ao usuário.",
                 },
               ].map((item) => (
                 <div
@@ -307,7 +309,7 @@ export default function HomePage() {
                   lineHeight: 1.15,
                 }}
               >
-                Explore freely and register when you want
+                Explore freely, search companies and register when you want
               </div>
 
               <div
@@ -317,9 +319,9 @@ export default function HomePage() {
                   fontSize: 15,
                 }}
               >
-                Access to the platform must stay open. Registration remains
-                available as a clear and strong option whenever the user is ready
-                to place the business inside the ecosystem.
+                Access to the platform stays open. Company search becomes a clear
+                path for discovery, while registration remains available whenever
+                the user is ready to enter the ecosystem properly.
               </div>
 
               <div
@@ -333,8 +335,8 @@ export default function HomePage() {
                   General sign up
                 </Link>
 
-                <Link href="/explorar" style={secondaryBigButtonStyle}>
-                  Explore first
+                <Link href={SEARCH_COMPANIES_HREF} style={secondaryBigButtonStyle}>
+                  Search companies
                 </Link>
               </div>
             </div>
@@ -370,7 +372,7 @@ export default function HomePage() {
                   lineHeight: 1.15,
                 }}
               >
-                Explora libremente y regístrate cuando quieras
+                Explora libremente, busca empresas y regístrate cuando quieras
               </div>
 
               <div
@@ -380,9 +382,9 @@ export default function HomePage() {
                   fontSize: 15,
                 }}
               >
-                La entrada al sitio debe permanecer libre. El registro general
-                queda disponible como una opción clara para cuando la empresa
-                quiera entrar en la base real del ecosistema.
+                La entrada al sitio permanece libre. La búsqueda de empresas queda
+                como un camino claro para encontrar negocios, y el registro se
+                mantiene disponible para el momento correcto.
               </div>
 
               <div
@@ -396,119 +398,12 @@ export default function HomePage() {
                   Registro general
                 </Link>
 
-                <Link href="/explorar" style={secondaryBigButtonStyle}>
-                  Explorar primero
+                <Link href={SEARCH_COMPANIES_HREF} style={secondaryBigButtonStyle}>
+                  Buscar empresas
                 </Link>
               </div>
             </div>
           </aside>
-        </section>
-
-        <section
-          style={{
-            border: "1px solid rgba(255,255,255,0.08)",
-            background: "rgba(7, 18, 13, 0.84)",
-            borderRadius: 28,
-            padding: "22px 18px",
-            boxShadow: "0 18px 60px rgba(0,0,0,0.20)",
-            display: "grid",
-            gap: 14,
-          }}
-        >
-          <div>
-            <div
-              style={{
-                fontSize: 13,
-                fontWeight: 800,
-                color: "#86efac",
-                textTransform: "uppercase",
-                letterSpacing: "0.08em",
-              }}
-            >
-              Ecossistema Aurora
-            </div>
-            <h2
-              style={{
-                margin: "8px 0 0",
-                fontSize: "clamp(26px, 4vw, 38px)",
-                lineHeight: 1.1,
-              }}
-            >
-              Entre, explore, cadastre e feche negócios
-            </h2>
-          </div>
-
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
-              gap: 12,
-            }}
-          >
-            {[
-              {
-                title: "Agro",
-                href: "/agro",
-                text: "Presença profissional para o setor agrícola e oportunidades do campo.",
-              },
-              {
-                title: "Locadoras",
-                href: "/locadora",
-                text: "Cadastros, motoristas, operação e expansão comercial do setor.",
-              },
-              {
-                title: "Imóveis",
-                href: "/imoveis",
-                text: "Busca, cadastro e presença digital para o mercado imobiliário.",
-              },
-              {
-                title: "Aurora IA",
-                href: "/chat",
-                text: "Converse, crie campanhas, imagens e acelere sua operação.",
-              },
-            ].map((item) => (
-              <Link
-                key={item.title}
-                href={item.href}
-                style={{
-                  textDecoration: "none",
-                  color: "#ecfdf5",
-                  borderRadius: 20,
-                  padding: "18px 16px",
-                  background: "rgba(255,255,255,0.03)",
-                  border: "1px solid rgba(255,255,255,0.06)",
-                  display: "grid",
-                  gap: 8,
-                }}
-              >
-                <div
-                  style={{
-                    fontSize: 17,
-                    fontWeight: 900,
-                  }}
-                >
-                  {item.title}
-                </div>
-                <div
-                  style={{
-                    color: "rgba(236,253,245,0.72)",
-                    lineHeight: 1.6,
-                    fontSize: 14,
-                  }}
-                >
-                  {item.text}
-                </div>
-                <div
-                  style={{
-                    color: "#86efac",
-                    fontWeight: 800,
-                  }}
-                >
-                  Abrir →
-                </div>
-              </Link>
-            ))}
-          </div>
         </section>
 
         <section
@@ -540,9 +435,10 @@ export default function HomePage() {
               maxWidth: 900,
             }}
           >
-            O botão principal da home leva direto ao cadastro geral real, mas a
-            navegação continua livre. Assim o usuário entra no site sem pressão e
-            se cadastra no momento certo.
+            O cadastro geral continua visível e forte na home, mas a navegação
+            segue livre. A pesquisa de empresas entra como caminho principal para
+            descoberta, sem criar expectativa errada de exposição imediata na
+            página inicial.
           </div>
 
           <div
@@ -555,8 +451,8 @@ export default function HomePage() {
             <Link href={GENERAL_SIGNUP_HREF} style={primaryBigButtonStyle}>
               Entrar no cadastro geral
             </Link>
-            <Link href="/explorar" style={secondaryBigButtonStyle}>
-              Continuar explorando
+            <Link href={SEARCH_COMPANIES_HREF} style={secondaryBigButtonStyle}>
+              Pesquisar empresas
             </Link>
           </div>
         </section>

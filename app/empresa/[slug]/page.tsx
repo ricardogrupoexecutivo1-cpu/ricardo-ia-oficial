@@ -38,6 +38,7 @@ function buildDescription(input: {
 
 function normalizeUrl(url: string | null) {
   if (!url) return null;
+
   const trimmed = url.trim();
   if (!trimmed) return null;
 
@@ -63,16 +64,46 @@ function normalizeUrl(url: string | null) {
 
 function formatWhatsappLink(value: string | null) {
   if (!value) return null;
+
   const digits = value.replace(/\D+/g, "");
   if (!digits) return null;
+
   return `https://wa.me/${digits}`;
 }
 
 function formatInstagramLabel(value: string | null) {
   if (!value) return null;
+
   const trimmed = value.trim();
   if (!trimmed) return null;
+
   return trimmed.startsWith("@") ? trimmed : `@${trimmed}`;
+}
+
+function getDisplayDescription(company: {
+  publicDescription?: string | null;
+  segment?: string | null;
+  coverage?: string | null;
+  city?: string | null;
+  state?: string | null;
+}) {
+  if (company.publicDescription?.trim()) {
+    return company.publicDescription.trim();
+  }
+
+  const details = [
+    company.segment ? `segmento ${company.segment}` : null,
+    company.coverage ? `cobertura ${company.coverage}` : null,
+    company.city || company.state
+      ? `base em ${[company.city, company.state].filter(Boolean).join(" - ")}`
+      : null,
+  ].filter(Boolean);
+
+  if (details.length) {
+    return `Perfil público publicado na Aurora com ${details.join(", ")}.`;
+  }
+
+  return "Este perfil público foi publicado na Aurora com foco em apresentação profissional, contato e divulgação segura.";
 }
 
 export async function generateStaticParams() {
@@ -157,6 +188,7 @@ export default async function PublicCompanyPage({ params }: PageProps) {
 
   const title = buildTitle(company.publicName, company.city, company.state);
   const description = buildDescription(company);
+  const displayDescription = getDisplayDescription(company);
   const websiteHref = normalizeUrl(company.website);
   const instagramHref = normalizeUrl(company.instagram);
   const whatsappHref = formatWhatsappLink(company.whatsapp);
@@ -219,7 +251,7 @@ export default async function PublicCompanyPage({ params }: PageProps) {
         >
           <div
             style={{
-              minHeight: 180,
+              minHeight: 220,
               padding: 28,
               background: company.heroImageUrl
                 ? `linear-gradient(rgba(2,6,23,0.55), rgba(2,6,23,0.85)), url(${company.heroImageUrl}) center/cover`
@@ -305,9 +337,7 @@ export default async function PublicCompanyPage({ params }: PageProps) {
                     lineHeight: 1.7,
                   }}
                 >
-                  {company.publicDescription?.trim()
-                    ? company.publicDescription
-                    : "Este perfil público foi publicado na Aurora com foco em apresentação profissional, contato e divulgação segura."}
+                  {displayDescription}
                 </p>
               </article>
 
@@ -328,95 +358,19 @@ export default async function PublicCompanyPage({ params }: PageProps) {
                     gap: 14,
                   }}
                 >
-                  <div
-                    style={{
-                      borderRadius: 18,
-                      padding: 16,
-                      background: "rgba(2,6,23,0.45)",
-                      border: "1px solid rgba(148,163,184,0.12)",
-                    }}
-                  >
-                    <div style={{ fontSize: 12, color: "#94a3b8" }}>Cidade</div>
-                    <div style={{ marginTop: 6, fontWeight: 700 }}>
-                      {company.city || "Não informado"}
-                    </div>
-                  </div>
-
-                  <div
-                    style={{
-                      borderRadius: 18,
-                      padding: 16,
-                      background: "rgba(2,6,23,0.45)",
-                      border: "1px solid rgba(148,163,184,0.12)",
-                    }}
-                  >
-                    <div style={{ fontSize: 12, color: "#94a3b8" }}>Estado</div>
-                    <div style={{ marginTop: 6, fontWeight: 700 }}>
-                      {company.state || "Não informado"}
-                    </div>
-                  </div>
-
-                  <div
-                    style={{
-                      borderRadius: 18,
-                      padding: 16,
-                      background: "rgba(2,6,23,0.45)",
-                      border: "1px solid rgba(148,163,184,0.12)",
-                    }}
-                  >
-                    <div style={{ fontSize: 12, color: "#94a3b8" }}>Cobertura</div>
-                    <div style={{ marginTop: 6, fontWeight: 700 }}>
-                      {company.coverage || "Não informado"}
-                    </div>
-                  </div>
-
-                  <div
-                    style={{
-                      borderRadius: 18,
-                      padding: 16,
-                      background: "rgba(2,6,23,0.45)",
-                      border: "1px solid rgba(148,163,184,0.12)",
-                    }}
-                  >
-                    <div style={{ fontSize: 12, color: "#94a3b8" }}>Segmento</div>
-                    <div style={{ marginTop: 6, fontWeight: 700 }}>
-                      {company.segment || "Não informado"}
-                    </div>
-                  </div>
-
-                  <div
-                    style={{
-                      borderRadius: 18,
-                      padding: 16,
-                      background: "rgba(2,6,23,0.45)",
-                      border: "1px solid rgba(148,163,184,0.12)",
-                    }}
-                  >
-                    <div style={{ fontSize: 12, color: "#94a3b8" }}>
-                      Atendimento
-                    </div>
-                    <div style={{ marginTop: 6, fontWeight: 700 }}>
-                      {company.serviceMode || "Não informado"}
-                    </div>
-                  </div>
-
-                  <div
-                    style={{
-                      borderRadius: 18,
-                      padding: 16,
-                      background: "rgba(2,6,23,0.45)",
-                      border: "1px solid rgba(148,163,184,0.12)",
-                    }}
-                  >
-                    <div style={{ fontSize: 12, color: "#94a3b8" }}>
-                      Atualizado em
-                    </div>
-                    <div style={{ marginTop: 6, fontWeight: 700 }}>
-                      {company.updatedAt
+                  <InfoCard label="Cidade" value={company.city || "Não informado"} />
+                  <InfoCard label="Estado" value={company.state || "Não informado"} />
+                  <InfoCard label="Cobertura" value={company.coverage || "Não informado"} />
+                  <InfoCard label="Segmento" value={company.segment || "Não informado"} />
+                  <InfoCard label="Atendimento" value={company.serviceMode || "Não informado"} />
+                  <InfoCard
+                    label="Atualizado em"
+                    value={
+                      company.updatedAt
                         ? new Date(company.updatedAt).toLocaleDateString("pt-BR")
-                        : "Não informado"}
-                    </div>
-                  </div>
+                        : "Não informado"
+                    }
+                  />
                 </div>
               </article>
             </div>
@@ -506,7 +460,7 @@ export default async function PublicCompanyPage({ params }: PageProps) {
                         borderRadius: 999,
                         padding: "14px 18px",
                         textAlign: "center",
-                        fontWeight: 800,
+                        fontWeight: 900,
                         background:
                           "linear-gradient(90deg, rgba(34,197,94,1) 0%, rgba(59,130,246,1) 100%)",
                         color: "#04111f",
@@ -584,5 +538,27 @@ export default async function PublicCompanyPage({ params }: PageProps) {
         </section>
       </div>
     </main>
+  );
+}
+
+function InfoCard({
+  label,
+  value,
+}: {
+  label: string;
+  value: string;
+}) {
+  return (
+    <div
+      style={{
+        borderRadius: 18,
+        padding: 16,
+        background: "rgba(2,6,23,0.45)",
+        border: "1px solid rgba(148,163,184,0.12)",
+      }}
+    >
+      <div style={{ fontSize: 12, color: "#94a3b8" }}>{label}</div>
+      <div style={{ marginTop: 6, fontWeight: 700 }}>{value}</div>
+    </div>
   );
 }

@@ -36,6 +36,7 @@ const SUPABASE_KEY =
 
 const REGISTRATIONS_TABLE_CANDIDATES = [
   process.env.NEXT_PUBLIC_AURORA_REGISTRATIONS_TABLE || "",
+  "cadastros_gerais",
   "vw_cadastros_gerais_resumo",
   "cadastros",
   "cadastro",
@@ -125,7 +126,7 @@ function normalizeSlugPart(value: string): string {
     .replace(/-{2,}/g, "-");
 }
 
-function normalizeKey(value: string) {
+function normalizeKey(value: string): string {
   return value
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
@@ -141,8 +142,12 @@ function findStringByKeyHints(
   for (const [rawKey, rawValue] of Object.entries(row)) {
     const key = normalizeKey(rawKey);
 
-    const hasInclude = includeHints.some((hint) => key.includes(normalizeKey(hint)));
-    const hasExclude = excludeHints.some((hint) => key.includes(normalizeKey(hint)));
+    const hasInclude = includeHints.some((hint) =>
+      key.includes(normalizeKey(hint)),
+    );
+    const hasExclude = excludeHints.some((hint) =>
+      key.includes(normalizeKey(hint)),
+    );
 
     if (!hasInclude || hasExclude) continue;
 
@@ -151,6 +156,60 @@ function findStringByKeyHints(
   }
 
   return null;
+}
+
+function titleCaseWords(value: string): string {
+  return value
+    .split(" ")
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
+    .join(" ");
+}
+
+function formatCoverage(value: string | null): string | null {
+  if (!value) return null;
+
+  const normalized = normalizeKey(value);
+
+  const map: Record<string, string> = {
+    brasil: "Brasil inteiro",
+    estadual: "Estadual",
+    regional: "Regional",
+    municipal: "Municipal",
+    multilocal: "Multilocal",
+  };
+
+  return map[normalized] || value;
+}
+
+function formatServiceMode(value: string | null): string | null {
+  if (!value) return null;
+
+  const normalized = normalizeKey(value);
+
+  const map: Record<string, string> = {
+    todos: "Todos os segmentos",
+    especificos: "Segmentos específicos",
+  };
+
+  return map[normalized] || value;
+}
+
+function normalizeSegment(value: string | null): string | null {
+  if (!value) return null;
+
+  const normalized = normalizeKey(value);
+
+  if (
+    normalized === "cadastro_geral" ||
+    normalized === "cadastro geral" ||
+    normalized === "origem" ||
+    normalized === "geral"
+  ) {
+    return null;
+  }
+
+  return value;
 }
 
 export function buildCompanySlug(input: {
@@ -201,6 +260,7 @@ function hasPublicVisibility(row: RegistrationRow): boolean {
 function resolvePublicName(row: RegistrationRow): string {
   const exact =
     pickFirstString(row, [
+      "nome_publico",
       "public_name",
       "display_name",
       "company_name",
@@ -215,6 +275,7 @@ function resolvePublicName(row: RegistrationRow): string {
       "nome",
       "empresa",
     ]) ||
+    findStringByKeyHints(row, ["nome_publico", "public_name"]) ||
     findStringByKeyHints(row, ["nome_empresa", "nome fantasia", "razao", "razão"]) ||
     findStringByKeyHints(row, ["responsavel", "responsável", "responsible"]) ||
     findStringByKeyHints(row, ["empresa", "company", "business"], [
@@ -248,6 +309,7 @@ function sanitizePublicCompany(row: RegistrationRow): PublicCompanyProfile | nul
 
   const publicDescription =
     pickFirstString(row, [
+      "descricao_publica_curta",
       "public_description",
       "description",
       "bio",
@@ -258,28 +320,37 @@ function sanitizePublicCompany(row: RegistrationRow): PublicCompanyProfile | nul
       "observacao",
       "observação",
     ]) ||
-    findStringByKeyHints(row, ["observacao", "observação", "descricao", "descrição"]);
+    findStringByKeyHints(row, [
+      "descricao_publica_curta",
+      "public_description",
+      "observacao",
+      "observação",
+      "descricao",
+      "descrição",
+    ]);
 
-  const city =
+  const cityRaw =
     pickFirstString(row, [
+      "cidade_publica",
       "public_city",
       "city",
       "base_city",
       "cidade",
       "cidade_base",
-    ]) || findStringByKeyHints(row, ["cidade"]);
+    ]) || findStringByKeyHints(row, ["cidade_publica", "public_city", "cidade"]);
 
-  const state =
+  const stateRaw =
     pickFirstString(row, [
+      "estado_publico",
       "public_state",
       "state",
       "base_state",
       "estado",
       "estado_base",
       "uf",
-    ]) || findStringByKeyHints(row, ["estado", "uf"]);
+    ]) || findStringByKeyHints(row, ["estado_publico", "public_state", "estado", "uf"]);
 
-  const coverage =
+  const coverageRaw =
     pickFirstString(row, [
       "coverage",
       "coverage_area",
@@ -291,26 +362,26 @@ function sanitizePublicCompany(row: RegistrationRow): PublicCompanyProfile | nul
       "coverage_type",
     ]) || findStringByKeyHints(row, ["coverage", "cobertura", "abrangencia"]);
 
-  const segment =
+  const segmentRaw =
     pickFirstString(row, [
       "segment",
       "main_segment",
-      "category",
       "public_segment",
       "segmento",
+      "category",
       "categoria",
-      "origem",
-    ]) || findStringByKeyHints(row, ["segment", "categoria", "origem"]);
+    ]) || findStringByKeyHints(row, ["segment", "segmento", "categoria"]);
 
-  const serviceMode =
+  const serviceModeRaw =
     pickFirstString(row, [
+      "atendimento_tipo",
       "service_mode",
       "attendance_mode",
       "service_type",
       "public_service_mode",
       "atendimento",
       "modo_atendimento",
-    ]) || findStringByKeyHints(row, ["atendimento"]);
+    ]) || findStringByKeyHints(row, ["atendimento", "attendance"]);
 
   const website =
     pickFirstString(row, [
@@ -339,7 +410,7 @@ function sanitizePublicCompany(row: RegistrationRow): PublicCompanyProfile | nul
       "public_instagram",
       "main_social",
       "rede_principal",
-    ]) || findStringByKeyHints(row, ["instagram"]);
+    ]) || findStringByKeyHints(row, ["instagram", "rede_principal"]);
 
   const logoUrl =
     pickFirstString(row, [
@@ -365,8 +436,18 @@ function sanitizePublicCompany(row: RegistrationRow): PublicCompanyProfile | nul
     "created_at",
   ]);
 
-  const slug =
+  const explicitSlug =
     pickFirstString(row, ["public_slug", "slug"]) ||
+    findStringByKeyHints(row, ["public_slug", "slug"], ["image", "arquivo"]);
+
+  const city = cityRaw ? titleCaseWords(cityRaw) : null;
+  const state = stateRaw ? stateRaw.toUpperCase() : null;
+  const coverage = formatCoverage(coverageRaw);
+  const segment = normalizeSegment(segmentRaw);
+  const serviceMode = formatServiceMode(serviceModeRaw);
+
+  const slug =
+    explicitSlug ||
     buildCompanySlug({
       publicName,
       city,
@@ -375,7 +456,7 @@ function sanitizePublicCompany(row: RegistrationRow): PublicCompanyProfile | nul
 
   return {
     id,
-    slug,
+    slug: normalizeSlugPart(slug),
     publicName,
     publicDescription,
     city,
@@ -392,6 +473,19 @@ function sanitizePublicCompany(row: RegistrationRow): PublicCompanyProfile | nul
   };
 }
 
+async function tryLoadTable(
+  supabase: SupabaseClient,
+  tableName: string,
+): Promise<RegistrationRow[] | null> {
+  const result = await supabase.from(tableName).select("*").limit(500);
+
+  if (result.error) {
+    return null;
+  }
+
+  return Array.isArray(result.data) ? (result.data as RegistrationRow[]) : [];
+}
+
 async function loadRowsFromFirstAvailableTable(): Promise<{
   tableName: string;
   rows: RegistrationRow[];
@@ -400,16 +494,16 @@ async function loadRowsFromFirstAvailableTable(): Promise<{
   const errors: string[] = [];
 
   for (const tableName of REGISTRATIONS_TABLE_CANDIDATES) {
-    const result = await supabase.from(tableName).select("*").limit(500);
+    const rows = await tryLoadTable(supabase, tableName);
 
-    if (!result.error) {
+    if (rows) {
       return {
         tableName,
-        rows: Array.isArray(result.data) ? (result.data as RegistrationRow[]) : [],
+        rows,
       };
     }
 
-    errors.push(`${tableName}: ${result.error.message}`);
+    errors.push(`${tableName}: sem leitura disponível`);
   }
 
   throw new Error(
@@ -432,7 +526,7 @@ export async function getPublicCompanyBySlug(
     const sanitized = sanitizePublicCompany(row);
     if (!sanitized) continue;
 
-    if (sanitized.slug === normalizedSlug) {
+    if (normalizeSlugPart(sanitized.slug) === normalizedSlug) {
       return sanitized;
     }
   }

@@ -478,13 +478,16 @@ export default function CadastroGeralPage() {
       setCadastroIdSalvo(cadastroId);
       setFeedbackType("success");
       setFeedback(
-        "Cadastro real salvo no Supabase com privacidade por padrão."
+        "Cadastro realizado com sucesso. Seus dados foram salvos na Aurora com segurança."
       );
 
       const emailSafe = encodeURIComponent(email.trim() || "");
+
       clearForm();
 
-      router.push(`/cadastro/sucesso?next=/chat&email=${emailSafe}`);
+      router.push(
+        `/cadastro/sucesso?status=ok&email=${emailSafe}&id=${cadastroId}`
+      );
     } catch (error) {
       const message =
         error instanceof Error
