@@ -1,13 +1,22 @@
-"use client";
-
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
 
-export default function CadastroSucessoPage() {
-  const params = useSearchParams();
+type CadastroSucessoPageProps = {
+  searchParams?: Promise<{
+    email?: string;
+    id?: string;
+    status?: string;
+  }>;
+};
 
-  const email = params.get("email") || "";
-  const id = params.get("id") || "";
+export default async function CadastroSucessoPage({
+  searchParams,
+}: CadastroSucessoPageProps) {
+  const resolvedSearchParams = searchParams
+    ? await searchParams
+    : undefined;
+
+  const email = resolvedSearchParams?.email || "";
+  const id = resolvedSearchParams?.id || "";
 
   return (
     <main
@@ -33,7 +42,7 @@ export default function CadastroSucessoPage() {
           display: "grid",
           gap: 18,
           textAlign: "center",
-          boxShadow: "0 18px 60px rgba(0,0,0,0.22)",
+          boxShadow: "0 18px 60px rgba(0,0,0,0.28)",
         }}
       >
         <div
@@ -51,7 +60,7 @@ export default function CadastroSucessoPage() {
           style={{
             fontSize: 16,
             lineHeight: 1.7,
-            color: "rgba(236,253,245,0.85)",
+            color: "rgba(236,253,245,0.88)",
           }}
         >
           Seu cadastro foi salvo com segurança na Aurora.
@@ -63,10 +72,11 @@ export default function CadastroSucessoPage() {
           <div
             style={{
               fontSize: 13,
-              opacity: 0.8,
+              color: "rgba(236,253,245,0.72)",
+              wordBreak: "break-word",
             }}
           >
-            E-mail utilizado: {email}
+            E-mail utilizado: <strong>{email}</strong>
           </div>
         ) : null}
 
@@ -74,7 +84,7 @@ export default function CadastroSucessoPage() {
           <div
             style={{
               fontSize: 12,
-              opacity: 0.55,
+              color: "rgba(236,253,245,0.52)",
               wordBreak: "break-all",
             }}
           >
@@ -90,9 +100,26 @@ export default function CadastroSucessoPage() {
             border: "1px solid rgba(34,197,94,0.20)",
             fontSize: 14,
             lineHeight: 1.6,
+            color: "rgba(236,253,245,0.88)",
           }}
         >
-          🔒 Seu cadastro fica privado até você ativar e publicar no Guardião.
+          🔒 Seu cadastro permanece protegido. A publicação pública só acontece
+          quando você ativar no Guardião.
+        </div>
+
+        <div
+          style={{
+            borderRadius: 16,
+            padding: "14px",
+            background: "rgba(255,255,255,0.04)",
+            border: "1px solid rgba(255,255,255,0.08)",
+            fontSize: 14,
+            lineHeight: 1.6,
+            color: "rgba(236,253,245,0.78)",
+          }}
+        >
+          Sistema em constante atualização. Pode haver momentos de instabilidade
+          durante melhorias e novas liberações.
         </div>
 
         <div
@@ -103,10 +130,6 @@ export default function CadastroSucessoPage() {
         >
           <Link href="/guardiao" style={primaryButtonStyle}>
             Ir para o Guardião
-          </Link>
-
-          <Link href="/cadastros" style={secondaryButtonStyle}>
-            Ver busca pública
           </Link>
 
           <Link href="/chat" style={secondaryButtonStyle}>
