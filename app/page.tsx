@@ -78,8 +78,8 @@ export default function HomePage() {
             <Link href="/planos" style={navLinkStyle}>
               Planos
             </Link>
-            <Link href="/login" style={ctaSmallStyle}>
-              Entrar / Cadastrar
+            <Link href="/cadastro" style={ctaSmallStyle}>
+              Cadastrar grátis
             </Link>
           </nav>
         </header>
@@ -187,7 +187,7 @@ export default function HomePage() {
                 flexWrap: "wrap",
               }}
             >
-              <Link href="/login" style={primaryBigButtonStyle}>
+              <Link href="/cadastro" style={primaryBigButtonStyle}>
                 Cadastrar agora gratuitamente
               </Link>
 
@@ -206,7 +206,7 @@ export default function HomePage() {
               {[
                 {
                   title: "Entrada simples",
-                  text: "Usuários podem entrar, conhecer, testar e se cadastrar rapidamente.",
+                  text: "Usuários podem entrar, escolher sua área e se cadastrar rapidamente.",
                 },
                 {
                   title: "Busca séria",
@@ -301,7 +301,7 @@ export default function HomePage() {
                 services and strategic opportunities in Brazil and worldwide.
               </div>
 
-              <Link href="/login" style={languageButtonStyle}>
+              <Link href="/cadastro" style={languageButtonStyle}>
                 Sign up now
               </Link>
             </div>
@@ -351,7 +351,7 @@ export default function HomePage() {
                 bancos, inmobiliaria, servicios y oportunidades en Brasil y en el mundo.
               </div>
 
-              <Link href="/login" style={languageButtonStyle}>
+              <Link href="/cadastro" style={languageButtonStyle}>
                 Registrarse gratis
               </Link>
             </div>
@@ -506,7 +506,7 @@ export default function HomePage() {
               flexWrap: "wrap",
             }}
           >
-            <Link href="/login" style={primaryBigButtonStyle}>
+            <Link href="/cadastro" style={primaryBigButtonStyle}>
               Entrar / cadastrar gratuitamente
             </Link>
             <Link href="/planos" style={secondaryBigButtonStyle}>

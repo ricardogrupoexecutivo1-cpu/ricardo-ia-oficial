@@ -1,654 +1,650 @@
 "use client";
 
-import { useState } from "react";
+import Link from "next/link";
+import { useMemo, useState } from "react";
 
-const segmentosFixos = [
-  "Locadora / Rental",
-  "Agro / Agriculture",
-  "Mineração / Mining",
-  "Imóveis / Real Estate",
-  "Financeiro / Finance",
-  "Transportes / Transport",
-  "Logística / Logistics",
-  "Construção / Construction",
-  "Indústria / Industry",
-  "Comércio / Commerce",
-  "Tecnologia / Technology",
-  "Marketing / Marketing",
-  "Saúde / Healthcare",
-  "Educação / Education",
-  "Turismo / Tourism",
-  "Jurídico / Legal",
-  "Energia / Energy",
-  "Alimentação / Food",
-  "Motoristas / Drivers",
-  "Prestação de Serviços / Services",
-];
+type FormState = {
+  fullName: string;
+  companyName: string;
+  whatsapp: string;
+  email: string;
+  city: string;
+  segment: string;
+};
 
-const atividadesFixas = [
-  "Motorista fixo / Dedicated driver",
-  "Motorista eventual / On-demand driver",
-  "Fornecedor / Supplier",
-  "Prestador de serviço / Service provider",
-  "Vendas / Sales",
-  "Compras / Purchasing",
-  "Representação comercial / Sales representation",
-  "Consultoria / Consulting",
-  "Operação / Operations",
-  "Manutenção / Maintenance",
-  "Transporte / Transport",
-  "Logística / Logistics",
-  "Atendimento / Customer service",
-  "Administração / Administration",
-  "Financeiro / Finance",
-];
-
-const abrangencias = [
-  "Local / Local",
-  "Municipal / City",
-  "Estadual / State",
-  "Regional / Regional",
-  "Nacional / National",
-  "Internacional / International",
-];
-
-const initialForm = {
-  area: [] as string[],
-  atividades: [] as string[],
-  abrangencia: "",
-  segmentoPersonalizado: "",
-  atividadePersonalizada: "",
-  responsavel: "",
-  empresa: "",
-  cnpj: "",
+const INITIAL_STATE: FormState = {
+  fullName: "",
+  companyName: "",
   whatsapp: "",
   email: "",
-  descricao: "",
+  city: "",
+  segment: "",
 };
 
 export default function CadastroPage() {
-  const [form, setForm] = useState(initialForm);
-  const [loading, setLoading] = useState(false);
-  const [successData, setSuccessData] = useState<null | {
-    empresa: string;
-    responsavel: string;
-    abrangencia: string;
-    email: string;
-  }>(null);
+  const [form, setForm] = useState<FormState>(INITIAL_STATE);
+  const [message, setMessage] = useState("");
+  const [error, setError] = useState("");
 
-  function update(field: keyof typeof initialForm, value: string | string[]) {
-    setForm((prev) => ({ ...prev, [field]: value }));
+  const progress = useMemo(() => {
+    const values = Object.values(form);
+    const filled = values.filter((value) => String(value || "").trim()).length;
+    return Math.round((filled / values.length) * 100);
+  }, [form]);
+
+  function updateField<K extends keyof FormState>(key: K, value: FormState[K]) {
+    setForm((current) => ({
+      ...current,
+      [key]: value,
+    }));
   }
 
-  function toggleArrayItem(field: "area" | "atividades", item: string, checked: boolean) {
-    const atual = Array.isArray(form[field]) ? form[field] : [];
+  function persistLightRegistration() {
+    const payload = {
+      ...form,
+      createdAt: new Date().toISOString(),
+      source: "cadastro-entrada-ecosistema",
+    };
 
-    if (checked) {
-      update(field, [...atual, item]);
-      return;
-    }
+    if (typeof window !== "undefined") {
+      localStorage.setItem("aurora_light_registration", JSON.stringify(payload));
 
-    update(
-      field,
-      atual.filter((i: string) => i !== item)
-    );
-  }
-
-  function persistUserEmail(email: string) {
-    const safeEmail = email.trim();
-    if (!safeEmail || typeof window === "undefined") return;
-
-    localStorage.setItem("user_email", safeEmail);
-    localStorage.setItem("aurora_user_email", safeEmail);
-    localStorage.setItem("email", safeEmail);
-  }
-
-  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    setLoading(true);
-
-    try {
-      const payload = {
-        ...form,
-        area: Array.isArray(form.area) ? form.area : [],
-        atividades: Array.isArray(form.atividades) ? form.atividades : [],
-      };
-
-      const res = await fetch("/api/cadastro", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(payload),
-      });
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        alert(data.error || "Erro ao salvar");
-        setLoading(false);
-        return;
+      if (form.email.trim()) {
+        const normalizedEmail = form.email.trim().toLowerCase();
+        localStorage.setItem("aurora_user_email", normalizedEmail);
+        localStorage.setItem("userEmail", normalizedEmail);
+        localStorage.setItem("email", normalizedEmail);
+        localStorage.setItem("aurora_email", normalizedEmail);
       }
 
-      persistUserEmail(form.email);
+      if (form.fullName.trim()) {
+        localStorage.setItem("aurora_user_name", form.fullName.trim());
+      }
 
-      setSuccessData({
-        empresa: form.empresa || "Sua empresa",
-        responsavel: form.responsavel || "Responsável",
-        abrangencia: form.abrangencia || "Abrangência não informada",
-        email: form.email || "",
-      });
+      if (form.companyName.trim()) {
+        localStorage.setItem("aurora_company_name", form.companyName.trim());
+      }
 
-      setForm(initialForm);
-    } catch {
-      alert("Erro inesperado");
-    } finally {
-      setLoading(false);
+      if (form.whatsapp.trim()) {
+        localStorage.setItem("aurora_whatsapp", form.whatsapp.trim());
+      }
+
+      localStorage.setItem(
+        "aurora_guest_access",
+        JSON.stringify({
+          startedAt: new Date().toISOString(),
+          source: "cadastro-entrada-ecosistema",
+        }),
+      );
     }
   }
 
-  if (successData) {
-    return (
-      <main style={{ padding: "24px 0 60px", color: "#fff" }}>
+  function saveLightRegistration() {
+    try {
+      setError("");
+      setMessage("");
+
+      persistLightRegistration();
+
+      setMessage(
+        "Cadastro inicial salvo com sucesso. Agora escolha sua área principal no ecossistema e continue explorando sem bloqueio. Sistema em constante atualização e pode haver momentos de instabilidade durante melhorias.",
+      );
+    } catch (saveError) {
+      setError(
+        saveError instanceof Error
+          ? saveError.message
+          : "Erro ao salvar cadastro inicial.",
+      );
+    }
+  }
+
+  function goToArea(path: string) {
+    try {
+      setError("");
+      setMessage("");
+      persistLightRegistration();
+      window.location.href = path;
+    } catch (goError) {
+      setError(
+        goError instanceof Error
+          ? goError.message
+          : "Erro ao direcionar para a área selecionada.",
+      );
+    }
+  }
+
+  return (
+    <main
+      style={{
+        minHeight: "100vh",
+        background:
+          "radial-gradient(circle at top, rgba(34,197,94,0.14), transparent 18%), radial-gradient(circle at right top, rgba(59,130,246,0.12), transparent 22%), linear-gradient(180deg, #02100c 0%, #061711 40%, #020404 100%)",
+        color: "#ecfdf5",
+        padding: "24px 16px 80px",
+      }}
+    >
+      <div
+        style={{
+          maxWidth: 1180,
+          margin: "0 auto",
+          display: "grid",
+          gap: 18,
+        }}
+      >
         <section
           style={{
-            maxWidth: 760,
-            margin: "0 auto",
-            background: "#12182b",
-            borderRadius: 20,
             border: "1px solid rgba(255,255,255,0.08)",
-            padding: 24,
-            textAlign: "center",
+            background: "rgba(6,16,13,0.84)",
+            backdropFilter: "blur(10px)",
+            borderRadius: 28,
+            padding: "22px 20px",
+            boxShadow: "0 18px 60px rgba(0,0,0,0.24)",
+            display: "grid",
+            gap: 18,
           }}
         >
           <div
             style={{
-              display: "inline-flex",
+              display: "flex",
+              justifyContent: "space-between",
+              gap: 14,
+              flexWrap: "wrap",
               alignItems: "center",
-              justifyContent: "center",
-              width: 74,
-              height: 74,
-              borderRadius: 999,
-              background: "rgba(0,255,136,0.12)",
-              border: "1px solid rgba(0,255,136,0.25)",
-              fontSize: 34,
-              marginBottom: 18,
             }}
           >
-            ✅
-          </div>
+            <div style={{ display: "grid", gap: 6 }}>
+              <div
+                style={{
+                  fontSize: 12,
+                  fontWeight: 800,
+                  letterSpacing: "0.08em",
+                  color: "#86efac",
+                  textTransform: "uppercase",
+                }}
+              >
+                ricardoiaoficial.com
+              </div>
 
-          <h1
-            style={{
-              margin: 0,
-              fontSize: "clamp(28px, 5vw, 38px)",
-              fontWeight: 800,
-              lineHeight: 1.15,
-            }}
-          >
-            Cadastro realizado com sucesso
-          </h1>
+              <div
+                style={{
+                  fontSize: "clamp(28px, 5vw, 44px)",
+                  fontWeight: 900,
+                  lineHeight: 1.05,
+                }}
+              >
+                Escolha sua área principal no ecossistema
+              </div>
 
-          <p
-            style={{
-              marginTop: 14,
-              fontSize: 16,
-              lineHeight: 1.75,
-              color: "rgba(255,255,255,0.82)",
-            }}
-          >
-            Sua empresa já entrou na base da Aurora.
-            <br />
-            <span style={{ fontWeight: 700 }}>{successData.empresa}</span>
-            {" • "}
-            <span>{successData.abrangencia}</span>
-          </p>
+              <div
+                style={{
+                  color: "rgba(236,253,245,0.80)",
+                  lineHeight: 1.7,
+                  fontSize: 16,
+                  maxWidth: 900,
+                }}
+              >
+                Entre com uma jornada leve, rápida e estratégica. Salve seus dados
+                iniciais e siga direto para a área que mais combina com seu objetivo.
+                O chat fica como apoio, mas o foco principal é colocar você dentro
+                do ecossistema certo desde o primeiro clique.
+              </div>
+            </div>
 
-          {successData.email ? (
             <div
               style={{
-                marginTop: 16,
-                padding: 14,
-                borderRadius: 14,
-                background: "rgba(0,255,136,0.08)",
-                border: "1px solid rgba(0,255,136,0.18)",
-                color: "#bbf7d0",
-                fontSize: 14,
-                lineHeight: 1.6,
-                fontWeight: 700,
+                display: "flex",
+                gap: 10,
+                flexWrap: "wrap",
               }}
             >
-              E-mail salvo para identificação da Aurora:
-              <br />
-              <span style={{ fontWeight: 800 }}>{successData.email}</span>
+              <Link href="/" style={secondaryButtonStyle}>
+                Voltar para home
+              </Link>
+              <Link href="/explorar" style={secondaryButtonStyle}>
+                Explorar negócios
+              </Link>
             </div>
-          ) : null}
+          </div>
 
           <div
             style={{
-              marginTop: 18,
-              padding: 14,
-              borderRadius: 14,
-              background: "rgba(255,255,255,0.04)",
-              border: "1px solid rgba(255,255,255,0.08)",
-              textAlign: "left",
+              borderRadius: 18,
+              padding: "14px 16px",
+              border: "1px solid rgba(34,197,94,0.18)",
+              background: "rgba(34,197,94,0.08)",
+              display: "grid",
+              gap: 8,
             }}
           >
-            <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 8 }}>
-              Próximo passo
+            <div
+              style={{
+                fontSize: 13,
+                color: "#bbf7d0",
+                fontWeight: 800,
+              }}
+            >
+              Progresso do cadastro inicial
             </div>
 
             <div
               style={{
-                fontSize: 14,
-                lineHeight: 1.7,
-                color: "rgba(255,255,255,0.78)",
+                width: "100%",
+                height: 10,
+                borderRadius: 999,
+                background: "rgba(255,255,255,0.08)",
+                overflow: "hidden",
               }}
             >
-              Para acessar depois, editar informações, acompanhar oportunidades e
-              organizar usuários da sua empresa, crie seu login e senha pessoal.
+              <div
+                style={{
+                  width: `${progress}%`,
+                  height: "100%",
+                  background: "linear-gradient(90deg, #22c55e, #4ade80)",
+                }}
+              />
             </div>
 
             <div
               style={{
-                marginTop: 10,
-                fontSize: 12,
-                lineHeight: 1.6,
-                color: "rgba(255,255,255,0.58)",
+                fontSize: 13,
+                color: "rgba(236,253,245,0.78)",
               }}
             >
-              Create your personal access to manage your company later.
-              <br />
-              Crea tu acceso personal para administrar tu empresa después.
+              {progress}% preenchido
             </div>
+          </div>
+        </section>
+
+        <section
+          style={{
+            display: "grid",
+            gridTemplateColumns: "1.02fr 0.98fr",
+            gap: 18,
+          }}
+        >
+          <div
+            style={{
+              border: "1px solid rgba(255,255,255,0.08)",
+              background: "rgba(7,18,13,0.88)",
+              borderRadius: 28,
+              padding: "22px 20px",
+              boxShadow: "0 18px 60px rgba(0,0,0,0.20)",
+              display: "grid",
+              gap: 16,
+            }}
+          >
+            <div>
+              <h2
+                style={{
+                  margin: 0,
+                  fontSize: 26,
+                }}
+              >
+                Seus dados iniciais
+              </h2>
+              <div
+                style={{
+                  marginTop: 8,
+                  color: "rgba(236,253,245,0.74)",
+                  lineHeight: 1.6,
+                }}
+              >
+                Preencha o que fizer sentido agora. Nada aqui trava seu acesso.
+              </div>
+            </div>
+
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+                gap: 12,
+              }}
+            >
+              <label style={{ display: "grid", gap: 8 }}>
+                <span style={labelStyle}>Nome completo</span>
+                <input
+                  value={form.fullName}
+                  onChange={(e) => updateField("fullName", e.target.value)}
+                  placeholder="Ex.: Ricardo Leonardo Moreira"
+                  style={inputStyle}
+                />
+              </label>
+
+              <label style={{ display: "grid", gap: 8 }}>
+                <span style={labelStyle}>Empresa ou marca</span>
+                <input
+                  value={form.companyName}
+                  onChange={(e) => updateField("companyName", e.target.value)}
+                  placeholder="Ex.: Aurora IA"
+                  style={inputStyle}
+                />
+              </label>
+
+              <label style={{ display: "grid", gap: 8 }}>
+                <span style={labelStyle}>WhatsApp</span>
+                <input
+                  value={form.whatsapp}
+                  onChange={(e) => updateField("whatsapp", e.target.value)}
+                  placeholder="Ex.: (31) 99999-9999"
+                  style={inputStyle}
+                />
+              </label>
+
+              <label style={{ display: "grid", gap: 8 }}>
+                <span style={labelStyle}>E-mail</span>
+                <input
+                  value={form.email}
+                  onChange={(e) => updateField("email", e.target.value)}
+                  placeholder="Ex.: contato@empresa.com"
+                  style={inputStyle}
+                />
+              </label>
+
+              <label style={{ display: "grid", gap: 8 }}>
+                <span style={labelStyle}>Cidade</span>
+                <input
+                  value={form.city}
+                  onChange={(e) => updateField("city", e.target.value)}
+                  placeholder="Ex.: Belo Horizonte"
+                  style={inputStyle}
+                />
+              </label>
+
+              <label style={{ display: "grid", gap: 8 }}>
+                <span style={labelStyle}>Segmento</span>
+                <input
+                  value={form.segment}
+                  onChange={(e) => updateField("segment", e.target.value)}
+                  placeholder="Ex.: Agro, locadora, imóveis, serviços..."
+                  style={inputStyle}
+                />
+              </label>
+            </div>
+
+            <div
+              style={{
+                display: "flex",
+                gap: 12,
+                flexWrap: "wrap",
+              }}
+            >
+              <button
+                type="button"
+                onClick={saveLightRegistration}
+                style={primaryButtonStyle}
+              >
+                Salvar cadastro inicial
+              </button>
+
+              <button
+                type="button"
+                onClick={() => goToArea("/explorar")}
+                style={secondaryActionStyle}
+              >
+                Ver oportunidades agora
+              </button>
+            </div>
+
+            {message ? (
+              <div
+                style={{
+                  borderRadius: 16,
+                  padding: "14px 16px",
+                  background: "rgba(34,197,94,0.12)",
+                  border: "1px solid rgba(34,197,94,0.20)",
+                  color: "#bbf7d0",
+                  lineHeight: 1.6,
+                }}
+              >
+                {message}
+              </div>
+            ) : null}
+
+            {error ? (
+              <div
+                style={{
+                  borderRadius: 16,
+                  padding: "14px 16px",
+                  background: "rgba(239,68,68,0.12)",
+                  border: "1px solid rgba(239,68,68,0.20)",
+                  color: "#fecaca",
+                  lineHeight: 1.6,
+                }}
+              >
+                {error}
+              </div>
+            ) : null}
           </div>
 
           <div
             style={{
               display: "grid",
-              gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-              gap: 12,
-              marginTop: 22,
+              gap: 18,
             }}
           >
-            <a
-              href="/login"
+            <section
               style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                minHeight: 56,
-                borderRadius: 14,
-                textDecoration: "none",
-                background: "#00ff88",
-                color: "#04110b",
-                fontWeight: 800,
-                padding: "14px 18px",
-                textAlign: "center",
+                border: "1px solid rgba(255,255,255,0.08)",
+                background: "rgba(7,18,13,0.88)",
+                borderRadius: 28,
+                padding: "22px 20px",
+                boxShadow: "0 18px 60px rgba(0,0,0,0.20)",
+                display: "grid",
+                gap: 14,
               }}
             >
-              <span>
-                Criar meu acesso pessoal
-                <br />
-                <span style={{ fontSize: 12, opacity: 0.72 }}>
-                  Create my personal access
-                </span>
-              </span>
-            </a>
+              <div
+                style={{
+                  fontSize: 13,
+                  fontWeight: 800,
+                  color: "#86efac",
+                  textTransform: "uppercase",
+                  letterSpacing: "0.08em",
+                }}
+              >
+                Entrada profissional
+              </div>
 
-            <a
-              href="/explorar"
-              style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                minHeight: 56,
-                borderRadius: 14,
-                textDecoration: "none",
-                border: "1px solid rgba(255,255,255,0.12)",
-                background: "rgba(255,255,255,0.04)",
-                color: "#ffffff",
-                fontWeight: 700,
-                padding: "14px 18px",
-                textAlign: "center",
-              }}
-            >
-              <span>
-                Continuar explorando
-                <br />
-                <span style={{ fontSize: 12, opacity: 0.72 }}>
-                  Continue exploring
-                </span>
-              </span>
-            </a>
+              <div
+                style={{
+                  fontSize: 24,
+                  fontWeight: 900,
+                  lineHeight: 1.15,
+                }}
+              >
+                Escolha o setor certo desde o primeiro acesso
+              </div>
 
-            <a
-              href="/financeiro"
+              <div
+                style={{
+                  color: "rgba(236,253,245,0.76)",
+                  lineHeight: 1.7,
+                  fontSize: 15,
+                }}
+              >
+                Direcione sua jornada para a área principal do seu negócio. Isso
+                aumenta clareza, melhora a experiência e deixa o chat como apoio
+                estratégico em segundo plano.
+              </div>
+            </section>
+
+            <section
               style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                minHeight: 56,
-                borderRadius: 14,
-                textDecoration: "none",
-                border: "1px solid rgba(103,232,249,0.25)",
-                background: "rgba(103,232,249,0.08)",
-                color: "#cffafe",
-                fontWeight: 800,
-                padding: "14px 18px",
-                textAlign: "center",
+                border: "1px solid rgba(255,255,255,0.08)",
+                background:
+                  "linear-gradient(135deg, rgba(34,197,94,0.10), rgba(59,130,246,0.08))",
+                borderRadius: 28,
+                padding: "22px 20px",
+                display: "grid",
+                gap: 12,
               }}
             >
-              <span>
-                Ir para o financeiro
-                <br />
-                <span style={{ fontSize: 12, opacity: 0.72 }}>
-                  Open finance
-                </span>
-              </span>
-            </a>
+              <div
+                style={{
+                  fontSize: 22,
+                  fontWeight: 900,
+                  lineHeight: 1.15,
+                }}
+              >
+                Acesse sua área principal
+              </div>
+
+              <div
+                style={{
+                  color: "rgba(236,253,245,0.80)",
+                  lineHeight: 1.7,
+                  fontSize: 15,
+                }}
+              >
+                Escolha a entrada ideal para começar agora com mais foco.
+              </div>
+
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
+                  gap: 12,
+                }}
+              >
+                {[
+                  {
+                    title: "Agro",
+                    note: "Operação agrícola e oportunidades do setor.",
+                    path: "/agro",
+                  },
+                  {
+                    title: "Locadora",
+                    note: "Empresas, motoristas e operação comercial.",
+                    path: "/locadora",
+                  },
+                  {
+                    title: "Imóveis",
+                    note: "Busca, cadastros e presença imobiliária.",
+                    path: "/imoveis",
+                  },
+                  {
+                    title: "Serviços e negócios",
+                    note: "Entrada geral para explorar o ecossistema.",
+                    path: "/explorar",
+                  },
+                ].map((item) => (
+                  <button
+                    key={item.title}
+                    type="button"
+                    onClick={() => goToArea(item.path)}
+                    style={sectorButtonStyle}
+                  >
+                    <span
+                      style={{
+                        fontSize: 18,
+                        fontWeight: 900,
+                        color: "#ecfdf5",
+                        lineHeight: 1.2,
+                      }}
+                    >
+                      {item.title}
+                    </span>
+
+                    <span
+                      style={{
+                        fontSize: 13,
+                        color: "rgba(236,253,245,0.72)",
+                        lineHeight: 1.5,
+                      }}
+                    >
+                      {item.note}
+                    </span>
+
+                    <span
+                      style={{
+                        fontSize: 13,
+                        fontWeight: 800,
+                        color: "#86efac",
+                      }}
+                    >
+                      Entrar →
+                    </span>
+                  </button>
+                ))}
+              </div>
+
+              <div
+                style={{
+                  marginTop: 4,
+                  padding: "12px 14px",
+                  borderRadius: 16,
+                  border: "1px solid rgba(255,255,255,0.08)",
+                  background: "rgba(255,255,255,0.03)",
+                  color: "rgba(236,253,245,0.74)",
+                  lineHeight: 1.6,
+                  fontSize: 14,
+                }}
+              >
+                Chat Aurora IA disponível como apoio estratégico, sem roubar o foco
+                da entrada principal do usuário.
+              </div>
+            </section>
           </div>
-
-          <button
-            type="button"
-            onClick={() => setSuccessData(null)}
-            style={{
-              marginTop: 16,
-              background: "transparent",
-              border: "none",
-              color: "rgba(255,255,255,0.72)",
-              cursor: "pointer",
-              fontSize: 13,
-            }}
-          >
-            Fazer novo cadastro
-          </button>
         </section>
-      </main>
-    );
-  }
-
-  return (
-    <main style={{ padding: "24px 0 60px", color: "#fff" }}>
-      <section style={{ textAlign: "center", marginBottom: 30 }}>
-        <h1 style={{ fontSize: "clamp(26px, 5vw, 36px)", fontWeight: 800 }}>
-          Cadastro empresarial
-        </h1>
-
-        <p style={{ opacity: 0.75, marginTop: 10, lineHeight: 1.7 }}>
-          Cadastre sua empresa e comece a gerar oportunidades reais
-          <br />
-          <span style={{ fontSize: 12, opacity: 0.7 }}>
-            Register your business and start generating opportunities
-          </span>
-          <br />
-          <span style={{ fontSize: 12, opacity: 0.6 }}>
-            Registra tu empresa y comienza a generar oportunidades
-          </span>
-        </p>
-      </section>
-
-      <form onSubmit={handleSubmit} style={formStyle}>
-        <Input
-          label="Nome do responsável"
-          sub="Responsible name / Nombre del responsable"
-          value={form.responsavel}
-          onChange={(v: string) => update("responsavel", v)}
-        />
-
-        <Input
-          label="Empresa"
-          sub="Company name / Empresa"
-          value={form.empresa}
-          onChange={(v: string) => update("empresa", v)}
-        />
-
-        <Input
-          label="CNPJ"
-          sub="Company ID / Identificación empresarial"
-          value={form.cnpj}
-          onChange={(v: string) => update("cnpj", v)}
-        />
-
-        <Input
-          label="WhatsApp"
-          sub="Phone / WhatsApp / Teléfono"
-          value={form.whatsapp}
-          onChange={(v: string) => update("whatsapp", v)}
-        />
-
-        <Input
-          label="Email"
-          sub="Email / Correo electrónico"
-          value={form.email}
-          onChange={(v: string) => update("email", v)}
-        />
-
-        <div>
-          <label style={labelStyle}>
-            Segmentos de atuação
-            <div style={subStyle}>
-              Business segments / Segmentos de negocio
-            </div>
-          </label>
-
-          <div style={checkGridStyle}>
-            {segmentosFixos.map((item) => (
-              <label key={item} style={checkItemStyle}>
-                <input
-                  type="checkbox"
-                  checked={form.area.includes(item)}
-                  onChange={(e) => toggleArrayItem("area", item, e.target.checked)}
-                />
-                <span style={{ marginLeft: 8 }}>{item}</span>
-              </label>
-            ))}
-          </div>
-
-          <div style={{ marginTop: 12 }}>
-            <Input
-              label="Segmento adicional"
-              sub="Additional segment / Segmento adicional"
-              placeholder="Ex.: Peças automotivas / Auto parts / Insumos industriais"
-              value={form.segmentoPersonalizado}
-              onChange={(v: string) => update("segmentoPersonalizado", v)}
-            />
-          </div>
-        </div>
-
-        <div>
-          <label style={labelStyle}>
-            Atividades e funções
-            <div style={subStyle}>
-              Activities and roles / Actividades y funciones
-            </div>
-          </label>
-
-          <div style={checkGridStyle}>
-            {atividadesFixas.map((item) => (
-              <label key={item} style={checkItemStyle}>
-                <input
-                  type="checkbox"
-                  checked={form.atividades.includes(item)}
-                  onChange={(e) =>
-                    toggleArrayItem("atividades", item, e.target.checked)
-                  }
-                />
-                <span style={{ marginLeft: 8 }}>{item}</span>
-              </label>
-            ))}
-          </div>
-
-          <div style={{ marginTop: 12 }}>
-            <Input
-              label="Atividade adicional"
-              sub="Additional activity / Actividad adicional"
-              placeholder="Ex.: Motorista executivo, operador de máquinas, corretor, vendedor técnico"
-              value={form.atividadePersonalizada}
-              onChange={(v: string) => update("atividadePersonalizada", v)}
-            />
-          </div>
-        </div>
-
-        <div>
-          <label style={labelStyle}>
-            Abrangência de atendimento
-            <div style={subStyle}>
-              Service coverage / Cobertura de atención
-            </div>
-          </label>
-
-          <select
-            value={form.abrangencia}
-            onChange={(e) => update("abrangencia", e.target.value)}
-            style={inputStyle}
-          >
-            <option value="">Selecione a abrangência</option>
-            {abrangencias.map((item) => (
-              <option key={item} value={item}>
-                {item}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        <div>
-          <label style={labelStyle}>
-            Descrição da empresa
-            <div style={subStyle}>
-              Company description / Descripción de la empresa
-            </div>
-          </label>
-
-          <textarea
-            placeholder="Descreva sua empresa, seus serviços, produtos e diferenciais"
-            value={form.descricao}
-            onChange={(e) => update("descricao", e.target.value)}
-            style={{
-              ...inputStyle,
-              minHeight: 120,
-              resize: "vertical" as const,
-            }}
-          />
-        </div>
-
-        <div
-          style={{
-            padding: 12,
-            borderRadius: 12,
-            background: "rgba(255,255,255,0.04)",
-            border: "1px solid rgba(255,255,255,0.08)",
-            fontSize: 12,
-            lineHeight: 1.6,
-            color: "rgba(255,255,255,0.72)",
-          }}
-        >
-          Dados sensíveis como CNPJ não devem ser exibidos publicamente. Eles ficam
-          reservados para propostas, cobranças, contratos e operação interna,
-          respeitando a proteção de dados.
-        </div>
-
-        <button type="submit" style={btn} disabled={loading}>
-          {loading ? "Salvando cadastro..." : "Criar cadastro"}
-          <div style={subStyle}>
-            {loading
-              ? "Saving registration... / Guardando registro..."
-              : "Create account / Crear cuenta"}
-          </div>
-        </button>
-      </form>
+      </div>
     </main>
   );
 }
 
-function Input({
-  label,
-  sub,
-  value,
-  onChange,
-  placeholder,
-}: {
-  label: string;
-  sub: string;
-  value: string;
-  onChange: (value: string) => void;
-  placeholder?: string;
-}) {
-  return (
-    <div>
-      <label style={labelStyle}>
-        {label}
-        <div style={subStyle}>{sub}</div>
-      </label>
-
-      <input
-        value={value}
-        placeholder={placeholder}
-        onChange={(e) => onChange(e.target.value)}
-        style={inputStyle}
-      />
-    </div>
-  );
-}
-
-const formStyle = {
-  maxWidth: 720,
-  margin: "0 auto",
-  display: "grid",
-  gap: 18,
-  background: "#12182b",
-  padding: 22,
-  borderRadius: 18,
-  border: "1px solid rgba(255,255,255,0.08)",
-  boxSizing: "border-box" as const,
+const labelStyle: React.CSSProperties = {
+  fontSize: 13,
+  color: "rgba(236,253,245,0.76)",
+  fontWeight: 700,
 };
 
-const inputStyle = {
+const inputStyle: React.CSSProperties = {
   width: "100%",
-  padding: "12px",
-  borderRadius: 10,
-  border: "1px solid rgba(255,255,255,0.1)",
-  background: "#0b1020",
-  color: "#fff",
+  borderRadius: 14,
+  border: "1px solid rgba(255,255,255,0.10)",
+  background: "rgba(255,255,255,0.04)",
+  color: "#ecfdf5",
+  padding: "13px 14px",
   outline: "none",
-  boxSizing: "border-box" as const,
 };
 
-const labelStyle = {
-  fontSize: 14,
-  fontWeight: 600,
-  display: "block" as const,
-  marginBottom: 8,
-};
-
-const subStyle = {
-  fontSize: 11,
-  opacity: 0.6,
-};
-
-const btn = {
-  padding: "14px",
-  borderRadius: 12,
-  background: "#00ff88",
-  color: "#04110b",
-  fontWeight: 800,
-  border: "none",
+const primaryButtonStyle: React.CSSProperties = {
+  border: "1px solid rgba(34,197,94,0.28)",
+  background: "linear-gradient(135deg, #22c55e, #4ade80)",
+  color: "#04110a",
+  borderRadius: 16,
+  padding: "14px 18px",
+  fontWeight: 900,
   cursor: "pointer",
 };
 
-const checkGridStyle = {
-  display: "grid",
-  gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-  gap: 8,
-  marginTop: 8,
+const secondaryActionStyle: React.CSSProperties = {
+  border: "1px solid rgba(255,255,255,0.10)",
+  background: "rgba(255,255,255,0.04)",
+  color: "#ecfdf5",
+  borderRadius: 16,
+  padding: "14px 18px",
+  fontWeight: 800,
+  cursor: "pointer",
 };
 
-const checkItemStyle = {
-  display: "flex",
-  alignItems: "center",
-  padding: "10px 12px",
-  borderRadius: 10,
-  background: "#0b1020",
+const secondaryButtonStyle: React.CSSProperties = {
+  textDecoration: "none",
+  color: "#ecfdf5",
+  border: "1px solid rgba(255,255,255,0.10)",
+  background: "rgba(255,255,255,0.04)",
+  borderRadius: 14,
+  padding: "12px 16px",
+  fontWeight: 700,
+  textAlign: "center",
+};
+
+const sectorButtonStyle: React.CSSProperties = {
   border: "1px solid rgba(255,255,255,0.08)",
-  fontSize: 13,
+  background: "rgba(255,255,255,0.03)",
+  borderRadius: 18,
+  padding: "16px 14px",
+  display: "grid",
+  gap: 8,
+  textAlign: "left",
+  cursor: "pointer",
 };
