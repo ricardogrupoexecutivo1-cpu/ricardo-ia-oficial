@@ -100,7 +100,7 @@ function getSupabaseBrowserClient(): SupabaseClient | null {
   return createClient(url, anonKey);
 }
 
-function slugifyTerm(value: string) {
+function sanitizeValue(value: string) {
   return value
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
@@ -115,7 +115,7 @@ function addUniqueValue(
   currentList: string[],
   setter: (next: string[]) => void
 ) {
-  const value = slugifyTerm(rawValue);
+  const value = sanitizeValue(rawValue);
 
   if (!value) return;
 
@@ -322,19 +322,16 @@ export default function CadastroGeralPage() {
         );
       }
 
-      const {
-        data: { user },
-        error: userError,
-      } = await supabase.auth.getUser();
+      let userId: string | null = null;
 
-      if (userError) {
-        throw userError;
-      }
+      try {
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
 
-      if (!user) {
-        throw new Error(
-          "Você precisa estar logado para salvar o cadastro real no banco."
-        );
+        userId = session?.user?.id ?? null;
+      } catch {
+        userId = null;
       }
 
       if (!nomeResponsavel.trim() && !nomeEmpresa.trim()) {
@@ -343,15 +340,15 @@ export default function CadastroGeralPage() {
         );
       }
 
-      const perfisLimpos = perfisSelecionados.map(slugifyTerm).filter(Boolean);
-      const segmentosLimpos = segmentos.map(slugifyTerm).filter(Boolean);
-      const produtosLimpos = produtos.map(slugifyTerm).filter(Boolean);
+      const perfisLimpos = perfisSelecionados.map(sanitizeValue).filter(Boolean);
+      const segmentosLimpos = segmentos.map(sanitizeValue).filter(Boolean);
+      const produtosLimpos = produtos.map(sanitizeValue).filter(Boolean);
       const segmentosEspecificosLimpos = segmentosEspecificos
-        .map(slugifyTerm)
+        .map(sanitizeValue)
         .filter(Boolean);
 
       const cadastroPayload = {
-        user_id: user.id,
+        user_id: userId,
         nome_responsavel: nomeResponsavel.trim() || null,
         nome_empresa: nomeEmpresa.trim() || null,
         whatsapp: whatsapp.trim() || null,
@@ -368,7 +365,6 @@ export default function CadastroGeralPage() {
         status: "rascunho",
         is_public: false,
         origem: "cadastro_geral",
-
         nome_publico: nomePublico.trim() || null,
         descricao_publica_curta: descricaoPublicaCurta.trim() || null,
         cidade_publica: cidadePublica.trim() || null,
@@ -472,10 +468,17 @@ export default function CadastroGeralPage() {
         );
       }
 
+      try {
+        localStorage.setItem(
+          "aurora-cadastro-geral-email",
+          email.trim() || ""
+        );
+      } catch {}
+
       setCadastroIdSalvo(cadastroId);
       setFeedbackType("success");
       setFeedback(
-        "Cadastro real salvo no Supabase com privacidade por padrão. Os campos públicos próprios também foram gravados."
+        "Cadastro real salvo no Supabase com privacidade por padrão."
       );
 
       const emailSafe = encodeURIComponent(email.trim() || "");
@@ -1322,7 +1325,8 @@ const styles: Record<string, CSSProperties> = {
     textAlign: "left",
   },
   choiceButtonActive: {
-    background: "linear-gradient(135deg, rgba(34,197,94,0.22), rgba(74,222,128,0.18))",
+    background:
+      "linear-gradient(135deg, rgba(34,197,94,0.22), rgba(74,222,128,0.18))",
     borderColor: "rgba(34,197,94,0.34)",
     color: "#d1fae5",
   },
