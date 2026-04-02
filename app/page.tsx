@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
+import HomePatrocinadoresHighlight from "@/components/home/home-patrocinadores-highlight";
 
 const GENERAL_SIGNUP_HREF = "/cadastro-geral";
 const SEARCH_COMPANIES_HREF = "/cadastros";
@@ -397,6 +398,8 @@ export default function HomePage() {
             </div>
           </div>
         </section>
+
+        <HomePatrocinadoresHighlight />
 
         <section
           style={{
