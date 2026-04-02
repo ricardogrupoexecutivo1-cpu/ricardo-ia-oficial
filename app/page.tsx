@@ -11,56 +11,92 @@ type Lang = "pt" | "en" | "es";
 
 const orbitItems = [
   { label: "Empresas", top: "12%", left: "50%" },
-  { label: "Fornecedores", top: "26%", left: "78%" },
-  { label: "Agro", top: "50%", left: "88%" },
-  { label: "Locadoras", top: "74%", left: "76%" },
+  { label: "Fornecedores", top: "24%", left: "77%" },
+  { label: "AGRO", top: "47%", left: "88%" },
+  { label: "Locadoras", top: "72%", left: "76%" },
   { label: "Imóveis", top: "86%", left: "50%" },
-  { label: "Bancos", top: "74%", left: "24%" },
-  { label: "Serviços", top: "26%", left: "22%" },
+  { label: "Bancos", top: "72%", left: "24%" },
+  { label: "Mineração", top: "47%", left: "12%" },
+  { label: "Financeiro", top: "24%", left: "23%" },
+];
+
+const mainAccessLinks = [
+  { href: "/locadora", label: "Locadoras" },
+  { href: "/imoveis", label: "Imóveis" },
+  { href: "/bancos", label: "Bancos" },
+  { href: "/agro", label: "AGRO" },
+  { href: "/mineracao", label: "Mineração" },
+  { href: "/financeiro", label: "Financeiro" },
+  { href: "/app-builder", label: "App Builder" },
+  { href: "/guardiao", label: "Guardião" },
+  { href: "/chat", label: "Chat Aurora" },
+  { href: SEARCH_COMPANIES_HREF, label: "Buscar empresas" },
+  { href: "/planos", label: "Planos" },
+  { href: GENERAL_SIGNUP_HREF, label: "Cadastro" },
+];
+
+const heroQuickLinks = [
+  { href: "/locadora", label: "Locadoras" },
+  { href: "/imoveis", label: "Imóveis" },
+  { href: "/bancos", label: "Bancos" },
+  { href: "/agro", label: "AGRO" },
+  { href: "/mineracao", label: "Mineração" },
+  { href: "/financeiro", label: "Financeiro" },
+  { href: SEARCH_COMPANIES_HREF, label: "Buscar empresas" },
+  { href: "/app-builder", label: "App Builder" },
 ];
 
 const copyByLang = {
   pt: {
     badge: "Ecossistema empresarial com IA",
-    title: "Cadastre, pesquise e gere negócios",
+    title: "Cadastre, pesquise e gere negócios reais",
     subtitle:
-      "Empresas, fornecedores, agro, locadoras, imóveis, bancos e serviços em uma entrada premium, limpa e forte.",
-    ctaPrimary: "Cadastrar empresa",
-    ctaSecondary: "Pesquisar empresas",
+      "Locadoras, imóveis, bancos, agro, mineração, fornecedores, empresas e operação empresarial em uma entrada premium, clara e forte.",
+    ctaPrimary: "Cadastro geral grátis",
+    ctaSecondary: "Buscar empresas",
     ctaThird: "Abrir Aurora IA",
-    footerTitle: "Entrada livre • busca profissional • crescimento com tecnologia",
+    quickTitle: "Entradas principais da plataforma",
+    quickText:
+      "Acesse rapidamente os módulos principais da Aurora no topo da home e também no centro visual da plataforma.",
+    footerTitle: "Entrada forte • descoberta rápida • navegação comercial",
     footerText:
-      "A Aurora mantém a navegação aberta, reduz poluição visual e deixa o cadastro visível no momento certo para aumentar clareza e conversão.",
-    footerPrimary: "Cadastro geral grátis",
-    footerSecondary: "Ver empresas",
+      "A Aurora está em constante atualização. Pode haver momentos de instabilidade durante melhorias, mas a estrutura principal da home foi organizada para facilitar acesso, entendimento e conversão.",
+    footerPrimary: "Cadastrar agora",
+    footerSecondary: "Explorar empresas",
   },
   en: {
     badge: "Business ecosystem with AI",
-    title: "Register, search and generate business",
+    title: "Register, search and generate real business",
     subtitle:
-      "Companies, suppliers, agribusiness, rentals, real estate, banks and services in a premium, clean and strong entry point.",
-    ctaPrimary: "Register company",
+      "Rentals, real estate, banks, agribusiness, mining, suppliers, companies and business operations in a premium, clear and strong entry point.",
+    ctaPrimary: "Free general registration",
     ctaSecondary: "Search companies",
     ctaThird: "Open Aurora IA",
-    footerTitle: "Open entry • professional search • growth with technology",
+    quickTitle: "Main platform entries",
+    quickText:
+      "Access Aurora's main modules quickly from the top navigation and also from the platform visual core.",
+    footerTitle: "Strong entry • quick discovery • commercial navigation",
     footerText:
-      "Aurora keeps navigation open, reduces visual clutter and leaves sign up visible at the right moment to increase clarity and conversion.",
-    footerPrimary: "Free sign up",
-    footerSecondary: "See companies",
+      "Aurora is constantly evolving. There may be moments of instability during improvements, but the home structure was organized to improve access, understanding and conversion.",
+    footerPrimary: "Register now",
+    footerSecondary: "Explore companies",
   },
   es: {
     badge: "Ecosistema empresarial con IA",
-    title: "Registra, busca y genera negocios",
+    title: "Registra, busca y genera negocios reales",
     subtitle:
-      "Empresas, proveedores, agro, locadoras, inmuebles, bancos y servicios en una entrada premium, limpia y fuerte.",
-    ctaPrimary: "Registrar empresa",
+      "Locadoras, inmuebles, bancos, agro, minería, proveedores, empresas y operación empresarial en una entrada premium, clara y fuerte.",
+    ctaPrimary: "Registro general gratis",
     ctaSecondary: "Buscar empresas",
     ctaThird: "Abrir Aurora IA",
-    footerTitle: "Entrada libre • búsqueda profesional • crecimiento con tecnología",
+    quickTitle: "Entradas principales de la plataforma",
+    quickText:
+      "Accede rápidamente a los módulos principales de Aurora desde la navegación superior y también desde el núcleo visual de la plataforma.",
+    footerTitle: "Entrada fuerte • descubrimiento rápido • navegación comercial",
     footerText:
-      "Aurora mantiene la navegación abierta, reduce el ruido visual y deja el registro visible en el momento correcto para aumentar claridad y conversión.",
-    footerPrimary: "Registro gratis",
-    footerSecondary: "Ver empresas",
+      "Aurora está en constante actualización. Puede haber momentos de inestabilidad durante mejoras, pero la estructura principal fue organizada para facilitar acceso, comprensión y conversión.",
+    footerPrimary: "Registrar ahora",
+    footerSecondary: "Explorar empresas",
   },
 } satisfies Record<
   Lang,
@@ -71,6 +107,8 @@ const copyByLang = {
     ctaPrimary: string;
     ctaSecondary: string;
     ctaThird: string;
+    quickTitle: string;
+    quickText: string;
     footerTitle: string;
     footerText: string;
     footerPrimary: string;
@@ -103,16 +141,13 @@ export default function HomePage() {
       >
         <header
           style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
+            display: "grid",
             gap: 14,
-            flexWrap: "wrap",
             border: "1px solid rgba(15,23,42,0.08)",
             background: "rgba(255,255,255,0.78)",
             backdropFilter: "blur(14px)",
-            borderRadius: 22,
-            padding: "12px 14px",
+            borderRadius: 24,
+            padding: "14px",
             boxShadow: "0 18px 42px rgba(15,23,42,0.07)",
             position: "relative",
             zIndex: 3,
@@ -120,40 +155,42 @@ export default function HomePage() {
         >
           <div
             style={{
-              display: "grid",
-              gap: 3,
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              gap: 14,
+              flexWrap: "wrap",
             }}
           >
             <div
               style={{
-                fontSize: 11,
-                fontWeight: 900,
-                letterSpacing: "0.08em",
-                color: "#2563eb",
-                textTransform: "uppercase",
+                display: "grid",
+                gap: 3,
               }}
             >
-              ricardoiaoficial.com
+              <div
+                style={{
+                  fontSize: 11,
+                  fontWeight: 900,
+                  letterSpacing: "0.08em",
+                  color: "#2563eb",
+                  textTransform: "uppercase",
+                }}
+              >
+                ricardoiaoficial.com
+              </div>
+              <div
+                style={{
+                  fontSize: 17,
+                  fontWeight: 900,
+                  lineHeight: 1.2,
+                  color: "#0f172a",
+                }}
+              >
+                Aurora IA • Plataforma internacional de negócios
+              </div>
             </div>
-            <div
-              style={{
-                fontSize: 17,
-                fontWeight: 900,
-                lineHeight: 1.2,
-                color: "#0f172a",
-              }}
-            >
-              Aurora IA • Plataforma internacional de negócios
-            </div>
-          </div>
 
-          <div
-            style={{
-              display: "grid",
-              gap: 8,
-              justifyItems: "end",
-            }}
-          >
             <div
               style={{
                 display: "flex",
@@ -177,27 +214,46 @@ export default function HomePage() {
                 onClick={() => setLang("es")}
               />
             </div>
+          </div>
+
+          <div
+            style={{
+              display: "grid",
+              gap: 8,
+            }}
+          >
+            <div
+              style={{
+                fontSize: 12,
+                fontWeight: 900,
+                color: "rgba(15,23,42,0.62)",
+                textTransform: "uppercase",
+                letterSpacing: "0.06em",
+              }}
+            >
+              Acessos principais
+            </div>
 
             <nav
               style={{
                 display: "flex",
                 gap: 8,
                 flexWrap: "wrap",
-                justifyContent: "flex-end",
               }}
             >
-              <Link href="/chat" style={navLinkStyle}>
-                Chat
-              </Link>
-              <Link href={SEARCH_COMPANIES_HREF} style={navLinkStyle}>
-                Pesquisar
-              </Link>
-              <Link href="/planos" style={navLinkStyle}>
-                Planos
-              </Link>
-              <Link href={GENERAL_SIGNUP_HREF} style={ctaSmallStyle}>
-                Cadastro
-              </Link>
+              {mainAccessLinks.map((item) => (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  style={
+                    item.href === GENERAL_SIGNUP_HREF
+                      ? ctaSmallStyle
+                      : topAccessLinkStyle
+                  }
+                >
+                  {item.label}
+                </Link>
+              ))}
             </nav>
           </div>
         </header>
@@ -262,7 +318,7 @@ export default function HomePage() {
                   fontSize: "clamp(34px, 5.8vw, 62px)",
                   lineHeight: 0.97,
                   letterSpacing: "-0.05em",
-                  maxWidth: 900,
+                  maxWidth: 980,
                   color: "#0f172a",
                 }}
               >
@@ -304,11 +360,59 @@ export default function HomePage() {
               </div>
             </div>
 
+            <section
+              style={{
+                display: "grid",
+                gap: 10,
+                justifyItems: "center",
+                textAlign: "center",
+                padding: "8px 4px 0",
+              }}
+            >
+              <div
+                style={{
+                  fontSize: "clamp(18px, 3vw, 24px)",
+                  fontWeight: 900,
+                  color: "#0f172a",
+                  lineHeight: 1.08,
+                }}
+              >
+                {t.quickTitle}
+              </div>
+
+              <div
+                style={{
+                  maxWidth: 860,
+                  color: "rgba(15,23,42,0.66)",
+                  lineHeight: 1.65,
+                  fontSize: 15,
+                  fontWeight: 700,
+                }}
+              >
+                {t.quickText}
+              </div>
+
+              <div
+                style={{
+                  display: "flex",
+                  gap: 8,
+                  flexWrap: "wrap",
+                  justifyContent: "center",
+                }}
+              >
+                {heroQuickLinks.map((item) => (
+                  <Link key={item.href} href={item.href} style={heroMiniLinkStyle}>
+                    {item.label}
+                  </Link>
+                ))}
+              </div>
+            </section>
+
             <div
               style={{
                 position: "relative",
                 minHeight: 500,
-                marginTop: 4,
+                marginTop: 6,
                 borderRadius: 30,
                 border: "1px solid rgba(15,23,42,0.06)",
                 background:
@@ -655,16 +759,34 @@ const coreTextStyle: React.CSSProperties = {
   letterSpacing: "0.04em",
 };
 
-const navLinkStyle: React.CSSProperties = {
+const topAccessLinkStyle: React.CSSProperties = {
   textDecoration: "none",
   color: "#0f172a",
   border: "1px solid rgba(15,23,42,0.08)",
-  background: "rgba(255,255,255,0.65)",
-  borderRadius: 11,
+  background: "rgba(255,255,255,0.72)",
+  borderRadius: 999,
+  padding: "10px 14px",
+  fontWeight: 800,
+  boxShadow: "0 8px 16px rgba(15,23,42,0.04)",
+  fontSize: 13,
+  display: "inline-flex",
+  alignItems: "center",
+  justifyContent: "center",
+};
+
+const heroMiniLinkStyle: React.CSSProperties = {
+  textDecoration: "none",
+  color: "#0f172a",
+  border: "1px solid rgba(15,23,42,0.08)",
+  background: "rgba(255,255,255,0.74)",
+  borderRadius: 999,
   padding: "9px 12px",
   fontWeight: 800,
   boxShadow: "0 8px 16px rgba(15,23,42,0.04)",
   fontSize: 13,
+  display: "inline-flex",
+  alignItems: "center",
+  justifyContent: "center",
 };
 
 const ctaSmallStyle: React.CSSProperties = {
@@ -672,11 +794,14 @@ const ctaSmallStyle: React.CSSProperties = {
   color: "#ffffff",
   border: "1px solid rgba(37,99,235,0.16)",
   background: "linear-gradient(135deg, #2563eb, #3b82f6)",
-  borderRadius: 11,
-  padding: "9px 12px",
+  borderRadius: 999,
+  padding: "10px 14px",
   fontWeight: 900,
   boxShadow: "0 10px 24px rgba(37,99,235,0.16)",
   fontSize: 13,
+  display: "inline-flex",
+  alignItems: "center",
+  justifyContent: "center",
 };
 
 const primaryBigButtonStyle: React.CSSProperties = {
