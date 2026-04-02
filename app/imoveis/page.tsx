@@ -1,225 +1,644 @@
 import Link from "next/link";
 
+const primaryActions = [
+  { href: "/imoveis/busca", label: "Buscar imóveis" },
+  { href: "/imoveis/cadastrar", label: "Cadastrar imóvel" },
+  { href: "/cadastro-geral", label: "Cadastro geral" },
+  { href: "/chat", label: "Chat Aurora" },
+];
+
+const operationActions = [
+  {
+    href: "/imoveis/busca",
+    title: "Busca pública",
+    text: "Explore imóveis com navegação mais clara para facilitar descoberta, leitura e contato.",
+  },
+  {
+    href: "/imoveis/cadastrar",
+    title: "Cadastrar imóvel",
+    text: "Publique imóveis com mais organização e fortaleça a presença comercial dentro do ecossistema.",
+  },
+  {
+    href: "/imoveis/cadastros",
+    title: "Cadastros",
+    text: "Centralize entradas e organize a base operacional com mais clareza para crescer melhor.",
+  },
+  {
+    href: "/cadastros",
+    title: "Buscar empresas",
+    text: "Conecte a área de imóveis com empresas, parceiros e oportunidades da Aurora.",
+  },
+  {
+    href: "/financeiro",
+    title: "Financeiro",
+    text: "Leve a operação para uma base empresarial mais forte com controle privado por empresa.",
+  },
+  {
+    href: "/chat",
+    title: "Chat Aurora",
+    text: "Use a Aurora para criar anúncios, descrições, campanhas e respostas comerciais.",
+  },
+];
+
+const highlightStats = [
+  {
+    value: "Busca real",
+    label: "Descoberta forte",
+    text: "A pessoa precisa encontrar oportunidades com rapidez, confiança e leitura simples.",
+  },
+  {
+    value: "Cadastro",
+    label: "Entrada comercial",
+    text: "A publicação precisa ser clara para gerar mais presença e menos atrito no uso.",
+  },
+  {
+    value: "Conexão",
+    label: "Ecossistema Aurora",
+    text: "Imóveis ganham mais força quando se conectam com empresas, serviços e operação.",
+  },
+];
+
 export default function ImoveisPage() {
   return (
     <main
       style={{
         minHeight: "100vh",
         background:
-          "radial-gradient(circle at top, rgba(59,130,246,0.18), transparent 30%), #050816",
-        color: "#e5eef8",
-        padding: "32px 16px 80px",
+          "radial-gradient(circle at top, rgba(59,130,246,0.10), transparent 18%), radial-gradient(circle at left, rgba(16,185,129,0.10), transparent 24%), linear-gradient(180deg, #eef6ff 0%, #f7fbff 36%, #edf7f3 100%)",
+        color: "#0f172a",
+        overflow: "hidden",
       }}
     >
-      <div style={{ maxWidth: 1100, margin: "0 auto" }}>
-        <div
+      <section
+        style={{
+          maxWidth: 1320,
+          margin: "0 auto",
+          padding: "18px 16px 72px",
+          display: "grid",
+          gap: 18,
+        }}
+      >
+        <header
           style={{
-            display: "flex",
+            display: "grid",
             gap: 12,
-            flexWrap: "wrap",
-            marginBottom: 16,
-          }}
-        >
-          <Link
-            href="/"
-            style={{
-              color: "#93c5fd",
-              textDecoration: "none",
-              border: "1px solid rgba(147,197,253,0.25)",
-              borderRadius: 999,
-              padding: "10px 14px",
-            }}
-          >
-            Voltar à Home
-          </Link>
-
-          <Link
-            href="/app-builder"
-            style={{
-              color: "#86efac",
-              textDecoration: "none",
-              border: "1px solid rgba(134,239,172,0.25)",
-              borderRadius: 999,
-              padding: "10px 14px",
-            }}
-          >
-            Ir para o App Builder
-          </Link>
-
-          <Link
-            href="/guardiao"
-            style={{
-              color: "#facc15",
-              textDecoration: "none",
-              border: "1px solid rgba(250,204,21,0.25)",
-              borderRadius: 999,
-              padding: "10px 14px",
-            }}
-          >
-            Ir para o Guardião
-          </Link>
-        </div>
-
-        <section
-          style={{
-            border: "1px solid rgba(148,163,184,0.18)",
-            background: "rgba(15,23,42,0.72)",
-            backdropFilter: "blur(10px)",
+            border: "1px solid rgba(15,23,42,0.08)",
+            background: "rgba(255,255,255,0.78)",
+            backdropFilter: "blur(14px)",
             borderRadius: 24,
-            padding: 24,
-            boxShadow: "0 20px 80px rgba(0,0,0,0.35)",
-            marginBottom: 24,
+            padding: "14px",
+            boxShadow: "0 18px 42px rgba(15,23,42,0.07)",
+            position: "relative",
+            zIndex: 2,
           }}
         >
           <div
             style={{
-              display: "inline-flex",
-              padding: "8px 12px",
-              borderRadius: 999,
-              background: "rgba(59,130,246,0.14)",
-              border: "1px solid rgba(59,130,246,0.25)",
-              color: "#93c5fd",
-              fontSize: 13,
-              fontWeight: 700,
-              letterSpacing: 0.3,
-              marginBottom: 14,
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              gap: 12,
+              flexWrap: "wrap",
             }}
           >
-            Aurora Imóveis
+            <div style={{ display: "grid", gap: 4 }}>
+              <div
+                style={{
+                  fontSize: 11,
+                  fontWeight: 900,
+                  letterSpacing: "0.08em",
+                  textTransform: "uppercase",
+                  color: "#2563eb",
+                }}
+              >
+                ricardoiaoficial.com
+              </div>
+              <div
+                style={{
+                  fontSize: 18,
+                  fontWeight: 900,
+                  lineHeight: 1.2,
+                  color: "#0f172a",
+                }}
+              >
+                Aurora Imóveis • presença, busca e negócios
+              </div>
+            </div>
+
+            <div
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+                minHeight: 36,
+                padding: "0 12px",
+                borderRadius: 999,
+                background: "rgba(37,99,235,0.08)",
+                border: "1px solid rgba(37,99,235,0.16)",
+                color: "#2563eb",
+                fontSize: 12,
+                fontWeight: 900,
+                textTransform: "uppercase",
+                letterSpacing: "0.06em",
+              }}
+            >
+              Sistema em evolução
+            </div>
           </div>
 
-          <h1
+          <nav
             style={{
-              fontSize: 36,
-              lineHeight: 1.05,
-              margin: 0,
+              display: "flex",
+              gap: 8,
+              flexWrap: "wrap",
             }}
           >
-            Plataforma de Imóveis em atualização
-          </h1>
+            <Link href="/" style={topLinkStyle}>
+              Home
+            </Link>
+            <Link href="/guardiao" style={topLinkStyle}>
+              Guardião
+            </Link>
+            <Link href="/cadastro-geral" style={topLinkStyle}>
+              Cadastro geral
+            </Link>
+            <Link href="/chat" style={topLinkStyle}>
+              Chat Aurora
+            </Link>
+            <Link href="/financeiro" style={topLinkStyle}>
+              Financeiro global
+            </Link>
+          </nav>
+        </header>
 
-          <p
+        <section
+          style={{
+            position: "relative",
+            overflow: "hidden",
+            borderRadius: 32,
+            border: "1px solid rgba(15,23,42,0.08)",
+            background:
+              "linear-gradient(180deg, rgba(255,255,255,0.88), rgba(255,255,255,0.74))",
+            boxShadow: "0 22px 70px rgba(15,23,42,0.09)",
+            padding: "28px 20px 22px",
+            display: "grid",
+            gap: 22,
+          }}
+        >
+          <div style={heroGlowBlue} />
+          <div style={heroGlowGreen} />
+          <div style={heroGridStyle} />
+
+          <div
             style={{
-              color: "#94a3b8",
-              marginTop: 14,
-              maxWidth: 820,
-              fontSize: 16,
-              lineHeight: 1.7,
+              position: "relative",
+              zIndex: 1,
+              display: "grid",
+              gap: 16,
+              justifyItems: "start",
             }}
           >
-            Esta área da Aurora está em evolução para atender imobiliárias,
-            corretores, compradores, investidores e oportunidades do setor
-            imobiliário. Estamos em constante atualização e pode haver momentos
-            de instabilidade.
-          </p>
+            <div
+              style={{
+                display: "inline-flex",
+                width: "fit-content",
+                alignItems: "center",
+                gap: 8,
+                padding: "8px 12px",
+                borderRadius: 999,
+                background: "rgba(37,99,235,0.08)",
+                border: "1px solid rgba(37,99,235,0.16)",
+                color: "#2563eb",
+                fontSize: 12,
+                fontWeight: 900,
+                boxShadow: "0 0 16px rgba(37,99,235,0.06)",
+              }}
+            >
+              Aurora Imóveis
+            </div>
+
+            <div style={{ display: "grid", gap: 12, maxWidth: 900 }}>
+              <h1
+                style={{
+                  margin: 0,
+                  fontSize: "clamp(34px, 6vw, 68px)",
+                  lineHeight: 0.95,
+                  letterSpacing: "-0.05em",
+                  color: "#0f172a",
+                }}
+              >
+                Plataforma para publicar, encontrar e gerar negócios com imóveis
+              </h1>
+
+              <p
+                style={{
+                  margin: 0,
+                  color: "rgba(15,23,42,0.74)",
+                  fontSize: 18,
+                  lineHeight: 1.7,
+                  fontWeight: 700,
+                  maxWidth: 940,
+                }}
+              >
+                Estruture a área de imóveis com busca pública, cadastro,
+                apresentação comercial e apoio inteligente da Aurora em uma
+                experiência mais clara, forte e preparada para crescer. Sistema
+                em constante atualização e pode haver momentos de instabilidade
+                durante melhorias.
+              </p>
+            </div>
+
+            <div
+              style={{
+                display: "flex",
+                gap: 10,
+                flexWrap: "wrap",
+              }}
+            >
+              {primaryActions.map((item, index) => (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  style={index === 0 ? primaryButtonStyle : secondaryButtonStyle}
+                >
+                  {item.label}
+                </Link>
+              ))}
+            </div>
+          </div>
+
+          <div
+            style={{
+              position: "relative",
+              zIndex: 1,
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+              gap: 12,
+            }}
+          >
+            {highlightStats.map((item) => (
+              <div key={item.label} style={statCardStyle}>
+                <div
+                  style={{
+                    fontSize: 24,
+                    fontWeight: 900,
+                    color: "#0f172a",
+                    lineHeight: 1,
+                  }}
+                >
+                  {item.value}
+                </div>
+                <div
+                  style={{
+                    fontSize: 13,
+                    fontWeight: 900,
+                    textTransform: "uppercase",
+                    letterSpacing: "0.05em",
+                    color: "#2563eb",
+                  }}
+                >
+                  {item.label}
+                </div>
+                <div
+                  style={{
+                    color: "rgba(15,23,42,0.68)",
+                    lineHeight: 1.7,
+                    fontSize: 14,
+                  }}
+                >
+                  {item.text}
+                </div>
+              </div>
+            ))}
+          </div>
         </section>
 
         <section
           style={{
             display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-            gap: 16,
-            marginBottom: 24,
+            gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
+            gap: 18,
           }}
         >
-          <div
-            style={{
-              borderRadius: 20,
-              padding: 18,
-              background: "rgba(15,23,42,0.72)",
-              border: "1px solid rgba(148,163,184,0.16)",
-            }}
-          >
-            <div style={{ fontSize: 12, color: "#94a3b8" }}>Status atual</div>
-            <div style={{ fontWeight: 800, fontSize: 20, marginTop: 8 }}>
-              Página ativa
-            </div>
-            <p style={{ color: "#cbd5e1", marginTop: 10, marginBottom: 0 }}>
-              O 404 desta rota foi eliminado e a estrutura base já está pronta.
+          <div style={panelStyle}>
+            <div style={sectionBadgeStyle}>Entrada comercial</div>
+
+            <h2
+              style={{
+                margin: 0,
+                fontSize: "clamp(26px, 4vw, 42px)",
+                lineHeight: 1.02,
+                color: "#0f172a",
+                letterSpacing: "-0.04em",
+              }}
+            >
+              Faça seus imóveis aparecerem com mais clareza e valor percebido
+            </h2>
+
+            <p style={sectionTextStyle}>
+              A Aurora foi preparada para receber imóveis, organizar presença
+              pública, facilitar busca e conectar operação com o restante do
+              ecossistema. A entrada precisa ser simples para quem procura e
+              forte para quem anuncia.
             </p>
+
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+                gap: 12,
+              }}
+            >
+              <div style={infoCardStyle}>
+                <div style={infoTitleStyle}>Busca mais clara</div>
+                <div style={infoTextStyle}>
+                  A pessoa encontra oportunidades com leitura leve, navegação
+                  organizada e mais confiança na experiência.
+                </div>
+              </div>
+
+              <div style={infoCardStyle}>
+                <div style={infoTitleStyle}>Publicação forte</div>
+                <div style={infoTextStyle}>
+                  O imóvel precisa entrar bem apresentado para aumentar atenção
+                  e melhorar a resposta comercial.
+                </div>
+              </div>
+
+              <div style={infoCardStyle}>
+                <div style={infoTitleStyle}>Integração real</div>
+                <div style={infoTextStyle}>
+                  A área de imóveis ganha mais força quando conversa com
+                  empresas, serviços, chat e operação empresarial.
+                </div>
+              </div>
+
+              <div style={infoCardStyle}>
+                <div style={infoTitleStyle}>Base para expansão</div>
+                <div style={infoTextStyle}>
+                  A estrutura foi pensada para crescer com anúncios, contatos,
+                  parceiros e gestão sem perder clareza.
+                </div>
+              </div>
+            </div>
           </div>
 
-          <div
-            style={{
-              borderRadius: 20,
-              padding: 18,
-              background: "rgba(15,23,42,0.72)",
-              border: "1px solid rgba(148,163,184,0.16)",
-            }}
-          >
-            <div style={{ fontSize: 12, color: "#94a3b8" }}>Objetivo</div>
-            <div style={{ fontWeight: 800, fontSize: 20, marginTop: 8 }}>
-              Expansão imobiliária
-            </div>
-            <p style={{ color: "#cbd5e1", marginTop: 10, marginBottom: 0 }}>
-              Estruturar imóveis, corretores, leads, propostas e operação
-              comercial dentro da Aurora.
-            </p>
-          </div>
+          <div style={panelStyle}>
+            <div style={sectionBadgeStyle}>Acesso rápido</div>
 
-          <div
-            style={{
-              borderRadius: 20,
-              padding: 18,
-              background: "rgba(15,23,42,0.72)",
-              border: "1px solid rgba(148,163,184,0.16)",
-            }}
-          >
-            <div style={{ fontSize: 12, color: "#94a3b8" }}>Próximo passo</div>
-            <div style={{ fontWeight: 800, fontSize: 20, marginTop: 8 }}>
-              Estrutura comercial
+            <h3
+              style={{
+                margin: 0,
+                fontSize: 24,
+                lineHeight: 1.08,
+                color: "#0f172a",
+              }}
+            >
+              Operação de imóveis
+            </h3>
+
+            <div
+              style={{
+                display: "grid",
+                gap: 10,
+              }}
+            >
+              {operationActions.map((item) => (
+                <Link key={item.href} href={item.href} style={quickCardLinkStyle}>
+                  <div style={quickCardTitleStyle}>{item.title}</div>
+                  <div style={quickCardTextStyle}>{item.text}</div>
+                </Link>
+              ))}
             </div>
-            <p style={{ color: "#cbd5e1", marginTop: 10, marginBottom: 0 }}>
-              Criar páginas internas, busca real, cadastro de imóveis e captação
-              de leads.
-            </p>
           </div>
         </section>
 
         <section
           style={{
-            borderRadius: 24,
-            padding: 24,
-            background: "rgba(15,23,42,0.72)",
-            border: "1px solid rgba(148,163,184,0.18)",
-            boxShadow: "0 20px 80px rgba(0,0,0,0.35)",
+            borderRadius: 28,
+            border: "1px solid rgba(15,23,42,0.08)",
+            background:
+              "linear-gradient(135deg, rgba(37,99,235,0.06), rgba(16,185,129,0.06))",
+            boxShadow: "0 18px 44px rgba(15,23,42,0.07)",
+            padding: "22px 18px",
+            display: "grid",
+            gap: 12,
+            textAlign: "center",
           }}
         >
-          <h2 style={{ fontSize: 24, marginTop: 0 }}>Áreas previstas</h2>
+          <div
+            style={{
+              fontSize: "clamp(22px, 4vw, 30px)",
+              fontWeight: 900,
+              lineHeight: 1.08,
+              color: "#0f172a",
+            }}
+          >
+            Imóveis prontos para ganhar mais presença, leitura e conexão
+          </div>
 
           <div
             style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-              gap: 14,
-              marginTop: 18,
+              maxWidth: 920,
+              margin: "0 auto",
+              color: "rgba(15,23,42,0.68)",
+              lineHeight: 1.7,
+              fontSize: 15,
             }}
           >
-            {[
-              "Cadastro de imóveis",
-              "Cadastro de corretores",
-              "Busca e filtros",
-              "Leads e propostas",
-              "Painel gerencial",
-              "Contato e captação",
-            ].map((item) => (
-              <div
-                key={item}
-                style={{
-                  borderRadius: 16,
-                  padding: 16,
-                  background: "rgba(2,6,23,0.45)",
-                  border: "1px solid rgba(148,163,184,0.14)",
-                  color: "#e2e8f0",
-                  fontWeight: 700,
-                }}
-              >
-                {item}
-              </div>
-            ))}
+            A plataforma está em constante atualização e pode passar por
+            momentos de instabilidade durante melhorias. Mesmo assim, esta área
+            já foi estruturada para melhorar descoberta, cadastro e apresentação
+            dos imóveis dentro do ecossistema Aurora.
+          </div>
+
+          <div
+            style={{
+              display: "flex",
+              gap: 10,
+              flexWrap: "wrap",
+              justifyContent: "center",
+            }}
+          >
+            <Link href="/imoveis/cadastrar" style={primaryButtonStyle}>
+              Cadastrar imóvel
+            </Link>
+            <Link href="/imoveis/busca" style={secondaryButtonStyle}>
+              Explorar imóveis
+            </Link>
           </div>
         </section>
-      </div>
+      </section>
     </main>
   );
 }
+
+const heroGlowBlue: React.CSSProperties = {
+  position: "absolute",
+  top: -140,
+  right: -100,
+  width: 420,
+  height: 420,
+  borderRadius: 999,
+  background:
+    "radial-gradient(circle, rgba(59,130,246,0.12) 0%, rgba(59,130,246,0.04) 44%, transparent 72%)",
+  filter: "blur(24px)",
+  pointerEvents: "none",
+};
+
+const heroGlowGreen: React.CSSProperties = {
+  position: "absolute",
+  bottom: -120,
+  left: -90,
+  width: 380,
+  height: 380,
+  borderRadius: 999,
+  background:
+    "radial-gradient(circle, rgba(16,185,129,0.10) 0%, rgba(16,185,129,0.03) 45%, transparent 72%)",
+  filter: "blur(22px)",
+  pointerEvents: "none",
+};
+
+const heroGridStyle: React.CSSProperties = {
+  position: "absolute",
+  inset: 0,
+  backgroundImage:
+    "linear-gradient(rgba(15,23,42,0.022) 1px, transparent 1px), linear-gradient(90deg, rgba(15,23,42,0.022) 1px, transparent 1px)",
+  backgroundSize: "42px 42px",
+  opacity: 0.24,
+  pointerEvents: "none",
+};
+
+const topLinkStyle: React.CSSProperties = {
+  textDecoration: "none",
+  color: "#0f172a",
+  border: "1px solid rgba(15,23,42,0.08)",
+  background: "rgba(255,255,255,0.68)",
+  borderRadius: 999,
+  padding: "10px 14px",
+  fontWeight: 800,
+  fontSize: 13,
+  display: "inline-flex",
+  alignItems: "center",
+  justifyContent: "center",
+  boxShadow: "0 8px 16px rgba(15,23,42,0.04)",
+};
+
+const primaryButtonStyle: React.CSSProperties = {
+  textDecoration: "none",
+  color: "#ffffff",
+  background: "linear-gradient(135deg, #2563eb, #3b82f6)",
+  border: "1px solid rgba(37,99,235,0.16)",
+  borderRadius: 16,
+  padding: "13px 16px",
+  fontWeight: 900,
+  fontSize: 14,
+  display: "inline-flex",
+  alignItems: "center",
+  justifyContent: "center",
+  boxShadow: "0 14px 30px rgba(37,99,235,0.16)",
+};
+
+const secondaryButtonStyle: React.CSSProperties = {
+  textDecoration: "none",
+  color: "#0f172a",
+  background: "rgba(255,255,255,0.78)",
+  border: "1px solid rgba(15,23,42,0.08)",
+  borderRadius: 16,
+  padding: "13px 16px",
+  fontWeight: 800,
+  fontSize: 14,
+  display: "inline-flex",
+  alignItems: "center",
+  justifyContent: "center",
+  boxShadow: "0 10px 22px rgba(15,23,42,0.05)",
+};
+
+const statCardStyle: React.CSSProperties = {
+  borderRadius: 24,
+  padding: "18px 16px",
+  border: "1px solid rgba(15,23,42,0.08)",
+  background: "rgba(255,255,255,0.76)",
+  display: "grid",
+  gap: 8,
+  boxShadow: "0 14px 30px rgba(15,23,42,0.05)",
+};
+
+const panelStyle: React.CSSProperties = {
+  borderRadius: 28,
+  border: "1px solid rgba(15,23,42,0.08)",
+  background: "rgba(255,255,255,0.80)",
+  boxShadow: "0 18px 42px rgba(15,23,42,0.06)",
+  padding: "22px 18px",
+  display: "grid",
+  gap: 14,
+};
+
+const sectionBadgeStyle: React.CSSProperties = {
+  display: "inline-flex",
+  width: "fit-content",
+  minHeight: 34,
+  alignItems: "center",
+  justifyContent: "center",
+  padding: "0 12px",
+  borderRadius: 999,
+  background: "rgba(37,99,235,0.08)",
+  border: "1px solid rgba(37,99,235,0.16)",
+  color: "#2563eb",
+  fontSize: 12,
+  fontWeight: 900,
+};
+
+const sectionTextStyle: React.CSSProperties = {
+  margin: 0,
+  color: "rgba(15,23,42,0.70)",
+  lineHeight: 1.75,
+  fontSize: 15,
+};
+
+const infoCardStyle: React.CSSProperties = {
+  borderRadius: 22,
+  border: "1px solid rgba(15,23,42,0.08)",
+  background: "rgba(255,255,255,0.86)",
+  padding: "16px 14px",
+  display: "grid",
+  gap: 8,
+  boxShadow: "0 10px 24px rgba(15,23,42,0.04)",
+};
+
+const infoTitleStyle: React.CSSProperties = {
+  color: "#0f172a",
+  fontSize: 16,
+  fontWeight: 900,
+  lineHeight: 1.1,
+};
+
+const infoTextStyle: React.CSSProperties = {
+  color: "rgba(15,23,42,0.68)",
+  lineHeight: 1.7,
+  fontSize: 14,
+};
+
+const quickCardLinkStyle: React.CSSProperties = {
+  textDecoration: "none",
+  borderRadius: 22,
+  border: "1px solid rgba(15,23,42,0.08)",
+  background: "rgba(255,255,255,0.86)",
+  padding: "16px 14px",
+  display: "grid",
+  gap: 8,
+  boxShadow: "0 10px 24px rgba(15,23,42,0.04)",
+};
+
+const quickCardTitleStyle: React.CSSProperties = {
+  color: "#0f172a",
+  fontSize: 16,
+  fontWeight: 900,
+  lineHeight: 1.1,
+};
+
+const quickCardTextStyle: React.CSSProperties = {
+  color: "rgba(15,23,42,0.68)",
+  lineHeight: 1.7,
+  fontSize: 14,
+};
