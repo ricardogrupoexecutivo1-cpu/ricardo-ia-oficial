@@ -505,19 +505,19 @@ export default function CadastroGeralPage() {
     <main style={styles.main}>
       <div style={styles.container}>
         <div style={styles.topNav}>
-          <NavLink href="/" label="Voltar à Home" color="#93c5fd" />
-          <NavLink href="/guardiao" label="Ir para o Guardião" color="#facc15" />
+          <NavLink href="/" label="Voltar à Home" color="#2563eb" />
+          <NavLink href="/guardiao" label="Ir para o Guardião" color="#0f766e" />
           <NavLink
             href="/app-builder"
             label="Ir para App Builder"
-            color="#86efac"
+            color="#2563eb"
           />
           <NavLink
             href="/aurora-responde"
             label="Aurora Responde"
-            color="#c4b5fd"
+            color="#0f766e"
           />
-          <NavLink href="/mineracao" label="Mineração" color="#f59e0b" />
+          <NavLink href="/mineracao" label="Mineração" color="#1d4ed8" />
         </div>
 
         <section style={styles.heroCard}>
@@ -526,8 +526,7 @@ export default function CadastroGeralPage() {
           <p style={styles.heroText}>
             Esta é a base principal de entrada da plataforma para empresas,
             profissionais, fornecedores, compradores, parceiros e operações em
-            nível Brasil, estadual, regional, municipal ou multilocal. Estamos em
-            constante atualização e pode haver momentos de instabilidade.
+            nível Brasil, estadual, regional, municipal ou multilocal.
           </p>
 
           <div style={styles.heroGrid}>
@@ -1143,8 +1142,8 @@ const styles: Record<string, CSSProperties> = {
   main: {
     minHeight: "100vh",
     background:
-      "radial-gradient(circle at top, rgba(34,197,94,0.12), transparent 18%), radial-gradient(circle at right top, rgba(59,130,246,0.10), transparent 22%), linear-gradient(180deg, #03110d 0%, #071712 38%, #030504 100%)",
-    color: "#ecfdf5",
+      "radial-gradient(circle at top, rgba(59,130,246,0.10), transparent 18%), radial-gradient(circle at left, rgba(34,197,94,0.10), transparent 24%), linear-gradient(180deg, #eef6ff 0%, #f7fbff 36%, #edf7f3 100%)",
+    color: "#0f172a",
     padding: "24px 16px 80px",
   },
   container: {
@@ -1160,19 +1159,20 @@ const styles: Record<string, CSSProperties> = {
   },
   topLink: {
     textDecoration: "none",
-    border: "1px solid rgba(255,255,255,0.12)",
-    background: "rgba(255,255,255,0.04)",
+    border: "1px solid rgba(15,23,42,0.08)",
+    background: "rgba(255,255,255,0.76)",
     borderRadius: 14,
     padding: "10px 14px",
     fontWeight: 800,
+    boxShadow: "0 8px 18px rgba(15,23,42,0.04)",
   },
   heroCard: {
-    border: "1px solid rgba(255,255,255,0.08)",
+    border: "1px solid rgba(15,23,42,0.08)",
     background:
-      "linear-gradient(180deg, rgba(7,18,13,0.90), rgba(7,18,13,0.78))",
+      "linear-gradient(180deg, rgba(255,255,255,0.88), rgba(255,255,255,0.74))",
     borderRadius: 28,
     padding: "26px 22px",
-    boxShadow: "0 18px 60px rgba(0,0,0,0.22)",
+    boxShadow: "0 18px 60px rgba(15,23,42,0.08)",
     display: "grid",
     gap: 18,
   },
@@ -1183,9 +1183,9 @@ const styles: Record<string, CSSProperties> = {
     gap: 8,
     padding: "8px 12px",
     borderRadius: 999,
-    background: "rgba(34,197,94,0.10)",
-    border: "1px solid rgba(34,197,94,0.26)",
-    color: "#86efac",
+    background: "rgba(37,99,235,0.08)",
+    border: "1px solid rgba(37,99,235,0.16)",
+    color: "#2563eb",
     fontSize: 13,
     fontWeight: 800,
   },
@@ -1194,13 +1194,15 @@ const styles: Record<string, CSSProperties> = {
     fontSize: "clamp(30px, 6vw, 52px)",
     lineHeight: 1.02,
     letterSpacing: "-0.03em",
+    color: "#0f172a",
   },
   heroText: {
     margin: 0,
-    color: "rgba(236,253,245,0.84)",
+    color: "rgba(15,23,42,0.74)",
     fontSize: 18,
     lineHeight: 1.7,
     maxWidth: 980,
+    fontWeight: 700,
   },
   heroGrid: {
     display: "grid",
@@ -1210,54 +1212,60 @@ const styles: Record<string, CSSProperties> = {
   infoCard: {
     borderRadius: 18,
     padding: "16px",
-    background: "rgba(255,255,255,0.03)",
-    border: "1px solid rgba(255,255,255,0.06)",
+    background:
+      "linear-gradient(180deg, rgba(255,255,255,0.80), rgba(255,255,255,0.64))",
+    border: "1px solid rgba(15,23,42,0.08)",
     display: "grid",
     gap: 8,
+    boxShadow: "0 8px 18px rgba(15,23,42,0.04)",
   },
   infoTitle: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: 900,
-    color: "#86efac",
+    color: "#2563eb",
     textTransform: "uppercase",
     letterSpacing: "0.08em",
   },
   infoValue: {
     fontSize: 22,
     fontWeight: 900,
+    color: "#0f172a",
   },
   infoText: {
     fontSize: 14,
     lineHeight: 1.6,
-    color: "rgba(236,253,245,0.72)",
+    color: "rgba(15,23,42,0.62)",
   },
   feedbackBox: {
     borderRadius: 18,
     padding: "16px 18px",
-    border: "1px solid rgba(255,255,255,0.08)",
+    border: "1px solid rgba(15,23,42,0.08)",
+    color: "#0f172a",
+    boxShadow: "0 10px 24px rgba(15,23,42,0.05)",
   },
   feedbackSuccess: {
-    background: "rgba(34,197,94,0.12)",
-    borderColor: "rgba(34,197,94,0.26)",
+    background: "linear-gradient(135deg, rgba(16,185,129,0.08), rgba(255,255,255,0.76))",
+    borderColor: "rgba(16,185,129,0.20)",
   },
   feedbackError: {
-    background: "rgba(239,68,68,0.12)",
-    borderColor: "rgba(239,68,68,0.26)",
+    background: "linear-gradient(135deg, rgba(239,68,68,0.08), rgba(255,255,255,0.76))",
+    borderColor: "rgba(239,68,68,0.20)",
   },
   feedbackInfo: {
-    background: "rgba(59,130,246,0.12)",
-    borderColor: "rgba(59,130,246,0.26)",
+    background: "linear-gradient(135deg, rgba(37,99,235,0.08), rgba(255,255,255,0.76))",
+    borderColor: "rgba(37,99,235,0.20)",
   },
   formWrap: {
     display: "grid",
     gap: 16,
   },
   sectionCard: {
-    border: "1px solid rgba(255,255,255,0.08)",
-    background: "rgba(7, 18, 13, 0.84)",
+    border: "1px solid rgba(15,23,42,0.08)",
+    background:
+      "linear-gradient(180deg, rgba(255,255,255,0.88), rgba(255,255,255,0.74))",
     borderRadius: 24,
     padding: "22px 18px",
-    boxShadow: "0 18px 60px rgba(0,0,0,0.20)",
+    boxShadow: "0 18px 60px rgba(15,23,42,0.06)",
     display: "grid",
     gap: 16,
   },
@@ -1265,11 +1273,12 @@ const styles: Record<string, CSSProperties> = {
     fontSize: 20,
     fontWeight: 900,
     lineHeight: 1.2,
+    color: "#0f172a",
   },
   sectionText: {
     fontSize: 14,
     lineHeight: 1.7,
-    color: "rgba(236,253,245,0.74)",
+    color: "rgba(15,23,42,0.64)",
   },
   grid2: {
     display: "grid",
@@ -1279,38 +1288,41 @@ const styles: Record<string, CSSProperties> = {
   label: {
     fontSize: 14,
     fontWeight: 800,
-    color: "#d1fae5",
+    color: "#0f172a",
   },
   input: {
     width: "100%",
     borderRadius: 14,
-    border: "1px solid rgba(255,255,255,0.10)",
-    background: "rgba(255,255,255,0.05)",
-    color: "#ecfdf5",
+    border: "1px solid rgba(15,23,42,0.10)",
+    background: "rgba(255,255,255,0.92)",
+    color: "#0f172a",
     padding: "14px 14px",
     outline: "none",
     fontSize: 15,
+    boxShadow: "0 6px 14px rgba(15,23,42,0.03)",
   },
   select: {
     width: "100%",
     borderRadius: 14,
-    border: "1px solid rgba(255,255,255,0.10)",
-    background: "#0c1713",
-    color: "#ecfdf5",
+    border: "1px solid rgba(15,23,42,0.10)",
+    background: "rgba(255,255,255,0.92)",
+    color: "#0f172a",
     padding: "14px 14px",
     outline: "none",
     fontSize: 15,
+    boxShadow: "0 6px 14px rgba(15,23,42,0.03)",
   },
   textarea: {
     width: "100%",
     borderRadius: 16,
-    border: "1px solid rgba(255,255,255,0.10)",
-    background: "rgba(255,255,255,0.05)",
-    color: "#ecfdf5",
+    border: "1px solid rgba(15,23,42,0.10)",
+    background: "rgba(255,255,255,0.92)",
+    color: "#0f172a",
     padding: "14px 14px",
     outline: "none",
     fontSize: 15,
     resize: "vertical",
+    boxShadow: "0 6px 14px rgba(15,23,42,0.03)",
   },
   choiceGrid: {
     display: "grid",
@@ -1320,26 +1332,28 @@ const styles: Record<string, CSSProperties> = {
   choiceButton: {
     cursor: "pointer",
     borderRadius: 16,
-    border: "1px solid rgba(255,255,255,0.10)",
-    background: "rgba(255,255,255,0.04)",
-    color: "#ecfdf5",
+    border: "1px solid rgba(15,23,42,0.08)",
+    background: "rgba(255,255,255,0.78)",
+    color: "#0f172a",
     padding: "14px 16px",
     fontWeight: 800,
     textAlign: "left",
+    boxShadow: "0 8px 18px rgba(15,23,42,0.04)",
   },
   choiceButtonActive: {
     background:
-      "linear-gradient(135deg, rgba(34,197,94,0.22), rgba(74,222,128,0.18))",
-    borderColor: "rgba(34,197,94,0.34)",
-    color: "#d1fae5",
+      "linear-gradient(135deg, rgba(37,99,235,0.10), rgba(59,130,246,0.06))",
+    borderColor: "rgba(37,99,235,0.18)",
+    color: "#1d4ed8",
   },
   inlineInfo: {
     borderRadius: 14,
     padding: "12px 14px",
-    background: "rgba(255,255,255,0.03)",
-    border: "1px solid rgba(255,255,255,0.06)",
-    color: "rgba(236,253,245,0.78)",
+    background: "rgba(255,255,255,0.76)",
+    border: "1px solid rgba(15,23,42,0.08)",
+    color: "rgba(15,23,42,0.72)",
     fontSize: 14,
+    boxShadow: "0 8px 18px rgba(15,23,42,0.04)",
   },
   suggestionWrap: {
     display: "flex",
@@ -1349,11 +1363,12 @@ const styles: Record<string, CSSProperties> = {
   suggestionButton: {
     cursor: "pointer",
     borderRadius: 999,
-    border: "1px solid rgba(255,255,255,0.10)",
-    background: "rgba(255,255,255,0.05)",
-    color: "#ecfdf5",
+    border: "1px solid rgba(15,23,42,0.08)",
+    background: "rgba(255,255,255,0.80)",
+    color: "#0f172a",
     padding: "8px 12px",
     fontWeight: 700,
+    boxShadow: "0 6px 14px rgba(15,23,42,0.03)",
   },
   addRow: {
     display: "grid",
@@ -1364,18 +1379,19 @@ const styles: Record<string, CSSProperties> = {
   addButton: {
     cursor: "pointer",
     borderRadius: 14,
-    border: "1px solid rgba(34,197,94,0.28)",
-    background: "linear-gradient(135deg, #22c55e, #4ade80)",
-    color: "#04110a",
+    border: "1px solid rgba(37,99,235,0.16)",
+    background: "linear-gradient(135deg, #2563eb, #3b82f6)",
+    color: "#ffffff",
     padding: "14px 16px",
     fontWeight: 900,
+    boxShadow: "0 12px 28px rgba(37,99,235,0.16)",
   },
   emptyTagBox: {
     borderRadius: 14,
     padding: "14px 16px",
-    background: "rgba(255,255,255,0.03)",
-    border: "1px dashed rgba(255,255,255,0.10)",
-    color: "rgba(236,253,245,0.62)",
+    background: "rgba(255,255,255,0.76)",
+    border: "1px dashed rgba(15,23,42,0.10)",
+    color: "rgba(15,23,42,0.54)",
     fontSize: 14,
   },
   tagWrap: {
@@ -1389,16 +1405,18 @@ const styles: Record<string, CSSProperties> = {
     gap: 8,
     borderRadius: 999,
     padding: "9px 12px",
-    background: "rgba(255,255,255,0.06)",
-    border: "1px solid rgba(255,255,255,0.10)",
+    background: "rgba(255,255,255,0.82)",
+    border: "1px solid rgba(15,23,42,0.08)",
     fontSize: 14,
     fontWeight: 700,
+    color: "#0f172a",
+    boxShadow: "0 6px 14px rgba(15,23,42,0.03)",
   },
   tagRemove: {
     cursor: "pointer",
     border: "none",
     background: "transparent",
-    color: "#fca5a5",
+    color: "#dc2626",
     fontSize: 18,
     lineHeight: 1,
     padding: 0,
@@ -1414,19 +1432,21 @@ const styles: Record<string, CSSProperties> = {
     gap: 10,
     borderRadius: 14,
     padding: "12px 14px",
-    background: "rgba(255,255,255,0.03)",
-    border: "1px solid rgba(255,255,255,0.06)",
+    background: "rgba(255,255,255,0.78)",
+    border: "1px solid rgba(15,23,42,0.08)",
     fontSize: 14,
-    color: "#ecfdf5",
+    color: "#0f172a",
+    boxShadow: "0 8px 18px rgba(15,23,42,0.04)",
   },
   submitCard: {
-    border: "1px solid rgba(255,255,255,0.08)",
+    border: "1px solid rgba(15,23,42,0.08)",
     background:
-      "linear-gradient(135deg, rgba(34,197,94,0.12), rgba(59,130,246,0.10))",
+      "linear-gradient(135deg, rgba(37,99,235,0.08), rgba(16,185,129,0.08))",
     borderRadius: 24,
     padding: "22px 18px",
     display: "grid",
     gap: 14,
+    boxShadow: "0 16px 34px rgba(15,23,42,0.06)",
   },
   submitTextWrap: {
     display: "grid",
@@ -1435,11 +1455,12 @@ const styles: Record<string, CSSProperties> = {
   submitTitle: {
     fontSize: 22,
     fontWeight: 900,
+    color: "#0f172a",
   },
   submitText: {
     fontSize: 14,
     lineHeight: 1.7,
-    color: "rgba(236,253,245,0.82)",
+    color: "rgba(15,23,42,0.72)",
   },
   submitActions: {
     display: "flex",
@@ -1449,19 +1470,21 @@ const styles: Record<string, CSSProperties> = {
   primarySubmit: {
     cursor: "pointer",
     borderRadius: 16,
-    border: "1px solid rgba(34,197,94,0.28)",
-    background: "linear-gradient(135deg, #22c55e, #4ade80)",
-    color: "#04110a",
+    border: "1px solid rgba(37,99,235,0.16)",
+    background: "linear-gradient(135deg, #2563eb, #3b82f6)",
+    color: "#ffffff",
     padding: "14px 18px",
     fontWeight: 900,
+    boxShadow: "0 12px 28px rgba(37,99,235,0.16)",
   },
   secondarySubmit: {
     cursor: "pointer",
     borderRadius: 16,
-    border: "1px solid rgba(255,255,255,0.10)",
-    background: "rgba(255,255,255,0.05)",
-    color: "#ecfdf5",
+    border: "1px solid rgba(15,23,42,0.08)",
+    background: "rgba(255,255,255,0.78)",
+    color: "#0f172a",
     padding: "14px 18px",
     fontWeight: 800,
+    boxShadow: "0 8px 18px rgba(15,23,42,0.04)",
   },
 };

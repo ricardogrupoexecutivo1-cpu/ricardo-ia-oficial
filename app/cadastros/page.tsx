@@ -1,322 +1,282 @@
-"use client";
-
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import { getPublicCompanies } from "@/lib/public-company";
 
-type CadastroPublicoBase = {
-  id: string;
-  nome_empresa: string | null;
-  coverage_type: "brasil" | "estadual" | "regional" | "municipal" | "multilocal";
-  estado_base: string | null;
-  regiao_base: string | null;
-  cidade_base: string | null;
-  atendimento_tipo: "todos" | "especificos";
-  descricao_publica: string | null;
-  status: "rascunho" | "ativo" | "inativo" | "bloqueado";
-  is_public: boolean;
-  created_at: string;
-  updated_at: string;
-};
+type SearchParams = Promise<{
+  q?: string;
+}>;
 
-type CadastroSegmento = {
-  cadastro_id: string;
-  nome: string;
-};
-
-type CadastroProdutoServico = {
-  cadastro_id: string;
-  nome: string;
-};
-
-type CadastroPublico = CadastroPublicoBase & {
-  segmentos: string[];
-  produtos_servicos: string[];
-};
-
-function getSupabaseBrowserClient(): SupabaseClient | null {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-
-  if (!url || !anonKey) {
-    return null;
-  }
-
-  return createClient(url, anonKey);
+function normalizeText(value: string) {
+  return value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .trim();
 }
 
-function formatCoverageLabel(value: CadastroPublicoBase["coverage_type"]) {
-  switch (value) {
-    case "brasil":
-      return "Brasil inteiro";
-    case "estadual":
-      return "Estadual";
-    case "regional":
-      return "Regional";
-    case "municipal":
-      return "Municipal";
-    case "multilocal":
-      return "Multilocal";
-    default:
-      return value;
-  }
+function matchesQuery(value: string | null | undefined, query: string) {
+  if (!value) return false;
+  return normalizeText(value).includes(query);
 }
 
-function getSafePublicName(item: CadastroPublico) {
-  const nomeEmpresa = item.nome_empresa?.trim();
-  if (nomeEmpresa) return nomeEmpresa;
-  return "Cadastro público Aurora";
-}
+export default async function CadastrosPublicosPage({
+  searchParams,
+}: {
+  searchParams?: SearchParams;
+}) {
+  const resolvedSearchParams = searchParams ? await searchParams : undefined;
+  const rawQuery = resolvedSearchParams?.q || "";
+  const query = normalizeText(rawQuery);
 
-export default function CadastrosPublicosPage() {
-  const [loading, setLoading] = useState(true);
-  const [feedback, setFeedback] = useState("");
-  const [feedbackType, setFeedbackType] = useState<"info" | "error" | "success">(
-    "info"
-  );
-  const [cadastros, setCadastros] = useState<CadastroPublico[]>([]);
-  const [busca, setBusca] = useState("");
+  const companies = await getPublicCompanies();
 
-  const carregar = useCallback(async () => {
-    setLoading(true);
-    setFeedback("");
-
-    try {
-      const supabase = getSupabaseBrowserClient();
-
-      if (!supabase) {
-        throw new Error(
-          "Variáveis NEXT_PUBLIC_SUPABASE_URL e NEXT_PUBLIC_SUPABASE_ANON_KEY não configuradas."
+  const filtered = !query
+    ? companies
+    : companies.filter((company) => {
+        return (
+          matchesQuery(company.publicName, query) ||
+          matchesQuery(company.city, query) ||
+          matchesQuery(company.state, query) ||
+          matchesQuery(company.coverage, query) ||
+          matchesQuery(company.segment, query) ||
+          matchesQuery(company.publicDescription, query)
         );
-      }
-
-      const { data: baseRows, error: baseError } = await supabase
-        .from("cadastros_gerais")
-        .select(
-          "id, nome_empresa, coverage_type, estado_base, regiao_base, cidade_base, atendimento_tipo, descricao_publica, status, is_public, created_at, updated_at"
-        )
-        .eq("status", "ativo")
-        .eq("is_public", true)
-        .order("updated_at", { ascending: false });
-
-      if (baseError) {
-        throw baseError;
-      }
-
-      const bases = (baseRows ?? []) as CadastroPublicoBase[];
-
-      if (bases.length === 0) {
-        setCadastros([]);
-        setFeedbackType("info");
-        setFeedback(
-          "Nenhum cadastro público ativo encontrado ainda. Esta área está em constante atualização e pode haver momentos de instabilidade."
-        );
-        return;
-      }
-
-      const ids = bases.map((item) => item.id);
-
-      const [segmentosResp, produtosResp] = await Promise.all([
-        supabase
-          .from("cadastro_segmentos")
-          .select("cadastro_id, nome")
-          .in("cadastro_id", ids),
-        supabase
-          .from("cadastro_produtos_servicos")
-          .select("cadastro_id, nome")
-          .in("cadastro_id", ids),
-      ]);
-
-      if (segmentosResp.error) throw segmentosResp.error;
-      if (produtosResp.error) throw produtosResp.error;
-
-      const segmentos = (segmentosResp.data ?? []) as CadastroSegmento[];
-      const produtos = (produtosResp.data ?? []) as CadastroProdutoServico[];
-
-      const completos: CadastroPublico[] = bases.map((base) => ({
-        ...base,
-        segmentos: segmentos
-          .filter((item) => item.cadastro_id === base.id)
-          .map((item) => item.nome),
-        produtos_servicos: produtos
-          .filter((item) => item.cadastro_id === base.id)
-          .map((item) => item.nome),
-      }));
-
-      setCadastros(completos);
-      setFeedbackType("success");
-      setFeedback(
-        "Busca pública segura carregada com sucesso. Apenas dados públicos estão sendo exibidos."
-      );
-    } catch (error) {
-      const message =
-        error instanceof Error
-          ? error.message
-          : "Falha ao carregar os cadastros públicos.";
-
-      setCadastros([]);
-      setFeedbackType("error");
-      setFeedback(message);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    carregar();
-  }, [carregar]);
-
-  const filtrados = useMemo(() => {
-    const termo = busca.trim().toLowerCase();
-
-    if (!termo) return cadastros;
-
-    return cadastros.filter((item) => {
-      const conteudo = [
-        item.nome_empresa ?? "",
-        item.cidade_base ?? "",
-        item.estado_base ?? "",
-        item.regiao_base ?? "",
-        item.descricao_publica ?? "",
-        item.segmentos.join(" "),
-        item.produtos_servicos.join(" "),
-        formatCoverageLabel(item.coverage_type),
-      ]
-        .join(" ")
-        .toLowerCase();
-
-      return conteudo.includes(termo);
-    });
-  }, [busca, cadastros]);
+      });
 
   return (
-    <main style={styles.main}>
-      <div style={styles.container}>
-        <div style={styles.topNav}>
-          <NavLink href="/" label="Voltar à Home" color="#93c5fd" />
-          <NavLink href="/guardiao" label="Ir para o Guardião" color="#facc15" />
-          <NavLink href="/cadastro" label="Novo cadastro" color="#86efac" />
-          <NavLink href="/mineracao" label="Mineração" color="#f59e0b" />
+    <main
+      style={{
+        minHeight: "100vh",
+        background:
+          "radial-gradient(circle at top, rgba(34,197,94,0.16), transparent 20%), linear-gradient(180deg, #03110d 0%, #071712 38%, #030504 100%)",
+        color: "#ecfdf5",
+        padding: "24px 16px 80px",
+      }}
+    >
+      <div
+        style={{
+          maxWidth: 1200,
+          margin: "0 auto",
+          display: "grid",
+          gap: 18,
+        }}
+      >
+        <div
+          style={{
+            display: "flex",
+            flexWrap: "wrap",
+            gap: 10,
+          }}
+        >
+          <Link href="/" style={navLinkStyle}>
+            Voltar à Home
+          </Link>
+          <Link href="/guardiao" style={navLinkStyle}>
+            Ir para o Guardião
+          </Link>
+          <Link href="/cadastro" style={navLinkStyle}>
+            Novo cadastro
+          </Link>
+          <Link href="/mineracao" style={navLinkStyle}>
+            Mineração
+          </Link>
         </div>
 
-        <section style={styles.heroCard}>
-          <div style={styles.badge}>Busca pública segura</div>
-          <h1 style={styles.heroTitle}>Cadastros públicos da Aurora</h1>
-          <p style={styles.heroText}>
+        <section style={heroCardStyle}>
+          <div style={badgeStyle}>Busca pública segura</div>
+
+          <h1
+            style={{
+              margin: 0,
+              fontSize: "clamp(28px, 4vw, 42px)",
+              lineHeight: 1.08,
+            }}
+          >
+            Cadastros públicos da Aurora
+          </h1>
+
+          <p
+            style={{
+              margin: 0,
+              color: "rgba(236,253,245,0.78)",
+              lineHeight: 1.7,
+              maxWidth: 980,
+            }}
+          >
             Esta vitrine mostra apenas cadastros ativos e públicos, com exibição
             segura. Dados pessoais, dados internos e informações sensíveis não são
             expostos nesta área. Estamos em constante atualização e pode haver
             momentos de instabilidade.
           </p>
 
-          <div style={styles.searchRow}>
+          <form
+            action="/cadastros"
+            method="get"
+            style={{
+              display: "flex",
+              gap: 10,
+              flexWrap: "wrap",
+              marginTop: 4,
+            }}
+          >
             <input
-              value={busca}
-              onChange={(e) => setBusca(e.target.value)}
+              type="text"
+              name="q"
+              defaultValue={rawQuery}
               placeholder="Buscar por empresa, cidade, segmento, produto ou cobertura"
-              style={styles.input}
+              style={searchInputStyle}
             />
-            <button type="button" onClick={carregar} style={styles.primaryButton}>
+
+            <button type="submit" style={primaryButtonStyle}>
               Atualizar busca
             </button>
+          </form>
+
+          <div
+            style={{
+              borderRadius: 18,
+              padding: "14px 16px",
+              background: "rgba(34,197,94,0.10)",
+              border: "1px solid rgba(34,197,94,0.20)",
+              color: "#d1fae5",
+              lineHeight: 1.6,
+            }}
+          >
+            Busca pública segura carregada com sucesso. Apenas dados públicos estão
+            sendo exibidos.
+          </div>
+
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+              gap: 12,
+            }}
+          >
+            <MiniInfo
+              title="Cadastros públicos"
+              value={String(companies.length)}
+              text="Quantidade total pública carregada."
+            />
+            <MiniInfo
+              title="Resultado da busca"
+              value={String(filtered.length)}
+              text="Quantidade encontrada com o filtro atual."
+            />
+            <MiniInfo
+              title="Privacidade"
+              value="Protegida"
+              text="Apenas informações públicas liberadas aparecem aqui."
+            />
           </div>
         </section>
 
-        {feedback ? (
-          <section
-            style={{
-              ...styles.feedbackBox,
-              ...(feedbackType === "success"
-                ? styles.feedbackSuccess
-                : feedbackType === "error"
-                ? styles.feedbackError
-                : styles.feedbackInfo),
-            }}
-          >
-            <strong style={{ display: "block", marginBottom: 6 }}>
-              {feedbackType === "success"
-                ? "Sucesso"
-                : feedbackType === "error"
-                ? "Falha"
-                : "Aviso"}
-            </strong>
-            <div>{feedback}</div>
-          </section>
-        ) : null}
-
-        <section style={styles.statsRow}>
-          <StatCard label="Cadastros públicos" value={String(cadastros.length)} />
-          <StatCard label="Resultado da busca" value={String(filtrados.length)} />
-          <StatCard label="Privacidade" value="Protegida" />
-        </section>
-
-        {loading ? (
-          <section style={styles.emptyCard}>Carregando busca pública...</section>
-        ) : filtrados.length === 0 ? (
-          <section style={styles.emptyCard}>
+        {filtered.length === 0 ? (
+          <section style={emptyCardStyle}>
             Nenhum cadastro público encontrado para esta busca.
           </section>
         ) : (
-          <section style={styles.grid}>
-            {filtrados.map((item) => {
-              const nomeExibicao = getSafePublicName(item);
-              const localidade = [item.cidade_base, item.estado_base]
-                .filter(Boolean)
-                .join(" • ");
+          <section
+            style={{
+              display: "grid",
+              gap: 16,
+            }}
+          >
+            {filtered.map((company) => {
+              const publicUrl = `/empresa/${company.slug}`;
 
               return (
-                <article key={item.id} style={styles.card}>
-                  <div style={styles.cardTop}>
-                    <div>
-                      <h2 style={styles.cardTitle}>{nomeExibicao}</h2>
-                      <div style={styles.cardMeta}>
-                        {localidade || "Localidade não informada"}
+                <article key={company.id} style={cardStyle}>
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      gap: 16,
+                      flexWrap: "wrap",
+                    }}
+                  >
+                    <div style={{ display: "grid", gap: 8 }}>
+                      <div
+                        style={{
+                          fontSize: 24,
+                          fontWeight: 900,
+                          lineHeight: 1.1,
+                        }}
+                      >
+                        {company.publicName}
+                      </div>
+
+                      <div
+                        style={{
+                          color: "rgba(236,253,245,0.74)",
+                          fontWeight: 700,
+                        }}
+                      >
+                        {[company.city, company.state].filter(Boolean).join(" • ") ||
+                          "Localidade não informada"}
                       </div>
                     </div>
 
-                    <div style={styles.publicBadge}>Público</div>
+                    <div
+                      style={{
+                        display: "inline-flex",
+                        alignItems: "center",
+                        height: "fit-content",
+                        borderRadius: 999,
+                        padding: "8px 12px",
+                        background: "rgba(34,197,94,0.10)",
+                        border: "1px solid rgba(34,197,94,0.20)",
+                        color: "#86efac",
+                        fontWeight: 800,
+                      }}
+                    >
+                      Público
+                    </div>
                   </div>
 
-                  <div style={styles.infoGrid}>
-                    <InfoItem
-                      label="Cobertura"
-                      value={formatCoverageLabel(item.coverage_type)}
-                    />
-                    <InfoItem
-                      label="Atendimento"
+                  <div style={metaGridStyle}>
+                    <InfoBox label="Cobertura" value={company.coverage || "Não informado"} />
+                    <InfoBox label="Atendimento" value={company.serviceMode || "Não informado"} />
+                    <InfoBox label="Estado-base" value={company.state || "-"} />
+                    <InfoBox label="Cidade-base" value={company.city || "-"} />
+                    <InfoBox label="Segmentos" value={company.segment || "Não informado"} />
+                    <InfoBox
+                      label="Descrição pública"
                       value={
-                        item.atendimento_tipo === "todos"
-                          ? "Todos os segmentos"
-                          : "Segmentos específicos"
+                        company.publicDescription ||
+                        "Sem descrição pública ainda."
                       }
                     />
-                    <InfoItem
-                      label="Estado-base"
-                      value={item.estado_base || "-"}
-                    />
-                    <InfoItem
-                      label="Cidade-base"
-                      value={item.cidade_base || "-"}
-                    />
                   </div>
 
-                  <TagBlock
-                    title="Segmentos"
-                    items={item.segmentos}
-                    emptyText="Nenhum segmento público informado."
-                  />
+                  <div
+                    style={{
+                      display: "flex",
+                      gap: 10,
+                      flexWrap: "wrap",
+                      marginTop: 4,
+                    }}
+                  >
+                    <Link href={publicUrl} style={primaryLinkButtonStyle}>
+                      Ver perfil público
+                    </Link>
 
-                  <TagBlock
-                    title="Produtos e serviços"
-                    items={item.produtos_servicos}
-                    emptyText="Nenhum produto ou serviço público informado."
-                  />
+                    <a
+                      href={publicUrl}
+                      style={secondaryLinkButtonStyle}
+                    >
+                      Copiar/abrir link
+                    </a>
 
-                  <div style={styles.descriptionBox}>
-                    <div style={styles.blockTitle}>Descrição pública</div>
-                    <div style={styles.descriptionText}>
-                      {item.descricao_publica || "Sem descrição pública ainda."}
-                    </div>
+                    {company.whatsapp ? (
+                      <a
+                        href={`https://wa.me/${company.whatsapp.replace(/\D+/g, "")}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        style={secondaryLinkButtonStyle}
+                      >
+                        Falar no WhatsApp
+                      </a>
+                    ) : null}
                   </div>
                 </article>
               );
@@ -328,307 +288,191 @@ export default function CadastrosPublicosPage() {
   );
 }
 
-function NavLink({
-  href,
-  label,
-  color,
-}: {
-  href: string;
-  label: string;
-  color: string;
-}) {
-  return (
-    <Link
-      href={href}
-      style={{
-        color,
-        textDecoration: "none",
-        border: `1px solid ${color}33`,
-        borderRadius: 999,
-        padding: "10px 14px",
-        fontWeight: 700,
-      }}
-    >
-      {label}
-    </Link>
-  );
-}
-
-function StatCard({ label, value }: { label: string; value: string }) {
-  return (
-    <div style={styles.statCard}>
-      <div style={styles.statLabel}>{label}</div>
-      <div style={styles.statValue}>{value}</div>
-    </div>
-  );
-}
-
-function InfoItem({ label, value }: { label: string; value: string }) {
-  return (
-    <div style={styles.infoItem}>
-      <div style={styles.infoLabel}>{label}</div>
-      <div style={styles.infoValue}>{value}</div>
-    </div>
-  );
-}
-
-function TagBlock({
+function MiniInfo({
   title,
-  items,
-  emptyText,
+  value,
+  text,
 }: {
   title: string;
-  items: string[];
-  emptyText: string;
+  value: string;
+  text: string;
 }) {
   return (
-    <section style={styles.blockCard}>
-      <div style={styles.blockTitle}>{title}</div>
-
-      {items.length === 0 ? (
-        <div style={styles.emptyText}>{emptyText}</div>
-      ) : (
-        <div style={styles.tagWrap}>
-          {items.map((item) => (
-            <div key={`${title}-${item}`} style={styles.tag}>
-              {item}
-            </div>
-          ))}
-        </div>
-      )}
-    </section>
+    <div
+      style={{
+        borderRadius: 18,
+        padding: 16,
+        background: "rgba(255,255,255,0.04)",
+        border: "1px solid rgba(255,255,255,0.08)",
+      }}
+    >
+      <div style={{ fontSize: 12, color: "rgba(236,253,245,0.62)" }}>{title}</div>
+      <div
+        style={{
+          marginTop: 8,
+          fontSize: 24,
+          fontWeight: 900,
+          color: "#ecfdf5",
+        }}
+      >
+        {value}
+      </div>
+      <div
+        style={{
+          marginTop: 8,
+          color: "rgba(236,253,245,0.70)",
+          lineHeight: 1.6,
+          fontSize: 14,
+        }}
+      >
+        {text}
+      </div>
+    </div>
   );
 }
 
-const styles: Record<string, React.CSSProperties> = {
-  main: {
-    minHeight: "100vh",
-    background:
-      "radial-gradient(circle at top, rgba(16,185,129,0.14), transparent 25%), #050816",
-    color: "#e5eef8",
-    padding: "32px 16px 80px",
-  },
-  container: {
-    maxWidth: 1280,
-    margin: "0 auto",
-  },
-  topNav: {
-    display: "flex",
-    flexWrap: "wrap",
-    gap: 12,
-    marginBottom: 16,
-  },
-  heroCard: {
-    border: "1px solid rgba(148,163,184,0.18)",
-    background: "rgba(15,23,42,0.72)",
-    backdropFilter: "blur(10px)",
-    borderRadius: 24,
-    padding: 24,
-    boxShadow: "0 20px 80px rgba(0,0,0,0.35)",
-    marginBottom: 20,
-  },
-  badge: {
-    display: "inline-flex",
-    padding: "8px 12px",
-    borderRadius: 999,
-    background: "rgba(16,185,129,0.14)",
-    border: "1px solid rgba(16,185,129,0.25)",
-    color: "#86efac",
-    fontSize: 13,
-    fontWeight: 700,
-    letterSpacing: 0.3,
-    marginBottom: 14,
-  },
-  heroTitle: {
-    fontSize: 38,
-    lineHeight: 1.05,
-    margin: 0,
-  },
-  heroText: {
-    color: "#94a3b8",
-    marginTop: 14,
-    maxWidth: 980,
-    fontSize: 16,
-    lineHeight: 1.7,
-  },
-  searchRow: {
-    display: "grid",
-    gridTemplateColumns: "1fr 220px",
-    gap: 12,
-    marginTop: 20,
-  },
-  input: {
-    width: "100%",
-    borderRadius: 14,
-    border: "1px solid rgba(148,163,184,0.18)",
-    background: "rgba(2,6,23,0.55)",
-    color: "#ffffff",
-    padding: "14px 16px",
-    outline: "none",
-    fontSize: 15,
-  },
-  primaryButton: {
-    borderRadius: 14,
-    border: "1px solid rgba(16,185,129,0.35)",
-    background:
-      "linear-gradient(135deg, rgba(16,185,129,0.24), rgba(59,130,246,0.18))",
-    color: "#ecfeff",
-    fontWeight: 800,
-    cursor: "pointer",
-    padding: "14px 18px",
-    fontSize: 15,
-  },
-  feedbackBox: {
-    borderRadius: 18,
-    padding: 16,
-    marginBottom: 20,
-    border: "1px solid rgba(148,163,184,0.18)",
-    lineHeight: 1.6,
-  },
-  feedbackSuccess: {
-    background: "rgba(16,185,129,0.12)",
-    border: "1px solid rgba(16,185,129,0.35)",
-    color: "#bbf7d0",
-  },
-  feedbackError: {
-    background: "rgba(239,68,68,0.12)",
-    border: "1px solid rgba(239,68,68,0.35)",
-    color: "#fecaca",
-  },
-  feedbackInfo: {
-    background: "rgba(59,130,246,0.12)",
-    border: "1px solid rgba(59,130,246,0.35)",
-    color: "#bfdbfe",
-  },
-  statsRow: {
-    display: "grid",
-    gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-    gap: 16,
-    marginBottom: 20,
-  },
-  statCard: {
-    borderRadius: 20,
-    padding: 18,
-    background: "rgba(15,23,42,0.72)",
-    border: "1px solid rgba(148,163,184,0.16)",
-  },
-  statLabel: {
-    fontSize: 12,
-    color: "#94a3b8",
-  },
-  statValue: {
-    fontWeight: 800,
-    fontSize: 22,
-    marginTop: 8,
-  },
-  emptyCard: {
-    borderRadius: 20,
-    padding: 24,
-    background: "rgba(15,23,42,0.72)",
-    border: "1px solid rgba(148,163,184,0.16)",
-    color: "#cbd5e1",
-  },
-  grid: {
-    display: "grid",
-    gap: 18,
-  },
-  card: {
-    borderRadius: 24,
-    padding: 22,
-    background: "rgba(15,23,42,0.72)",
-    border: "1px solid rgba(148,163,184,0.16)",
-    boxShadow: "0 20px 80px rgba(0,0,0,0.28)",
-  },
-  cardTop: {
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
-    gap: 16,
-    marginBottom: 18,
-    flexWrap: "wrap",
-  },
-  cardTitle: {
-    margin: 0,
-    fontSize: 24,
-    fontWeight: 800,
-    lineHeight: 1.2,
-  },
-  cardMeta: {
-    marginTop: 6,
-    color: "#94a3b8",
-    fontSize: 14,
-  },
-  publicBadge: {
-    borderRadius: 999,
-    padding: "8px 12px",
-    background: "rgba(16,185,129,0.14)",
-    border: "1px solid rgba(16,185,129,0.25)",
-    color: "#bbf7d0",
-    fontWeight: 800,
-    fontSize: 12,
-  },
-  infoGrid: {
-    display: "grid",
-    gridTemplateColumns: "repeat(auto-fit, minmax(190px, 1fr))",
-    gap: 12,
-    marginBottom: 16,
-  },
-  infoItem: {
-    borderRadius: 16,
-    padding: 14,
-    background: "rgba(2,6,23,0.4)",
-    border: "1px solid rgba(148,163,184,0.14)",
-  },
-  infoLabel: {
-    color: "#94a3b8",
-    fontSize: 12,
-    marginBottom: 8,
-  },
-  infoValue: {
-    color: "#f8fafc",
-    fontWeight: 700,
-    lineHeight: 1.5,
-    wordBreak: "break-word",
-  },
-  blockCard: {
-    borderRadius: 18,
-    padding: 16,
-    background: "rgba(2,6,23,0.4)",
-    border: "1px solid rgba(148,163,184,0.14)",
-    marginBottom: 16,
-  },
-  blockTitle: {
-    fontSize: 14,
-    fontWeight: 800,
-    color: "#dbeafe",
-    marginBottom: 12,
-  },
-  emptyText: {
-    color: "#94a3b8",
-    lineHeight: 1.6,
-  },
-  tagWrap: {
-    display: "flex",
-    flexWrap: "wrap",
-    gap: 10,
-  },
-  tag: {
-    borderRadius: 999,
-    border: "1px solid rgba(148,163,184,0.16)",
-    background: "rgba(15,23,42,0.85)",
-    color: "#e2e8f0",
-    padding: "10px 14px",
-    fontWeight: 700,
-  },
-  descriptionBox: {
-    borderRadius: 18,
-    padding: 16,
-    background: "rgba(2,6,23,0.4)",
-    border: "1px solid rgba(148,163,184,0.14)",
-  },
-  descriptionText: {
-    color: "#cbd5e1",
-    lineHeight: 1.7,
-    whiteSpace: "pre-wrap",
-  },
+function InfoBox({
+  label,
+  value,
+}: {
+  label: string;
+  value: string;
+}) {
+  return (
+    <div
+      style={{
+        borderRadius: 16,
+        padding: 14,
+        background: "rgba(255,255,255,0.03)",
+        border: "1px solid rgba(255,255,255,0.06)",
+        display: "grid",
+        gap: 8,
+      }}
+    >
+      <div
+        style={{
+          fontSize: 12,
+          color: "rgba(236,253,245,0.62)",
+        }}
+      >
+        {label}
+      </div>
+      <div
+        style={{
+          fontWeight: 800,
+          lineHeight: 1.6,
+          color: "#ecfdf5",
+          whiteSpace: "pre-wrap",
+        }}
+      >
+        {value}
+      </div>
+    </div>
+  );
+}
+
+const navLinkStyle: React.CSSProperties = {
+  textDecoration: "none",
+  color: "#ecfdf5",
+  border: "1px solid rgba(255,255,255,0.10)",
+  background: "rgba(255,255,255,0.04)",
+  borderRadius: 12,
+  padding: "10px 14px",
+  fontWeight: 700,
+};
+
+const heroCardStyle: React.CSSProperties = {
+  border: "1px solid rgba(255,255,255,0.08)",
+  background: "rgba(7,18,13,0.82)",
+  borderRadius: 28,
+  padding: "24px 20px",
+  boxShadow: "0 18px 60px rgba(0,0,0,0.20)",
+  display: "grid",
+  gap: 16,
+};
+
+const badgeStyle: React.CSSProperties = {
+  display: "inline-flex",
+  width: "fit-content",
+  alignItems: "center",
+  gap: 8,
+  padding: "8px 12px",
+  borderRadius: 999,
+  background: "rgba(34,197,94,0.10)",
+  border: "1px solid rgba(34,197,94,0.26)",
+  color: "#86efac",
+  fontSize: 13,
+  fontWeight: 800,
+};
+
+const searchInputStyle: React.CSSProperties = {
+  flex: 1,
+  minWidth: 260,
+  borderRadius: 16,
+  border: "1px solid rgba(255,255,255,0.10)",
+  background: "rgba(255,255,255,0.04)",
+  color: "#ecfdf5",
+  padding: "14px 16px",
+  fontSize: 15,
+  outline: "none",
+};
+
+const primaryButtonStyle: React.CSSProperties = {
+  borderRadius: 16,
+  border: "1px solid rgba(34,197,94,0.28)",
+  background: "linear-gradient(135deg, #22c55e, #4ade80)",
+  color: "#04110a",
+  padding: "14px 18px",
+  fontWeight: 900,
+  cursor: "pointer",
+};
+
+const emptyCardStyle: React.CSSProperties = {
+  borderRadius: 24,
+  padding: 22,
+  border: "1px solid rgba(255,255,255,0.08)",
+  background: "rgba(7,18,13,0.78)",
+  color: "rgba(236,253,245,0.82)",
+};
+
+const cardStyle: React.CSSProperties = {
+  borderRadius: 24,
+  padding: 22,
+  border: "1px solid rgba(255,255,255,0.08)",
+  background: "rgba(7,18,13,0.78)",
+  boxShadow: "0 18px 60px rgba(0,0,0,0.16)",
+  display: "grid",
+  gap: 16,
+};
+
+const metaGridStyle: React.CSSProperties = {
+  display: "grid",
+  gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+  gap: 12,
+};
+
+const primaryLinkButtonStyle: React.CSSProperties = {
+  textDecoration: "none",
+  color: "#04110a",
+  background: "linear-gradient(135deg, #22c55e, #4ade80)",
+  border: "1px solid rgba(34,197,94,0.28)",
+  borderRadius: 16,
+  padding: "14px 18px",
+  fontWeight: 900,
+  display: "inline-flex",
+  justifyContent: "center",
+  alignItems: "center",
+};
+
+const secondaryLinkButtonStyle: React.CSSProperties = {
+  textDecoration: "none",
+  color: "#ecfdf5",
+  background: "rgba(255,255,255,0.04)",
+  border: "1px solid rgba(255,255,255,0.10)",
+  borderRadius: 16,
+  padding: "14px 18px",
+  fontWeight: 800,
+  display: "inline-flex",
+  justifyContent: "center",
+  alignItems: "center",
 };

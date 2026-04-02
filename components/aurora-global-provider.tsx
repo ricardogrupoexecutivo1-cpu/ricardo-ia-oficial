@@ -52,27 +52,54 @@ type AuroraGlobalProviderProps = {
   initialCurrency?: string | null;
 };
 
+function buildFallbackContext(): AuroraGlobalContextValue {
+  const locale = getDefaultLocale();
+  const currency = getDefaultCurrency();
+  const texts = getAuroraTexts(locale);
+  const currencyOption = getCurrencyOption(currency);
+
+  return {
+    locale,
+    currency,
+    texts,
+    languages: AURORA_LANGUAGES,
+    currencies: AURORA_CURRENCIES,
+    hydrated: false,
+    setLocale: () => {},
+    setCurrency: () => {},
+    applyLocale: () => {},
+    applyCurrency: () => {},
+    resetGlobalPreferences: () => {},
+    currencySymbol: currencyOption.symbol,
+    currencyLabel: currencyOption.label,
+  };
+}
+
 export function AuroraGlobalProvider({
   children,
   initialLocale,
   initialCurrency,
 }: AuroraGlobalProviderProps) {
   const [locale, setLocaleState] = useState<AuroraLocale>(() =>
-    normalizeAuroraLocale(initialLocale),
+    normalizeAuroraLocale(initialLocale)
   );
 
   const [currency, setCurrencyState] = useState<AuroraCurrency>(() =>
-    normalizeAuroraCurrency(initialCurrency),
+    normalizeAuroraCurrency(initialCurrency)
   );
 
   const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {
     const browserLocale =
-      typeof window !== "undefined" ? window.localStorage.getItem(STORAGE_KEYS.locale) : null;
+      typeof window !== "undefined"
+        ? window.localStorage.getItem(STORAGE_KEYS.locale)
+        : null;
 
     const browserCurrency =
-      typeof window !== "undefined" ? window.localStorage.getItem(STORAGE_KEYS.currency) : null;
+      typeof window !== "undefined"
+        ? window.localStorage.getItem(STORAGE_KEYS.currency)
+        : null;
 
     const normalizedLocale = isAuroraLocale(browserLocale)
       ? browserLocale
@@ -142,7 +169,6 @@ export function AuroraGlobalProvider({
   }, []);
 
   const texts = useMemo(() => getAuroraTexts(locale), [locale]);
-
   const currencyOption = useMemo(() => getCurrencyOption(currency), [currency]);
 
   const value = useMemo<AuroraGlobalContextValue>(
@@ -173,7 +199,7 @@ export function AuroraGlobalProvider({
       resetGlobalPreferences,
       currencyOption.symbol,
       currencyOption.label,
-    ],
+    ]
   );
 
   return (
@@ -187,7 +213,7 @@ export function useAuroraGlobal() {
   const context = useContext(AuroraGlobalContext);
 
   if (!context) {
-    throw new Error("useAuroraGlobal must be used within AuroraGlobalProvider");
+    return buildFallbackContext();
   }
 
   return context;
