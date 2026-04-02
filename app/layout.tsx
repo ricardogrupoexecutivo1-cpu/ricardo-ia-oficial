@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { AuroraGlobalProvider } from "@/components/aurora-global-provider";
+import { AuroraThemeStyle } from "@/components/aurora-theme-style";
 
 export const metadata: Metadata = {
   title: "Aurora IA | Plataforma global",
@@ -27,10 +28,12 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="pt-BR" suppressHydrationWarning>
-      <body suppressHydrationWarning>
-        <AuroraGlobalProvider initialLocale="pt-BR" initialCurrency="BRL">
-          {children}
-        </AuroraGlobalProvider>
+      <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <AuroraThemeStyle />
+      </head>
+      <body suppressHydrationWarning className="aurora-page-shell">
+        <AuroraGlobalProvider>{children}</AuroraGlobalProvider>
       </body>
     </html>
   );

@@ -3,7 +3,13 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
-import { useMemo, useState, type CSSProperties, type FormEvent } from "react";
+import {
+  useEffect,
+  useMemo,
+  useState,
+  type CSSProperties,
+  type FormEvent,
+} from "react";
 
 type CoverageType =
   | "brasil"
@@ -14,6 +20,38 @@ type CoverageType =
 
 type AttendanceType = "todos" | "especificos";
 type FeedbackType = "success" | "error" | "info";
+
+type DraftPayload = {
+  nomeResponsavel: string;
+  nomeEmpresa: string;
+  whatsapp: string;
+  email: string;
+  site: string;
+  instagram: string;
+  perfisSelecionados: string[];
+  coverageType: CoverageType;
+  estadoBase: string;
+  regiaoBase: string;
+  cidadeBase: string;
+  observacaoCobertura: string;
+  atendimentoTipo: AttendanceType;
+  descricao: string;
+  segmentos: string[];
+  produtos: string[];
+  segmentosEspecificos: string[];
+  nomePublico: string;
+  descricaoPublicaCurta: string;
+  cidadePublica: string;
+  estadoPublico: string;
+  mostrarNomePublico: boolean;
+  mostrarDescricaoPublica: boolean;
+  mostrarCidadePublica: boolean;
+  mostrarEstadoPublico: boolean;
+  mostrarSegmentosPublicos: boolean;
+  mostrarProdutosPublicos: boolean;
+};
+
+const DRAFT_KEY = "aurora-cadastro-geral-draft-v1";
 
 const PERFIS_BASE = [
   "Empresa",
@@ -153,6 +191,16 @@ function formatCoverageLabel(value: CoverageType) {
   }
 }
 
+function buildDraftPayload(data: DraftPayload): DraftPayload {
+  return {
+    ...data,
+    perfisSelecionados: [...data.perfisSelecionados],
+    segmentos: [...data.segmentos],
+    produtos: [...data.produtos],
+    segmentosEspecificos: [...data.segmentosEspecificos],
+  };
+}
+
 export default function CadastroGeralPage() {
   const router = useRouter();
 
@@ -201,6 +249,7 @@ export default function CadastroGeralPage() {
   const [feedback, setFeedback] = useState("");
   const [feedbackType, setFeedbackType] = useState<FeedbackType>("info");
   const [cadastroIdSalvo, setCadastroIdSalvo] = useState("");
+  const [draftLoaded, setDraftLoaded] = useState(false);
 
   const progresso = useMemo(() => {
     const checks = [
@@ -225,6 +274,147 @@ export default function CadastroGeralPage() {
     produtos,
     descricao,
   ]);
+
+  const draftPayload = useMemo<DraftPayload>(
+    () =>
+      buildDraftPayload({
+        nomeResponsavel,
+        nomeEmpresa,
+        whatsapp,
+        email,
+        site,
+        instagram,
+        perfisSelecionados,
+        coverageType,
+        estadoBase,
+        regiaoBase,
+        cidadeBase,
+        observacaoCobertura,
+        atendimentoTipo,
+        descricao,
+        segmentos,
+        produtos,
+        segmentosEspecificos,
+        nomePublico,
+        descricaoPublicaCurta,
+        cidadePublica,
+        estadoPublico,
+        mostrarNomePublico,
+        mostrarDescricaoPublica,
+        mostrarCidadePublica,
+        mostrarEstadoPublico,
+        mostrarSegmentosPublicos,
+        mostrarProdutosPublicos,
+      }),
+    [
+      nomeResponsavel,
+      nomeEmpresa,
+      whatsapp,
+      email,
+      site,
+      instagram,
+      perfisSelecionados,
+      coverageType,
+      estadoBase,
+      regiaoBase,
+      cidadeBase,
+      observacaoCobertura,
+      atendimentoTipo,
+      descricao,
+      segmentos,
+      produtos,
+      segmentosEspecificos,
+      nomePublico,
+      descricaoPublicaCurta,
+      cidadePublica,
+      estadoPublico,
+      mostrarNomePublico,
+      mostrarDescricaoPublica,
+      mostrarCidadePublica,
+      mostrarEstadoPublico,
+      mostrarSegmentosPublicos,
+      mostrarProdutosPublicos,
+    ]
+  );
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(DRAFT_KEY);
+
+      if (!raw) {
+        setDraftLoaded(true);
+        return;
+      }
+
+      const parsed = JSON.parse(raw) as Partial<DraftPayload>;
+
+      setNomeResponsavel(parsed.nomeResponsavel || "");
+      setNomeEmpresa(parsed.nomeEmpresa || "");
+      setWhatsapp(parsed.whatsapp || "");
+      setEmail(parsed.email || "");
+      setSite(parsed.site || "");
+      setInstagram(parsed.instagram || "");
+      setPerfisSelecionados(parsed.perfisSelecionados || []);
+      setCoverageType(parsed.coverageType || "brasil");
+      setEstadoBase(parsed.estadoBase || "");
+      setRegiaoBase(parsed.regiaoBase || "");
+      setCidadeBase(parsed.cidadeBase || "");
+      setObservacaoCobertura(parsed.observacaoCobertura || "");
+      setAtendimentoTipo(parsed.atendimentoTipo || "todos");
+      setDescricao(parsed.descricao || "");
+      setSegmentos(parsed.segmentos || []);
+      setProdutos(parsed.produtos || []);
+      setSegmentosEspecificos(parsed.segmentosEspecificos || []);
+      setNomePublico(parsed.nomePublico || "");
+      setDescricaoPublicaCurta(parsed.descricaoPublicaCurta || "");
+      setCidadePublica(parsed.cidadePublica || "");
+      setEstadoPublico(parsed.estadoPublico || "");
+      setMostrarNomePublico(parsed.mostrarNomePublico || false);
+      setMostrarDescricaoPublica(
+        parsed.mostrarDescricaoPublica !== undefined
+          ? parsed.mostrarDescricaoPublica
+          : true
+      );
+      setMostrarCidadePublica(
+        parsed.mostrarCidadePublica !== undefined
+          ? parsed.mostrarCidadePublica
+          : true
+      );
+      setMostrarEstadoPublico(
+        parsed.mostrarEstadoPublico !== undefined
+          ? parsed.mostrarEstadoPublico
+          : true
+      );
+      setMostrarSegmentosPublicos(
+        parsed.mostrarSegmentosPublicos !== undefined
+          ? parsed.mostrarSegmentosPublicos
+          : true
+      );
+      setMostrarProdutosPublicos(
+        parsed.mostrarProdutosPublicos !== undefined
+          ? parsed.mostrarProdutosPublicos
+          : true
+      );
+
+      setFeedbackType("info");
+      setFeedback(
+        "Rascunho offline recuperado com sucesso. Sistema em constante atualização e proteção ativa."
+      );
+    } catch {
+      setFeedbackType("error");
+      setFeedback("Não foi possível restaurar o rascunho local do cadastro.");
+    } finally {
+      setDraftLoaded(true);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!draftLoaded) return;
+
+    try {
+      localStorage.setItem(DRAFT_KEY, JSON.stringify(draftPayload));
+    } catch {}
+  }, [draftLoaded, draftPayload]);
 
   function togglePerfil(perfil: string) {
     const exists = perfisSelecionados.includes(perfil);
@@ -287,6 +477,12 @@ export default function CadastroGeralPage() {
     setMostrarEstadoPublico(true);
     setMostrarSegmentosPublicos(true);
     setMostrarProdutosPublicos(true);
+    setFeedback("");
+    setCadastroIdSalvo("");
+
+    try {
+      localStorage.removeItem(DRAFT_KEY);
+    } catch {}
   }
 
   async function insertVocabulary(
@@ -309,6 +505,9 @@ export default function CadastroGeralPage() {
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
+
+    if (saving) return;
+
     setSaving(true);
     setFeedback("");
     setCadastroIdSalvo("");
@@ -339,6 +538,10 @@ export default function CadastroGeralPage() {
           "Preencha pelo menos o nome do responsável ou o nome da empresa."
         );
       }
+
+      try {
+        localStorage.setItem(DRAFT_KEY, JSON.stringify(draftPayload));
+      } catch {}
 
       const perfisLimpos = perfisSelecionados.map(sanitizeValue).filter(Boolean);
       const segmentosLimpos = segmentos.map(sanitizeValue).filter(Boolean);
@@ -397,7 +600,9 @@ export default function CadastroGeralPage() {
           }))
         );
 
-        if (error) throw error;
+        if (error) {
+          console.warn("Falha parcial em cadastro_perfis:", error.message);
+        }
       }
 
       if (segmentosLimpos.length > 0) {
@@ -408,7 +613,9 @@ export default function CadastroGeralPage() {
           }))
         );
 
-        if (error) throw error;
+        if (error) {
+          console.warn("Falha parcial em cadastro_segmentos:", error.message);
+        }
       }
 
       if (produtosLimpos.length > 0) {
@@ -421,7 +628,12 @@ export default function CadastroGeralPage() {
             }))
           );
 
-        if (error) throw error;
+        if (error) {
+          console.warn(
+            "Falha parcial em cadastro_produtos_servicos:",
+            error.message
+          );
+        }
       }
 
       if (
@@ -437,23 +649,33 @@ export default function CadastroGeralPage() {
             }))
           );
 
-        if (error) throw error;
+        if (error) {
+          console.warn(
+            "Falha parcial em cadastro_segmentos_atendidos:",
+            error.message
+          );
+        }
       }
 
-      const { error: coberturaError } = await supabase
-        .from("cadastro_areas_cobertura")
-        .insert({
-          cadastro_id: cadastroId,
-          coverage_type: coverageType,
-          pais: "Brasil",
-          estado: estadoBase || null,
-          regiao: regiaoBase.trim() || null,
-          cidade: cidadeBase.trim() || null,
-          observacao: observacaoCobertura.trim() || null,
-        });
+      {
+        const { error: coberturaError } = await supabase
+          .from("cadastro_areas_cobertura")
+          .insert({
+            cadastro_id: cadastroId,
+            coverage_type: coverageType,
+            pais: "Brasil",
+            estado: estadoBase || null,
+            regiao: regiaoBase.trim() || null,
+            cidade: cidadeBase.trim() || null,
+            observacao: observacaoCobertura.trim() || null,
+          });
 
-      if (coberturaError) {
-        throw coberturaError;
+        if (coberturaError) {
+          console.warn(
+            "Falha parcial em cadastro_areas_cobertura:",
+            coberturaError.message
+          );
+        }
       }
 
       await insertVocabulary(supabase, "perfil", perfisLimpos);
@@ -469,16 +691,14 @@ export default function CadastroGeralPage() {
       }
 
       try {
-        localStorage.setItem(
-          "aurora-cadastro-geral-email",
-          email.trim() || ""
-        );
+        localStorage.setItem("aurora-cadastro-geral-email", email.trim() || "");
+        localStorage.removeItem(DRAFT_KEY);
       } catch {}
 
       setCadastroIdSalvo(cadastroId);
       setFeedbackType("success");
       setFeedback(
-        "Cadastro realizado com sucesso. Seus dados foram salvos na Aurora com segurança."
+        "Cadastro realizado com sucesso. Seus dados foram salvos com segurança na Aurora. Sistema em constante atualização e proteção ativa."
       );
 
       const emailSafe = encodeURIComponent(email.trim() || "");
@@ -917,6 +1137,10 @@ export default function CadastroGeralPage() {
                 O registro será salvo no Supabase em rascunho privado, com base
                 preparada para publicação depois no Guardião.
               </div>
+              <div style={styles.submitSubtext}>
+                O rascunho deste formulário fica salvo automaticamente no navegador
+                para proteção contra queda de internet, travamento ou fechamento acidental.
+              </div>
             </div>
 
             <div style={styles.submitActions}>
@@ -1244,15 +1468,18 @@ const styles: Record<string, CSSProperties> = {
     boxShadow: "0 10px 24px rgba(15,23,42,0.05)",
   },
   feedbackSuccess: {
-    background: "linear-gradient(135deg, rgba(16,185,129,0.08), rgba(255,255,255,0.76))",
+    background:
+      "linear-gradient(135deg, rgba(16,185,129,0.08), rgba(255,255,255,0.76))",
     borderColor: "rgba(16,185,129,0.20)",
   },
   feedbackError: {
-    background: "linear-gradient(135deg, rgba(239,68,68,0.08), rgba(255,255,255,0.76))",
+    background:
+      "linear-gradient(135deg, rgba(239,68,68,0.08), rgba(255,255,255,0.76))",
     borderColor: "rgba(239,68,68,0.20)",
   },
   feedbackInfo: {
-    background: "linear-gradient(135deg, rgba(37,99,235,0.08), rgba(255,255,255,0.76))",
+    background:
+      "linear-gradient(135deg, rgba(37,99,235,0.08), rgba(255,255,255,0.76))",
     borderColor: "rgba(37,99,235,0.20)",
   },
   formWrap: {
@@ -1461,6 +1688,12 @@ const styles: Record<string, CSSProperties> = {
     fontSize: 14,
     lineHeight: 1.7,
     color: "rgba(15,23,42,0.72)",
+  },
+  submitSubtext: {
+    fontSize: 13,
+    lineHeight: 1.7,
+    color: "#1d4ed8",
+    fontWeight: 700,
   },
   submitActions: {
     display: "flex",

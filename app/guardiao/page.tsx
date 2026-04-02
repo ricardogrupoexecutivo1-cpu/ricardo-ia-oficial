@@ -2,66 +2,32 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { createClient, type SupabaseClient } from "@supabase/supabase-js";
-import { getPublicCompanyShareText } from "@/lib/public-links";
 
-type CadastroBase = {
-  id: string;
-  user_id: string | null;
-  nome_responsavel: string | null;
-  nome_empresa: string | null;
-  whatsapp: string | null;
-  email: string | null;
-  site: string | null;
-  instagram: string | null;
-  coverage_type: "brasil" | "estadual" | "regional" | "municipal" | "multilocal";
-  estado_base: string | null;
-  regiao_base: string | null;
-  cidade_base: string | null;
-  observacao_cobertura: string | null;
-  atendimento_tipo: "todos" | "especificos";
-  descricao_publica: string | null;
-  status: "rascunho" | "ativo" | "inativo" | "bloqueado";
-  is_public: boolean;
-  origem: string | null;
-  created_at: string;
-  updated_at: string;
-
-  nome_publico: string | null;
-  descricao_publica_curta: string | null;
-  cidade_publica: string | null;
-  estado_publico: string | null;
-  mostrar_nome_publico: boolean;
-  mostrar_descricao_publica: boolean;
-  mostrar_cidade_publica: boolean;
-  mostrar_estado_publico: boolean;
-  mostrar_segmentos_publicos: boolean;
-  mostrar_produtos_publicos: boolean;
-};
+type SearchMode = "smart" | "email" | "nome" | "empresa" | "whatsapp";
 
 type CadastroPerfil = {
   cadastro_id: string;
-  perfil: string;
+  nome: string | null;
 };
 
 type CadastroSegmento = {
   cadastro_id: string;
-  nome: string;
+  nome: string | null;
 };
 
 type CadastroProdutoServico = {
   cadastro_id: string;
-  nome: string;
+  nome: string | null;
 };
 
 type CadastroSegmentoAtendido = {
   cadastro_id: string;
-  nome: string;
+  nome: string | null;
 };
 
 type CadastroAreaCobertura = {
   cadastro_id: string;
-  coverage_type: string;
+  coverage_type: string | null;
   pais: string | null;
   estado: string | null;
   regiao: string | null;
@@ -69,1606 +35,1019 @@ type CadastroAreaCobertura = {
   observacao: string | null;
 };
 
-type CadastroCompleto = CadastroBase & {
-  perfis: string[];
-  segmentos: string[];
-  produtos_servicos: string[];
-  segmentos_atendidos: string[];
-  areas_cobertura: CadastroAreaCobertura[];
+type CadastroRow = {
+  id: string;
+  nome_responsavel: string | null;
+  nome_empresa: string | null;
+  email: string | null;
+  whatsapp: string | null;
+  cidade_base: string | null;
+  estado_base: string | null;
+  cidade_publica: string | null;
+  estado_publico: string | null;
+  nome_publico: string | null;
+  coverage_type: string | null;
+  atendimento_tipo: string | null;
+  status: string | null;
+  is_public: boolean | null;
+  origem: string | null;
+  cadastro_tipo: string | null;
+  cadastro_completo: boolean | null;
+  created_at: string | null;
+  updated_at: string | null;
+  perfis?: CadastroPerfil[];
+  segmentos?: CadastroSegmento[];
+  produtos_servicos?: CadastroProdutoServico[];
+  segmentos_atendidos?: CadastroSegmentoAtendido[];
+  areas_cobertura?: CadastroAreaCobertura[];
 };
 
-type PublicEditState = {
-  nome_publico: string;
-  descricao_publica_curta: string;
-  cidade_publica: string;
-  estado_publico: string;
-  mostrar_nome_publico: boolean;
-  mostrar_descricao_publica: boolean;
-  mostrar_cidade_publica: boolean;
-  mostrar_estado_publico: boolean;
-  mostrar_segmentos_publicos: boolean;
-  mostrar_produtos_publicos: boolean;
-};
+type AuditResponse =
+  | {
+      ok: true;
+      mode: SearchMode;
+      term: string;
+      totals: {
+        total: number;
+        publicos: number;
+        privados: number;
+        rascunhos: number;
+        ativos: number;
+      };
+      cadastros: CadastroRow[];
+    }
+  | {
+      ok: false;
+      error: string;
+    };
 
-const ESTADOS_BR = [
-  "AC",
-  "AL",
-  "AP",
-  "AM",
-  "BA",
-  "CE",
-  "DF",
-  "ES",
-  "GO",
-  "MA",
-  "MT",
-  "MS",
-  "MG",
-  "PA",
-  "PB",
-  "PR",
-  "PE",
-  "PI",
-  "RJ",
-  "RN",
-  "RS",
-  "RO",
-  "RR",
-  "SC",
-  "SP",
-  "SE",
-  "TO",
-];
+function getStoredEmail() {
+  if (typeof window === "undefined") return "";
 
-function normalizeSlugPart(value: string): string {
-  return value
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toLowerCase()
-    .replace(/&/g, " e ")
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "")
-    .replace(/-{2,}/g, "-");
+  const candidates = [
+    localStorage.getItem("aurora-cadastro-geral-email"),
+    localStorage.getItem("user_email"),
+    localStorage.getItem("aurora_user_email"),
+    localStorage.getItem("email"),
+  ];
+
+  return (
+    candidates.find((value) => typeof value === "string" && value.trim().length > 0)?.trim() ||
+    ""
+  );
 }
 
-function buildSlug(input: {
-  name?: string | null;
-  city?: string | null;
-  state?: string | null;
-}) {
-  const base = [
-    input.name ? normalizeSlugPart(input.name) : "",
-    input.city ? normalizeSlugPart(input.city) : "",
-    input.state ? normalizeSlugPart(input.state) : "",
-  ]
-    .filter(Boolean)
-    .join("-");
+function formatDate(value: string | null) {
+  if (!value) return "-";
 
-  return base || "empresa";
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) return value;
+
+  return new Intl.DateTimeFormat("pt-BR", {
+    dateStyle: "short",
+    timeStyle: "short",
+  }).format(date);
 }
 
-function getSupabaseBrowserClient(): SupabaseClient | null {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-
-  if (!url || !anonKey) {
-    return null;
-  }
-
-  return createClient(url, anonKey);
-}
-
-function formatCoverageLabel(value: CadastroBase["coverage_type"]) {
+function getCoverageLabel(value: string | null) {
   switch (value) {
-    case "brasil":
-      return "Brasil inteiro";
-    case "estadual":
-      return "Estadual";
-    case "regional":
-      return "Regional";
     case "municipal":
       return "Municipal";
-    case "multilocal":
-      return "Multilocal";
+    case "regional":
+      return "Regional";
+    case "estadual":
+      return "Estadual";
+    case "nacional":
+      return "Brasil";
+    case "internacional":
+      return "Internacional";
     default:
-      return value;
+      return value || "Não informado";
   }
 }
 
-function formatDate(value: string) {
-  try {
-    return new Intl.DateTimeFormat("pt-BR", {
-      dateStyle: "short",
-      timeStyle: "short",
-    }).format(new Date(value));
-  } catch {
-    return value;
-  }
-}
+function getStatusTone(status: string | null, isPublic: boolean | null) {
+  const normalized = (status || "").toLowerCase();
 
-function toPublicEditState(cadastro: CadastroCompleto): PublicEditState {
+  if (normalized === "bloqueado") {
+    return {
+      label: "Bloqueado",
+      textColor: "#b91c1c",
+      bgColor: "rgba(239,68,68,0.10)",
+      borderColor: "rgba(239,68,68,0.18)",
+    };
+  }
+
+  if (normalized === "inativo") {
+    return {
+      label: "Inativo",
+      textColor: "#92400e",
+      bgColor: "rgba(245,158,11,0.10)",
+      borderColor: "rgba(245,158,11,0.18)",
+    };
+  }
+
+  if (normalized === "ativo" && isPublic) {
+    return {
+      label: "Ativo público",
+      textColor: "#15803d",
+      bgColor: "rgba(34,197,94,0.10)",
+      borderColor: "rgba(34,197,94,0.18)",
+    };
+  }
+
+  if (normalized === "ativo") {
+    return {
+      label: "Ativo privado",
+      textColor: "#1d4ed8",
+      bgColor: "rgba(59,130,246,0.10)",
+      borderColor: "rgba(59,130,246,0.18)",
+    };
+  }
+
   return {
-    nome_publico: cadastro.nome_publico || "",
-    descricao_publica_curta: cadastro.descricao_publica_curta || "",
-    cidade_publica: cadastro.cidade_publica || "",
-    estado_publico: cadastro.estado_publico || "",
-    mostrar_nome_publico: cadastro.mostrar_nome_publico,
-    mostrar_descricao_publica: cadastro.mostrar_descricao_publica,
-    mostrar_cidade_publica: cadastro.mostrar_cidade_publica,
-    mostrar_estado_publico: cadastro.mostrar_estado_publico,
-    mostrar_segmentos_publicos: cadastro.mostrar_segmentos_publicos,
-    mostrar_produtos_publicos: cadastro.mostrar_produtos_publicos,
+    label: "Rascunho",
+    textColor: "#7c3aed",
+    bgColor: "rgba(124,58,237,0.10)",
+    borderColor: "rgba(124,58,237,0.18)",
   };
 }
 
-export default function GuardiaoPage() {
-  const [loading, setLoading] = useState(true);
-  const [feedback, setFeedback] = useState("");
-  const [feedbackType, setFeedbackType] = useState<"info" | "error" | "success">(
-    "info"
-  );
-  const [cadastros, setCadastros] = useState<CadastroCompleto[]>([]);
-  const [userEmail, setUserEmail] = useState("");
-  const [actionLoadingId, setActionLoadingId] = useState<string>("");
-  const [editingId, setEditingId] = useState<string>("");
-  const [editState, setEditState] = useState<Record<string, PublicEditState>>({});
+function getPublicVisibilityLabel(isPublic: boolean | null) {
+  return isPublic ? "Público" : "Privado";
+}
 
-  const totais = useMemo(() => {
+function getSafeDisplayName(item: CadastroRow) {
+  return (
+    item.nome_empresa?.trim() ||
+    item.nome_publico?.trim() ||
+    item.nome_responsavel?.trim() ||
+    "Cadastro sem nome"
+  );
+}
+
+function getLocationLabel(item: CadastroRow) {
+  const city = item.cidade_publica || item.cidade_base || "";
+  const state = item.estado_publico || item.estado_base || "";
+
+  if (city && state) return `${city} • ${state}`;
+  if (city) return city;
+  if (state) return state;
+
+  return "Local não informado";
+}
+
+function getModeLabel(mode: SearchMode) {
+  switch (mode) {
+    case "email":
+      return "E-mail";
+    case "nome":
+      return "Nome";
+    case "empresa":
+      return "Empresa";
+    case "whatsapp":
+      return "WhatsApp";
+    default:
+      return "Busca inteligente";
+  }
+}
+
+function getErrorMessage(error: unknown) {
+  if (typeof error === "string") return error;
+
+  if (error && typeof error === "object" && "error" in error) {
+    const maybeError = (error as { error?: unknown }).error;
+    if (typeof maybeError === "string") return maybeError;
+  }
+
+  return "Falha ao carregar os cadastros reais do Guardião.";
+}
+
+function buildAuditFeedback(
+  total: number,
+  publicos: number,
+  rascunhos: number,
+  term: string
+) {
+  if (total === 0) {
+    return term.trim()
+      ? `Nenhum cadastro encontrado para "${term}". Tente variar entre e-mail, nome, empresa, WhatsApp ou usar a busca inteligente.`
+      : "Nenhum cadastro encontrado. Digite um termo para iniciar a auditoria.";
+  }
+
+  return term.trim()
+    ? `Auditoria concluída para "${term}". Encontramos ${total} cadastro(s), sendo ${publicos} público(s) e ${rascunhos} em rascunho.`
+    : `Auditoria concluída. Encontramos ${total} cadastro(s), sendo ${publicos} público(s) e ${rascunhos} em rascunho.`;
+}
+
+export default function GuardiaoPage() {
+  const [searchMode, setSearchMode] = useState<SearchMode>("smart");
+  const [searchTerm, setSearchTerm] = useState("");
+  const [inputSearchTerm, setInputSearchTerm] = useState("");
+  const [cadastros, setCadastros] = useState<CadastroRow[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [loadingAudit, setLoadingAudit] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [feedback, setFeedback] = useState<string | null>(null);
+
+  const stats = useMemo(() => {
+    const total = cadastros.length;
+    const publicos = cadastros.filter((item) => item.is_public).length;
+    const rascunhos = cadastros.filter(
+      (item) => (item.status || "rascunho").toLowerCase() === "rascunho"
+    ).length;
+    const ativos = cadastros.filter(
+      (item) => (item.status || "").toLowerCase() === "ativo"
+    ).length;
+    const privados = cadastros.filter((item) => !item.is_public).length;
+
     return {
-      cadastros: cadastros.length,
-      ativos: cadastros.filter((item) => item.status === "ativo").length,
-      rascunhos: cadastros.filter((item) => item.status === "rascunho").length,
-      publicos: cadastros.filter((item) => item.is_public).length,
+      total,
+      publicos,
+      rascunhos,
+      ativos,
+      privados,
     };
   }, [cadastros]);
 
-  const carregar = useCallback(async () => {
+  const loadCadastros = useCallback(async (targetTerm: string, mode: SearchMode) => {
     setLoading(true);
+    setError(null);
+    setFeedback(null);
 
     try {
-      const supabase = getSupabaseBrowserClient();
-
-      if (!supabase) {
-        throw new Error(
-          "Variáveis NEXT_PUBLIC_SUPABASE_URL e NEXT_PUBLIC_SUPABASE_ANON_KEY não configuradas."
-        );
-      }
-
-      const {
-        data: { user },
-        error: userError,
-      } = await supabase.auth.getUser();
-
-      if (userError) throw userError;
-      if (!user) {
-        throw new Error("Você precisa estar logado para acessar o Guardião real.");
-      }
-
-      setUserEmail(user.email ?? "");
-
-      const { data: baseRows, error: baseError } = await supabase
-        .from("cadastros_gerais")
-        .select("*")
-        .eq("user_id", user.id)
-        .order("created_at", { ascending: false });
-
-      if (baseError) throw baseError;
-
-      const bases = (baseRows ?? []) as CadastroBase[];
-
-      if (bases.length === 0) {
-        setCadastros([]);
-        setFeedbackType("info");
-        setFeedback(
-          "Nenhum cadastro encontrado ainda. O Guardião já está ligado ao banco real."
-        );
-        return;
-      }
-
-      const cadastroIds = bases.map((item) => item.id);
-
-      const [
-        perfisResp,
-        segmentosResp,
-        produtosResp,
-        segmentosAtendidosResp,
-        areasResp,
-      ] = await Promise.all([
-        supabase
-          .from("cadastro_perfis")
-          .select("cadastro_id, perfil")
-          .in("cadastro_id", cadastroIds),
-        supabase
-          .from("cadastro_segmentos")
-          .select("cadastro_id, nome")
-          .in("cadastro_id", cadastroIds),
-        supabase
-          .from("cadastro_produtos_servicos")
-          .select("cadastro_id, nome")
-          .in("cadastro_id", cadastroIds),
-        supabase
-          .from("cadastro_segmentos_atendidos")
-          .select("cadastro_id, nome")
-          .in("cadastro_id", cadastroIds),
-        supabase
-          .from("cadastro_areas_cobertura")
-          .select("cadastro_id, coverage_type, pais, estado, regiao, cidade, observacao")
-          .in("cadastro_id", cadastroIds),
-      ]);
-
-      if (perfisResp.error) throw perfisResp.error;
-      if (segmentosResp.error) throw segmentosResp.error;
-      if (produtosResp.error) throw produtosResp.error;
-      if (segmentosAtendidosResp.error) throw segmentosAtendidosResp.error;
-      if (areasResp.error) throw areasResp.error;
-
-      const perfis = (perfisResp.data ?? []) as CadastroPerfil[];
-      const segmentos = (segmentosResp.data ?? []) as CadastroSegmento[];
-      const produtos = (produtosResp.data ?? []) as CadastroProdutoServico[];
-      const segmentosAtendidos = (segmentosAtendidosResp.data ??
-        []) as CadastroSegmentoAtendido[];
-      const areas = (areasResp.data ?? []) as CadastroAreaCobertura[];
-
-      const completos: CadastroCompleto[] = bases.map((base) => ({
-        ...base,
-        perfis: perfis
-          .filter((item) => item.cadastro_id === base.id)
-          .map((item) => item.perfil),
-        segmentos: segmentos
-          .filter((item) => item.cadastro_id === base.id)
-          .map((item) => item.nome),
-        produtos_servicos: produtos
-          .filter((item) => item.cadastro_id === base.id)
-          .map((item) => item.nome),
-        segmentos_atendidos: segmentosAtendidos
-          .filter((item) => item.cadastro_id === base.id)
-          .map((item) => item.nome),
-        areas_cobertura: areas.filter((item) => item.cadastro_id === base.id),
-      }));
-
-      setCadastros(completos);
-      setEditState((prev) => {
-        const next = { ...prev };
-        for (const cadastro of completos) {
-          if (!next[cadastro.id]) {
-            next[cadastro.id] = toPublicEditState(cadastro);
-          }
-        }
-        return next;
+      const response = await fetch("/api/guardiao/audit", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        cache: "no-store",
+        body: JSON.stringify({
+          term: targetTerm,
+          mode,
+        }),
       });
-      setFeedbackType("success");
-      setFeedback("Guardião conectado aos cadastros reais do Supabase.");
-    } catch (error) {
-      const message =
-        error instanceof Error ? error.message : "Falha ao carregar o Guardião.";
 
+      const json = (await response.json()) as AuditResponse;
+
+      if (!response.ok || !json.ok) {
+        throw new Error(getErrorMessage(json));
+      }
+
+      setCadastros(json.cadastros);
+      setFeedback(
+        buildAuditFeedback(
+          json.totals.total,
+          json.totals.publicos,
+          json.totals.rascunhos,
+          targetTerm
+        )
+      );
+    } catch (loadError) {
+      const message =
+        loadError instanceof Error
+          ? loadError.message
+          : "Falha ao carregar os cadastros reais do Guardião.";
+
+      setError(message);
       setCadastros([]);
-      setFeedbackType("error");
-      setFeedback(message);
+      setFeedback(null);
     } finally {
       setLoading(false);
+      setLoadingAudit(false);
     }
   }, []);
 
   useEffect(() => {
-    carregar();
-  }, [carregar]);
+    const stored = getStoredEmail();
+    setSearchTerm(stored);
+    setInputSearchTerm(stored);
 
-  async function recarregarCadastroAtualizado(cadastroId: string, userId: string) {
-    const supabase = getSupabaseBrowserClient();
-
-    if (!supabase) {
-      throw new Error(
-        "Variáveis NEXT_PUBLIC_SUPABASE_URL e NEXT_PUBLIC_SUPABASE_ANON_KEY não configuradas."
-      );
-    }
-
-    const { data: row, error } = await supabase
-      .from("cadastros_gerais")
-      .select("*")
-      .eq("id", cadastroId)
-      .eq("user_id", userId)
-      .single();
-
-    if (error) throw error;
-
-    return row as CadastroBase;
-  }
-
-  async function updateCadastro(
-    cadastroId: string,
-    patch: Partial<Pick<CadastroBase, "status" | "is_public">>,
-    successMessage: string
-  ) {
-    try {
-      setActionLoadingId(cadastroId);
-      setFeedbackType("info");
-      setFeedback("Processando ação no Guardião...");
-
-      const supabase = getSupabaseBrowserClient();
-
-      if (!supabase) {
-        throw new Error(
-          "Variáveis NEXT_PUBLIC_SUPABASE_URL e NEXT_PUBLIC_SUPABASE_ANON_KEY não configuradas."
-        );
-      }
-
-      const {
-        data: { user },
-        error: userError,
-      } = await supabase.auth.getUser();
-
-      if (userError) throw userError;
-      if (!user) throw new Error("Usuário não autenticado.");
-
-      const { error: updateError, count } = await supabase
-        .from("cadastros_gerais")
-        .update(patch, { count: "exact" })
-        .eq("id", cadastroId)
-        .eq("user_id", user.id);
-
-      if (updateError) throw updateError;
-      if (!count || count < 1) {
-        throw new Error("Nenhum registro foi atualizado.");
-      }
-
-      const atualizado = await recarregarCadastroAtualizado(cadastroId, user.id);
-
-      setCadastros((prev) =>
-        prev.map((item) => (item.id === cadastroId ? { ...item, ...atualizado } : item))
-      );
-
-      setEditState((prev) => ({
-        ...prev,
-        [cadastroId]: {
-          ...(prev[cadastroId] ??
-            toPublicEditState({
-              ...(atualizado as CadastroCompleto),
-              perfis: [],
-              segmentos: [],
-              produtos_servicos: [],
-              segmentos_atendidos: [],
-              areas_cobertura: [],
-            })),
-          ...toPublicEditState({
-            ...(atualizado as CadastroCompleto),
-            perfis: [],
-            segmentos: [],
-            produtos_servicos: [],
-            segmentos_atendidos: [],
-            areas_cobertura: [],
-          }),
-        },
-      }));
-
-      setFeedbackType("success");
+    if (!stored) {
+      setLoading(false);
       setFeedback(
-        `${successMessage} Status: ${atualizado.status} | Público: ${
-          atualizado.is_public ? "SIM" : "NÃO"
-        }`
+        "Digite um e-mail, nome, empresa ou WhatsApp para iniciar a auditoria completa dos cadastros."
       );
-    } catch (error) {
-      const message =
-        error instanceof Error ? error.message : "Falha ao atualizar cadastro.";
-
-      setFeedbackType("error");
-      setFeedback(message);
-    } finally {
-      setActionLoadingId("");
+      return;
     }
-  }
 
-  function startEditing(cadastro: CadastroCompleto) {
-    setEditingId(cadastro.id);
-    setEditState((prev) => ({
-      ...prev,
-      [cadastro.id]: toPublicEditState(cadastro),
-    }));
-  }
+    void loadCadastros(stored, "smart");
+  }, [loadCadastros]);
 
-  function cancelEditing(cadastro: CadastroCompleto) {
-    setEditingId("");
-    setEditState((prev) => ({
-      ...prev,
-      [cadastro.id]: toPublicEditState(cadastro),
-    }));
-  }
+  function handleAudit() {
+    const normalized = inputSearchTerm.trim();
 
-  function patchEditState(cadastroId: string, patch: Partial<PublicEditState>) {
-    setEditState((prev) => ({
-      ...prev,
-      [cadastroId]: {
-        ...(prev[cadastroId] ?? {
-          nome_publico: "",
-          descricao_publica_curta: "",
-          cidade_publica: "",
-          estado_publico: "",
-          mostrar_nome_publico: false,
-          mostrar_descricao_publica: true,
-          mostrar_cidade_publica: true,
-          mostrar_estado_publico: true,
-          mostrar_segmentos_publicos: true,
-          mostrar_produtos_publicos: true,
-        }),
-        ...patch,
-      },
-    }));
-  }
+    setLoadingAudit(true);
+    setSearchTerm(normalized);
 
-  async function savePublicLayer(cadastroId: string) {
     try {
-      setActionLoadingId(cadastroId);
-      setFeedbackType("info");
-      setFeedback("Salvando camada pública controlada...");
-
-      const supabase = getSupabaseBrowserClient();
-
-      if (!supabase) {
-        throw new Error(
-          "Variáveis NEXT_PUBLIC_SUPABASE_URL e NEXT_PUBLIC_SUPABASE_ANON_KEY não configuradas."
-        );
+      if (normalized.includes("@")) {
+        localStorage.setItem("aurora-cadastro-geral-email", normalized.toLowerCase());
       }
+    } catch {}
 
-      const {
-        data: { user },
-        error: userError,
-      } = await supabase.auth.getUser();
-
-      if (userError) throw userError;
-      if (!user) throw new Error("Usuário não autenticado.");
-
-      const state = editState[cadastroId];
-
-      if (!state) {
-        throw new Error("Estado de edição não encontrado.");
-      }
-
-      const payload = {
-        nome_publico: state.nome_publico.trim() || null,
-        descricao_publica_curta: state.descricao_publica_curta.trim() || null,
-        cidade_publica: state.cidade_publica.trim() || null,
-        estado_publico: state.estado_publico || null,
-        mostrar_nome_publico: state.mostrar_nome_publico,
-        mostrar_descricao_publica: state.mostrar_descricao_publica,
-        mostrar_cidade_publica: state.mostrar_cidade_publica,
-        mostrar_estado_publico: state.mostrar_estado_publico,
-        mostrar_segmentos_publicos: state.mostrar_segmentos_publicos,
-        mostrar_produtos_publicos: state.mostrar_produtos_publicos,
-      };
-
-      const { error: updateError, count } = await supabase
-        .from("cadastros_gerais")
-        .update(payload, { count: "exact" })
-        .eq("id", cadastroId)
-        .eq("user_id", user.id);
-
-      if (updateError) throw updateError;
-      if (!count || count < 1) {
-        throw new Error("Nenhum registro foi atualizado na camada pública.");
-      }
-
-      const atualizado = await recarregarCadastroAtualizado(cadastroId, user.id);
-
-      setCadastros((prev) =>
-        prev.map((item) => (item.id === cadastroId ? { ...item, ...atualizado } : item))
-      );
-
-      setEditState((prev) => ({
-        ...prev,
-        [cadastroId]: {
-          ...(prev[cadastroId] ?? state),
-          nome_publico: atualizado.nome_publico || "",
-          descricao_publica_curta: atualizado.descricao_publica_curta || "",
-          cidade_publica: atualizado.cidade_publica || "",
-          estado_publico: atualizado.estado_publico || "",
-          mostrar_nome_publico: atualizado.mostrar_nome_publico,
-          mostrar_descricao_publica: atualizado.mostrar_descricao_publica,
-          mostrar_cidade_publica: atualizado.mostrar_cidade_publica,
-          mostrar_estado_publico: atualizado.mostrar_estado_publico,
-          mostrar_segmentos_publicos: atualizado.mostrar_segmentos_publicos,
-          mostrar_produtos_publicos: atualizado.mostrar_produtos_publicos,
-        },
-      }));
-
-      setEditingId("");
-      setFeedbackType("success");
-      setFeedback("Camada pública atualizada com sucesso no Guardião.");
-    } catch (error) {
-      const message =
-        error instanceof Error ? error.message : "Falha ao salvar a camada pública.";
-      setFeedbackType("error");
-      setFeedback(message);
-    } finally {
-      setActionLoadingId("");
-    }
+    void loadCadastros(normalized, searchMode);
   }
 
   return (
-    <main style={styles.main}>
-      <div style={styles.container}>
-        <div style={styles.topNav}>
-          <NavLink href="/" label="Voltar à Home" color="#93c5fd" />
-          <NavLink href="/cadastro" label="Ir para Cadastro" color="#86efac" />
-          <NavLink href="/cadastros" label="Busca pública" color="#c4b5fd" />
-          <NavLink href="/mineracao" label="Mineração" color="#f59e0b" />
-        </div>
+    <main
+      style={{
+        minHeight: "100vh",
+        background:
+          "radial-gradient(circle at top, rgba(59,130,246,0.10), transparent 18%), radial-gradient(circle at left, rgba(34,197,94,0.10), transparent 24%), linear-gradient(180deg, #eef6ff 0%, #f7fbff 36%, #edf7f3 100%)",
+        color: "#0f172a",
+        overflow: "hidden",
+      }}
+    >
+      <section
+        style={{
+          maxWidth: 1320,
+          margin: "0 auto",
+          padding: "18px 16px 64px",
+          display: "grid",
+          gap: 18,
+        }}
+      >
+        <section
+          style={{
+            position: "relative",
+            border: "1px solid rgba(15,23,42,0.08)",
+            background:
+              "linear-gradient(180deg, rgba(255,255,255,0.86), rgba(255,255,255,0.72))",
+            borderRadius: 32,
+            padding: "24px 18px 20px",
+            boxShadow: "0 22px 70px rgba(15,23,42,0.09)",
+            overflow: "hidden",
+            display: "grid",
+            gap: 18,
+          }}
+        >
+          <div
+            style={{
+              position: "absolute",
+              width: 420,
+              height: 420,
+              borderRadius: 999,
+              background:
+                "radial-gradient(circle, rgba(59,130,246,0.12) 0%, rgba(59,130,246,0.04) 44%, transparent 72%)",
+              top: -150,
+              left: -100,
+              filter: "blur(20px)",
+              pointerEvents: "none",
+            }}
+          />
+          <div
+            style={{
+              position: "absolute",
+              width: 320,
+              height: 320,
+              borderRadius: 999,
+              background:
+                "radial-gradient(circle, rgba(16,185,129,0.10) 0%, rgba(16,185,129,0.03) 45%, transparent 72%)",
+              bottom: -80,
+              right: -40,
+              filter: "blur(18px)",
+              pointerEvents: "none",
+            }}
+          />
 
-        <section style={styles.heroCard}>
-          <div style={styles.badge}>Guardião real</div>
-          <h1 style={styles.heroTitle}>Guardião da Aurora</h1>
-          <p style={styles.heroText}>
-            Painel de leitura, controle e edição da camada pública dos cadastros reais do usuário logado.
-          </p>
+          <div
+            style={{
+              position: "relative",
+              zIndex: 2,
+              display: "grid",
+              gap: 14,
+            }}
+          >
+            <div
+              style={{
+                display: "inline-flex",
+                width: "fit-content",
+                alignItems: "center",
+                gap: 8,
+                padding: "7px 11px",
+                borderRadius: 999,
+                background: "rgba(37,99,235,0.08)",
+                border: "1px solid rgba(37,99,235,0.16)",
+                color: "#2563eb",
+                fontSize: 12,
+                fontWeight: 800,
+                boxShadow: "0 0 16px rgba(37,99,235,0.06)",
+              }}
+            >
+              🛡️ Guardião da Aurora
+            </div>
 
-          <div style={styles.heroGrid}>
-            <MiniInfo
-              title="Usuário atual"
-              value={userEmail || "Carregando usuário"}
-              text="Leitura protegida com autenticação real."
-            />
-            <MiniInfo
-              title="Cadastros"
-              value={String(totais.cadastros)}
-              text="Quantidade total carregada no Guardião."
-            />
-            <MiniInfo
-              title="Rascunhos"
-              value={String(totais.rascunhos)}
-              text="Cadastros ainda não publicados e não ativados."
-            />
-            <MiniInfo
-              title="Públicos"
-              value={String(totais.publicos)}
-              text="Cadastros marcados como públicos no banco."
+            <h1
+              style={{
+                margin: 0,
+                fontSize: "clamp(34px, 5.4vw, 58px)",
+                lineHeight: 0.98,
+                letterSpacing: "-0.05em",
+                maxWidth: 960,
+                color: "#0f172a",
+              }}
+            >
+              Guardião real com auditoria completa
+            </h1>
+
+            <p
+              style={{
+                margin: 0,
+                color: "rgba(15,23,42,0.74)",
+                fontSize: 18,
+                lineHeight: 1.6,
+                maxWidth: 980,
+                fontWeight: 700,
+              }}
+            >
+              Agora o Guardião pode auditar os cadastros por e-mail, primeiro nome,
+              nome completo, empresa ou WhatsApp. Isso ajuda a descobrir cadastro
+              perdido, duplicado, privado, em rascunho ou salvo com outro dado de referência.
+            </p>
+
+            <div
+              style={{
+                display: "flex",
+                gap: 10,
+                flexWrap: "wrap",
+              }}
+            >
+              <Link href="/" style={secondaryButtonStyle}>
+                Voltar à Home
+              </Link>
+              <Link href="/cadastro" style={secondaryButtonStyle}>
+                Ir para Cadastro
+              </Link>
+              <Link href="/cadastros" style={secondaryButtonStyle}>
+                Busca pública
+              </Link>
+              <Link href="/mineracao" style={secondaryButtonStyle}>
+                Mineração
+              </Link>
+            </div>
+
+            <div
+              style={{
+                display: "grid",
+                gap: 12,
+                border: "1px solid rgba(37,99,235,0.14)",
+                background: "rgba(255,255,255,0.72)",
+                borderRadius: 22,
+                padding: 16,
+                boxShadow: "0 12px 28px rgba(15,23,42,0.05)",
+              }}
+            >
+              <div
+                style={{
+                  display: "flex",
+                  gap: 8,
+                  flexWrap: "wrap",
+                }}
+              >
+                {[
+                  { value: "smart", label: "Busca inteligente" },
+                  { value: "email", label: "E-mail" },
+                  { value: "nome", label: "Nome" },
+                  { value: "empresa", label: "Empresa" },
+                  { value: "whatsapp", label: "WhatsApp" },
+                ].map((item) => {
+                  const active = searchMode === item.value;
+                  return (
+                    <button
+                      key={item.value}
+                      type="button"
+                      onClick={() => setSearchMode(item.value as SearchMode)}
+                      style={{
+                        minHeight: 40,
+                        padding: "0 14px",
+                        borderRadius: 999,
+                        cursor: "pointer",
+                        fontWeight: 800,
+                        fontSize: 13,
+                        border: active
+                          ? "1px solid rgba(37,99,235,0.22)"
+                          : "1px solid rgba(15,23,42,0.08)",
+                        background: active
+                          ? "linear-gradient(135deg, rgba(37,99,235,0.10), rgba(59,130,246,0.04))"
+                          : "rgba(255,255,255,0.66)",
+                        color: active ? "#1d4ed8" : "#0f172a",
+                        boxShadow: active ? "0 0 14px rgba(37,99,235,0.06)" : "none",
+                      }}
+                    >
+                      {item.label}
+                    </button>
+                  );
+                })}
+              </div>
+
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "minmax(0, 1.4fr) auto",
+                  gap: 12,
+                  alignItems: "end",
+                }}
+              >
+                <label
+                  style={{
+                    display: "grid",
+                    gap: 8,
+                  }}
+                >
+                  <span
+                    style={{
+                      fontSize: 13,
+                      fontWeight: 800,
+                      color: "#2563eb",
+                      letterSpacing: "0.03em",
+                      textTransform: "uppercase",
+                    }}
+                  >
+                    Termo para auditoria
+                  </span>
+                  <input
+                    value={inputSearchTerm}
+                    onChange={(event) => setInputSearchTerm(event.target.value)}
+                    placeholder="Digite e-mail, primeiro nome, nome completo, empresa ou WhatsApp"
+                    style={{
+                      width: "100%",
+                      minHeight: 52,
+                      borderRadius: 16,
+                      border: "1px solid rgba(15,23,42,0.10)",
+                      background: "rgba(255,255,255,0.92)",
+                      color: "#0f172a",
+                      padding: "0 14px",
+                      fontSize: 15,
+                      fontWeight: 700,
+                      outline: "none",
+                      boxShadow: "0 8px 18px rgba(15,23,42,0.04)",
+                    }}
+                  />
+                </label>
+
+                <button
+                  type="button"
+                  onClick={handleAudit}
+                  disabled={loadingAudit}
+                  style={{
+                    minHeight: 52,
+                    padding: "0 18px",
+                    border: "none",
+                    borderRadius: 16,
+                    cursor: loadingAudit ? "wait" : "pointer",
+                    background: "linear-gradient(135deg, #2563eb, #22c55e)",
+                    color: "#ffffff",
+                    fontSize: 14,
+                    fontWeight: 900,
+                    boxShadow: "0 18px 40px rgba(37,99,235,0.18)",
+                  }}
+                >
+                  {loadingAudit ? "Auditando..." : "Auditar agora"}
+                </button>
+              </div>
+            </div>
+
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
+                gap: 12,
+              }}
+            >
+              <MiniCard label="Modo" value={getModeLabel(searchMode)} />
+              <MiniCard label="Termo em uso" value={searchTerm || "Não definido"} />
+              <MiniCard label="Total de cadastros" value={String(stats.total)} />
+              <MiniCard label="Públicos" value={String(stats.publicos)} />
+              <MiniCard label="Rascunhos" value={String(stats.rascunhos)} />
+              <MiniCard label="Ativos" value={String(stats.ativos)} />
+              <MiniCard label="Privados" value={String(stats.privados)} />
+            </div>
+
+            {loading ? (
+              <MessageBox
+                tone="info"
+                title="Carregando auditoria"
+                text="Estamos consultando a API segura do Guardião."
+              />
+            ) : null}
+
+            {feedback ? (
+              <MessageBox tone="success" title="Leitura do Guardião" text={feedback} />
+            ) : null}
+
+            {error ? (
+              <MessageBox tone="danger" title="Falha de leitura" text={error} />
+            ) : null}
+
+            <MessageBox
+              tone="info"
+              title="Importante"
+              text="Agora a leitura é server-side. Se der erro daqui para frente, o motivo real vai aparecer no retorno da API, e não mais uma falha genérica do navegador."
             />
           </div>
         </section>
 
-        {feedback ? (
-          <section
-            style={{
-              ...styles.feedbackBox,
-              ...(feedbackType === "success"
-                ? styles.feedbackSuccess
-                : feedbackType === "error"
-                ? styles.feedbackError
-                : styles.feedbackInfo),
-            }}
-          >
-            <strong style={{ display: "block", marginBottom: 6 }}>
-              {feedbackType === "success"
-                ? "Sucesso"
-                : feedbackType === "error"
-                ? "Falha"
-                : "Aviso"}
-            </strong>
-            <div>{feedback}</div>
-          </section>
-        ) : null}
+        <section
+          style={{
+            display: "grid",
+            gap: 16,
+          }}
+        >
+          {cadastros.length === 0 && !loading ? (
+            <div
+              style={{
+                borderRadius: 24,
+                padding: 22,
+                background: "#ffffff",
+                border: "1px solid rgba(15,23,42,0.08)",
+                boxShadow: "0 10px 24px rgba(15,23,42,0.06)",
+              }}
+            >
+              <h2 style={{ margin: 0, fontWeight: 900 }}>Nenhum cadastro encontrado</h2>
+              <p
+                style={{
+                  margin: "10px 0 0",
+                  color: "#475569",
+                  lineHeight: 1.7,
+                }}
+              >
+                Tente variar entre busca inteligente, e-mail, nome, empresa e WhatsApp.
+                Quando o usuário não sabe exatamente qual dado usou, a busca inteligente costuma encontrar mais.
+              </p>
+            </div>
+          ) : null}
 
-        <section style={styles.toolbar}>
-          <button
-            type="button"
-            style={styles.primaryButton}
-            onClick={carregar}
-            disabled={loading || !!actionLoadingId}
-          >
-            {loading ? "Atualizando Guardião..." : "Atualizar Guardião"}
-          </button>
+          {cadastros.map((cadastro) => {
+            const tone = getStatusTone(cadastro.status, cadastro.is_public);
 
-          <Link href="/cadastro" style={styles.secondaryLink}>
-            Novo cadastro
-          </Link>
-        </section>
-
-        {loading ? (
-          <section style={styles.loadingCard}>
-            Carregando dados reais do Guardião...
-          </section>
-        ) : cadastros.length === 0 ? (
-          <section style={styles.emptyCard}>
-            Nenhum cadastro encontrado ainda. O Guardião está pronto para mostrar tudo que entrar no Supabase.
-          </section>
-        ) : (
-          <section style={styles.listWrap}>
-            {cadastros.map((cadastro) => {
-              const loadingThis = actionLoadingId === cadastro.id;
-              const isEditing = editingId === cadastro.id;
-              const state = editState[cadastro.id] ?? toPublicEditState(cadastro);
-
-              const slug = buildSlug({
-                name:
-                  cadastro.nome_publico ||
-                  cadastro.nome_empresa ||
-                  cadastro.nome_responsavel,
-                city: cadastro.cidade_publica || cadastro.cidade_base,
-                state: cadastro.estado_publico || cadastro.estado_base,
-              });
-
-              const baseUrl =
-                typeof window !== "undefined" ? window.location.origin : "";
-
-              const publicUrl = `${baseUrl}/empresa/${slug}`;
-
-              const shareText = getPublicCompanyShareText({
-                publicName:
-                  cadastro.nome_publico ||
-                  cadastro.nome_empresa ||
-                  cadastro.nome_responsavel,
-                city: cadastro.cidade_publica || cadastro.cidade_base,
-                state: cadastro.estado_publico || cadastro.estado_base,
-              });
-
-              return (
-                <article key={cadastro.id} style={styles.card}>
-                  <div style={styles.cardHeader}>
-                    <div>
-                      <div style={styles.cardTitle}>
-                        {cadastro.nome_empresa?.trim() ||
-                          cadastro.nome_responsavel?.trim() ||
-                          "Cadastro sem nome"}
-                      </div>
-                      <div style={styles.cardSubtitle}>ID: {cadastro.id}</div>
+            return (
+              <article
+                key={cadastro.id}
+                style={{
+                  borderRadius: 24,
+                  padding: 20,
+                  background: "#ffffff",
+                  border: "1px solid rgba(15,23,42,0.08)",
+                  boxShadow: "0 10px 24px rgba(15,23,42,0.06)",
+                  display: "grid",
+                  gap: 16,
+                }}
+              >
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    gap: 14,
+                    flexWrap: "wrap",
+                    alignItems: "flex-start",
+                  }}
+                >
+                  <div style={{ display: "grid", gap: 8 }}>
+                    <div
+                      style={{
+                        fontSize: 12,
+                        fontWeight: 800,
+                        color: "#64748b",
+                        textTransform: "uppercase",
+                        letterSpacing: "0.04em",
+                      }}
+                    >
+                      Cadastro real
                     </div>
 
-                    <div style={styles.statusWrap}>
-                      <Badge label={cadastro.status.toUpperCase()} />
-                      <Badge label={cadastro.is_public ? "PÚBLICO" : "PRIVADO"} />
+                    <h2
+                      style={{
+                        margin: 0,
+                        fontSize: "clamp(22px, 3vw, 30px)",
+                        lineHeight: 1.05,
+                        letterSpacing: "-0.04em",
+                        color: "#0f172a",
+                      }}
+                    >
+                      {getSafeDisplayName(cadastro)}
+                    </h2>
+
+                    <div
+                      style={{
+                        color: "#475569",
+                        fontSize: 14,
+                        fontWeight: 700,
+                        wordBreak: "break-word",
+                      }}
+                    >
+                      ID: {cadastro.id}
                     </div>
-                  </div>
-
-                  <div style={styles.actionRow}>
-                    <button
-                      type="button"
-                      style={styles.actionButtonPrimary}
-                      disabled={loadingThis}
-                      onClick={() =>
-                        updateCadastro(
-                          cadastro.id,
-                          { status: "ativo", is_public: true },
-                          "Cadastro ativado e publicado com sucesso."
-                        )
-                      }
-                    >
-                      {loadingThis ? "Processando..." : "Ativar e publicar"}
-                    </button>
-
-                    <button
-                      type="button"
-                      style={styles.actionButton}
-                      disabled={loadingThis}
-                      onClick={() =>
-                        updateCadastro(
-                          cadastro.id,
-                          { status: "rascunho", is_public: false },
-                          "Cadastro voltou para rascunho privado."
-                        )
-                      }
-                    >
-                      Voltar para rascunho
-                    </button>
-
-                    <button
-                      type="button"
-                      style={styles.actionButton}
-                      disabled={loadingThis}
-                      onClick={() =>
-                        updateCadastro(
-                          cadastro.id,
-                          { status: "inativo", is_public: false },
-                          "Cadastro marcado como inativo."
-                        )
-                      }
-                    >
-                      Inativar
-                    </button>
-
-                    <button
-                      type="button"
-                      style={styles.actionButtonDanger}
-                      disabled={loadingThis}
-                      onClick={() =>
-                        updateCadastro(
-                          cadastro.id,
-                          { status: "bloqueado", is_public: false },
-                          "Cadastro marcado como bloqueado."
-                        )
-                      }
-                    >
-                      Bloquear
-                    </button>
-                  </div>
-
-                  <div style={styles.metaGrid}>
-                    <InfoItem label="Responsável" value={cadastro.nome_responsavel || "-"} />
-                    <InfoItem label="Empresa" value={cadastro.nome_empresa || "-"} />
-                    <InfoItem
-                      label="Cobertura"
-                      value={formatCoverageLabel(cadastro.coverage_type)}
-                    />
-                    <InfoItem label="Cidade-base" value={cadastro.cidade_base || "-"} />
-                    <InfoItem label="Estado-base" value={cadastro.estado_base || "-"} />
-                    <InfoItem
-                      label="Atendimento"
-                      value={
-                        cadastro.atendimento_tipo === "todos"
-                          ? "Todos os segmentos"
-                          : "Segmentos específicos"
-                      }
-                    />
-                    <InfoItem label="Criado em" value={formatDate(cadastro.created_at)} />
-                    <InfoItem label="Atualizado em" value={formatDate(cadastro.updated_at)} />
-                  </div>
-
-                  <div style={styles.publicLayerCard}>
-                    <div style={styles.publicLayerHeader}>
-                      <div style={styles.blockTitle}>Camada pública controlada</div>
-
-                      {!isEditing ? (
-                        <button
-                          type="button"
-                          style={styles.actionButton}
-                          disabled={loadingThis}
-                          onClick={() => startEditing(cadastro)}
-                        >
-                          Editar camada pública
-                        </button>
-                      ) : (
-                        <div style={styles.inlineActions}>
-                          <button
-                            type="button"
-                            style={styles.actionButtonPrimary}
-                            disabled={loadingThis}
-                            onClick={() => savePublicLayer(cadastro.id)}
-                          >
-                            {loadingThis ? "Salvando..." : "Salvar edição pública"}
-                          </button>
-                          <button
-                            type="button"
-                            style={styles.actionButton}
-                            disabled={loadingThis}
-                            onClick={() => cancelEditing(cadastro)}
-                          >
-                            Cancelar
-                          </button>
-                        </div>
-                      )}
-                    </div>
-
-                    {!isEditing ? (
-                      <div style={styles.metaGrid}>
-                        <InfoItem label="Nome público" value={cadastro.nome_publico || "-"} />
-                        <InfoItem
-                          label="Descrição pública curta"
-                          value={cadastro.descricao_publica_curta || "-"}
-                        />
-                        <InfoItem label="Cidade pública" value={cadastro.cidade_publica || "-"} />
-                        <InfoItem label="Estado público" value={cadastro.estado_publico || "-"} />
-                        <InfoItem
-                          label="Mostrar nome público"
-                          value={cadastro.mostrar_nome_publico ? "SIM" : "NÃO"}
-                        />
-                        <InfoItem
-                          label="Mostrar descrição pública"
-                          value={cadastro.mostrar_descricao_publica ? "SIM" : "NÃO"}
-                        />
-                        <InfoItem
-                          label="Mostrar cidade pública"
-                          value={cadastro.mostrar_cidade_publica ? "SIM" : "NÃO"}
-                        />
-                        <InfoItem
-                          label="Mostrar estado público"
-                          value={cadastro.mostrar_estado_publico ? "SIM" : "NÃO"}
-                        />
-                        <InfoItem
-                          label="Mostrar segmentos públicos"
-                          value={cadastro.mostrar_segmentos_publicos ? "SIM" : "NÃO"}
-                        />
-                        <InfoItem
-                          label="Mostrar produtos públicos"
-                          value={cadastro.mostrar_produtos_publicos ? "SIM" : "NÃO"}
-                        />
-                      </div>
-                    ) : (
-                      <>
-                        <div style={styles.grid2}>
-                          <Field
-                            label="Nome público"
-                            value={state.nome_publico}
-                            onChange={(value) =>
-                              patchEditState(cadastro.id, { nome_publico: value })
-                            }
-                            placeholder="Ex.: Aurora IA Minas"
-                          />
-                          <Field
-                            label="Descrição pública curta"
-                            value={state.descricao_publica_curta}
-                            onChange={(value) =>
-                              patchEditState(cadastro.id, {
-                                descricao_publica_curta: value,
-                              })
-                            }
-                            placeholder="Ex.: soluções empresariais com IA"
-                          />
-                          <Field
-                            label="Cidade pública"
-                            value={state.cidade_publica}
-                            onChange={(value) =>
-                              patchEditState(cadastro.id, { cidade_publica: value })
-                            }
-                            placeholder="Ex.: Lagoa Santa"
-                          />
-                          <div style={styles.fieldWrap}>
-                            <label style={styles.label}>Estado público</label>
-                            <select
-                              value={state.estado_publico}
-                              onChange={(e) =>
-                                patchEditState(cadastro.id, {
-                                  estado_publico: e.target.value,
-                                })
-                              }
-                              style={styles.select}
-                            >
-                              <option value="">Selecione</option>
-                              {ESTADOS_BR.map((uf) => (
-                                <option key={uf} value={uf}>
-                                  {uf}
-                                </option>
-                              ))}
-                            </select>
-                          </div>
-                        </div>
-
-                        <div style={styles.choiceGrid}>
-                          <ToggleButton
-                            label="Mostrar nome público"
-                            active={state.mostrar_nome_publico}
-                            onClick={() =>
-                              patchEditState(cadastro.id, {
-                                mostrar_nome_publico: !state.mostrar_nome_publico,
-                              })
-                            }
-                          />
-                          <ToggleButton
-                            label="Mostrar descrição pública"
-                            active={state.mostrar_descricao_publica}
-                            onClick={() =>
-                              patchEditState(cadastro.id, {
-                                mostrar_descricao_publica:
-                                  !state.mostrar_descricao_publica,
-                              })
-                            }
-                          />
-                          <ToggleButton
-                            label="Mostrar cidade pública"
-                            active={state.mostrar_cidade_publica}
-                            onClick={() =>
-                              patchEditState(cadastro.id, {
-                                mostrar_cidade_publica: !state.mostrar_cidade_publica,
-                              })
-                            }
-                          />
-                          <ToggleButton
-                            label="Mostrar estado público"
-                            active={state.mostrar_estado_publico}
-                            onClick={() =>
-                              patchEditState(cadastro.id, {
-                                mostrar_estado_publico: !state.mostrar_estado_publico,
-                              })
-                            }
-                          />
-                          <ToggleButton
-                            label="Mostrar segmentos públicos"
-                            active={state.mostrar_segmentos_publicos}
-                            onClick={() =>
-                              patchEditState(cadastro.id, {
-                                mostrar_segmentos_publicos:
-                                  !state.mostrar_segmentos_publicos,
-                              })
-                            }
-                          />
-                          <ToggleButton
-                            label="Mostrar produtos públicos"
-                            active={state.mostrar_produtos_publicos}
-                            onClick={() =>
-                              patchEditState(cadastro.id, {
-                                mostrar_produtos_publicos:
-                                  !state.mostrar_produtos_publicos,
-                              })
-                            }
-                          />
-                        </div>
-                      </>
-                    )}
                   </div>
 
                   <div
                     style={{
-                      marginTop: 20,
-                      marginBottom: 16,
-                      padding: 16,
-                      borderRadius: 18,
-                      background: "rgba(34,197,94,0.08)",
-                      border: "1px solid rgba(34,197,94,0.18)",
+                      display: "flex",
+                      gap: 8,
+                      flexWrap: "wrap",
                     }}
                   >
-                    <div
-                      style={{
-                        fontWeight: 800,
-                        marginBottom: 10,
-                        color: "#86efac",
-                      }}
-                    >
-                      Página pública pronta para compartilhar
-                    </div>
-
-                    <div
-                      style={{
-                        color: "#cbd5e1",
-                        lineHeight: 1.6,
-                        marginBottom: 12,
-                        wordBreak: "break-word",
-                      }}
-                    >
-                      {publicUrl}
-                    </div>
-
-                    <div
-                      style={{
-                        display: "flex",
-                        gap: 10,
-                        flexWrap: "wrap",
-                      }}
-                    >
-                      <a
-                        href={publicUrl}
-                        target="_blank"
-                        rel="noreferrer"
-                        style={{
-                          ...styles.actionButtonPrimary,
-                          textDecoration: "none",
-                          display: "inline-flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                        }}
-                      >
-                        Ver página pública
-                      </a>
-
-                      <button
-                        type="button"
-                        style={styles.actionButton}
-                        onClick={async () => {
-                          try {
-                            await navigator.clipboard.writeText(publicUrl);
-                            setFeedbackType("success");
-                            setFeedback("Link público copiado com sucesso.");
-                          } catch {
-                            setFeedbackType("error");
-                            setFeedback("Não foi possível copiar o link público.");
-                          }
-                        }}
-                      >
-                        Copiar link
-                      </button>
-
-                      <button
-                        type="button"
-                        style={styles.actionButton}
-                        onClick={async () => {
-                          const content = `${shareText} ${publicUrl}`;
-                          try {
-                            await navigator.clipboard.writeText(content);
-                            setFeedbackType("success");
-                            setFeedback("Mensagem de compartilhamento copiada com sucesso.");
-                          } catch {
-                            setFeedbackType("error");
-                            setFeedback(
-                              "Não foi possível copiar a mensagem de compartilhamento."
-                            );
-                          }
-                        }}
-                      >
-                        Compartilhar
-                      </button>
-                    </div>
-                  </div>
-
-                  <div style={styles.sectionGrid}>
-                    <TagBlock
-                      title="Perfis"
-                      items={cadastro.perfis}
-                      emptyText="Nenhum perfil cadastrado."
+                    <Pill
+                      label={tone.label}
+                      textColor={tone.textColor}
+                      bgColor={tone.bgColor}
+                      borderColor={tone.borderColor}
                     />
-                    <TagBlock
-                      title="Segmentos"
-                      items={cadastro.segmentos}
-                      emptyText="Nenhum segmento cadastrado."
-                    />
-                    <TagBlock
-                      title="Produtos e serviços"
-                      items={cadastro.produtos_servicos}
-                      emptyText="Nenhum produto ou serviço cadastrado."
-                    />
-                    <TagBlock
-                      title="Segmentos atendidos"
-                      items={cadastro.segmentos_atendidos}
-                      emptyText="Atende todos os segmentos."
+                    <Pill
+                      label={getPublicVisibilityLabel(cadastro.is_public)}
+                      textColor={cadastro.is_public ? "#15803d" : "#92400e"}
+                      bgColor={cadastro.is_public ? "rgba(34,197,94,0.10)" : "rgba(245,158,11,0.10)"}
+                      borderColor={cadastro.is_public ? "rgba(34,197,94,0.18)" : "rgba(245,158,11,0.18)"}
                     />
                   </div>
+                </div>
 
-                  <div style={styles.coverageCard}>
-                    <div style={styles.blockTitle}>Áreas de cobertura</div>
+                <div
+                  style={{
+                    height: 1,
+                    background:
+                      "linear-gradient(90deg, rgba(37,99,235,0.14), rgba(15,23,42,0.06), transparent)",
+                  }}
+                />
 
-                    {cadastro.areas_cobertura.length === 0 ? (
-                      <div style={styles.emptyText}>
-                        Nenhuma área detalhada cadastrada.
-                      </div>
-                    ) : (
-                      <div style={styles.areaList}>
-                        {cadastro.areas_cobertura.map((area, index) => (
-                          <div key={`${cadastro.id}-${index}`} style={styles.areaItem}>
-                            <div style={styles.areaStrong}>
-                              {formatCoverageLabel(
-                                area.coverage_type as CadastroBase["coverage_type"]
-                              )}
-                            </div>
-                            <div style={styles.areaText}>
-                              País: {area.pais || "Brasil"} | Estado: {area.estado || "-"} |
-                              Região: {area.regiao || "-"} | Cidade: {area.cidade || "-"}
-                            </div>
-                            <div style={styles.areaObs}>
-                              Observação: {area.observacao || "-"}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+                    gap: 12,
+                  }}
+                >
+                  <InfoItem label="Responsável" value={cadastro.nome_responsavel || "-"} />
+                  <InfoItem label="Empresa" value={cadastro.nome_empresa || "-"} />
+                  <InfoItem label="Nome público" value={cadastro.nome_publico || "-"} />
+                  <InfoItem label="E-mail" value={cadastro.email || "-"} />
+                  <InfoItem label="WhatsApp" value={cadastro.whatsapp || "-"} />
+                  <InfoItem label="Cobertura" value={getCoverageLabel(cadastro.coverage_type)} />
+                  <InfoItem label="Atendimento" value={cadastro.atendimento_tipo || "-"} />
+                  <InfoItem label="Cidade / estado" value={getLocationLabel(cadastro)} />
+                  <InfoItem label="Origem" value={cadastro.origem || "-"} />
+                  <InfoItem label="Tipo" value={cadastro.cadastro_tipo || "-"} />
+                  <InfoItem
+                    label="Cadastro completo"
+                    value={cadastro.cadastro_completo ? "SIM" : "NÃO"}
+                  />
+                  <InfoItem label="Criado em" value={formatDate(cadastro.created_at)} />
+                  <InfoItem label="Atualizado em" value={formatDate(cadastro.updated_at)} />
+                  <InfoItem
+                    label="Perfis"
+                    value={
+                      cadastro.perfis?.map((item) => item.nome).filter(Boolean).join(" • ") || "-"
+                    }
+                  />
+                  <InfoItem
+                    label="Segmentos"
+                    value={
+                      cadastro.segmentos?.map((item) => item.nome).filter(Boolean).join(" • ") || "-"
+                    }
+                  />
+                  <InfoItem
+                    label="Produtos / serviços"
+                    value={
+                      cadastro.produtos_servicos
+                        ?.map((item) => item.nome)
+                        .filter(Boolean)
+                        .join(" • ") || "-"
+                    }
+                  />
+                  <InfoItem
+                    label="Segmentos atendidos"
+                    value={
+                      cadastro.segmentos_atendidos
+                        ?.map((item) => item.nome)
+                        .filter(Boolean)
+                        .join(" • ") || "-"
+                    }
+                  />
+                  <InfoItem
+                    label="Áreas de cobertura"
+                    value={
+                      cadastro.areas_cobertura
+                        ?.map((item) =>
+                          [item.cidade, item.estado, item.regiao, item.pais, item.coverage_type]
+                            .filter(Boolean)
+                            .join(" / ")
+                        )
+                        .filter(Boolean)
+                        .join(" • ") || "-"
+                    }
+                  />
+                </div>
 
-                  <div style={styles.descBox}>
-                    <div style={styles.blockTitle}>Descrição interna</div>
-                    <div style={styles.descText}>
-                      {cadastro.descricao_publica || "Sem descrição interna ainda."}
-                    </div>
-                  </div>
-                </article>
-              );
-            })}
-          </section>
-        )}
-      </div>
+                <div
+                  style={{
+                    display: "flex",
+                    gap: 10,
+                    flexWrap: "wrap",
+                  }}
+                >
+                  <Link href="/cadastro" style={secondaryButtonStyle}>
+                    Novo cadastro
+                  </Link>
+                  <Link href="/cadastros" style={secondaryButtonStyle}>
+                    Ver busca pública
+                  </Link>
+                </div>
+              </article>
+            );
+          })}
+        </section>
+      </section>
     </main>
   );
 }
 
-function NavLink({
-  href,
-  label,
-  color,
-}: {
-  href: string;
-  label: string;
-  color: string;
-}) {
+function MiniCard({ label, value }: { label: string; value: string }) {
   return (
-    <Link
-      href={href}
+    <div
       style={{
-        color,
-        textDecoration: "none",
-        border: `1px solid ${color}33`,
-        borderRadius: 999,
-        padding: "10px 14px",
-        fontWeight: 700,
+        borderRadius: 22,
+        padding: 18,
+        background: "#ffffff",
+        border: "1px solid rgba(15,23,42,0.08)",
+        boxShadow: "0 10px 24px rgba(15,23,42,0.06)",
+        display: "grid",
+        gap: 8,
       }}
     >
-      {label}
-    </Link>
-  );
-}
-
-function MiniInfo({
-  title,
-  value,
-  text,
-}: {
-  title: string;
-  value: string;
-  text: string;
-}) {
-  return (
-    <div style={styles.miniCard}>
-      <div style={styles.miniLabel}>{title}</div>
-      <div style={styles.miniValue}>{value}</div>
-      <p style={styles.miniText}>{text}</p>
+      <div
+        style={{
+          fontSize: 12,
+          fontWeight: 800,
+          color: "#64748b",
+          textTransform: "uppercase",
+          letterSpacing: "0.04em",
+        }}
+      >
+        {label}
+      </div>
+      <div
+        style={{
+          fontSize: 18,
+          fontWeight: 900,
+          color: "#0f172a",
+          lineHeight: 1.2,
+          wordBreak: "break-word",
+        }}
+      >
+        {value}
+      </div>
     </div>
   );
-}
-
-function Badge({ label }: { label: string }) {
-  return <div style={styles.badgeMini}>{label}</div>;
 }
 
 function InfoItem({ label, value }: { label: string; value: string }) {
   return (
-    <div style={styles.infoItem}>
-      <div style={styles.infoLabel}>{label}</div>
-      <div style={styles.infoValue}>{value}</div>
-    </div>
-  );
-}
-
-function TagBlock({
-  title,
-  items,
-  emptyText,
-}: {
-  title: string;
-  items: string[];
-  emptyText: string;
-}) {
-  return (
-    <div style={styles.blockCard}>
-      <div style={styles.blockTitle}>{title}</div>
-
-      {items.length === 0 ? (
-        <div style={styles.emptyText}>{emptyText}</div>
-      ) : (
-        <div style={styles.tagWrap}>
-          {items.map((item) => (
-            <div key={`${title}-${item}`} style={styles.tag}>
-              {item}
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
-
-function Field({
-  label,
-  value,
-  onChange,
-  placeholder,
-}: {
-  label: string;
-  value: string;
-  onChange: (value: string) => void;
-  placeholder: string;
-}) {
-  return (
-    <div style={styles.fieldWrap}>
-      <label style={styles.label}>{label}</label>
-      <input
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder={placeholder}
-        style={styles.input}
-      />
-    </div>
-  );
-}
-
-function ToggleButton({
-  label,
-  active,
-  onClick,
-}: {
-  label: string;
-  active: boolean;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
+    <div
       style={{
-        ...styles.choiceButton,
-        ...(active ? styles.choiceButtonActive : {}),
+        borderRadius: 18,
+        padding: 14,
+        background: "rgba(248,250,252,0.9)",
+        border: "1px solid rgba(15,23,42,0.06)",
+        display: "grid",
+        gap: 6,
       }}
     >
-      {label}: {active ? "SIM" : "NÃO"}
-    </button>
+      <div
+        style={{
+          fontSize: 12,
+          fontWeight: 800,
+          color: "#64748b",
+          textTransform: "uppercase",
+          letterSpacing: "0.04em",
+        }}
+      >
+        {label}
+      </div>
+      <div
+        style={{
+          color: "#0f172a",
+          fontSize: 14,
+          lineHeight: 1.6,
+          fontWeight: 700,
+          wordBreak: "break-word",
+        }}
+      >
+        {value}
+      </div>
+    </div>
   );
 }
 
-const styles: Record<string, React.CSSProperties> = {
-  main: {
-    minHeight: "100vh",
-    background:
-      "radial-gradient(circle at top, rgba(59,130,246,0.16), transparent 24%), #050816",
-    color: "#e5eef8",
-    padding: "32px 16px 80px",
-  },
-  container: {
-    maxWidth: 1280,
-    margin: "0 auto",
-  },
-  topNav: {
-    display: "flex",
-    flexWrap: "wrap",
-    gap: 12,
-    marginBottom: 16,
-  },
-  heroCard: {
-    border: "1px solid rgba(148,163,184,0.18)",
-    background: "rgba(15,23,42,0.72)",
-    backdropFilter: "blur(10px)",
-    borderRadius: 24,
-    padding: 24,
-    boxShadow: "0 20px 80px rgba(0,0,0,0.35)",
-    marginBottom: 20,
-  },
-  badge: {
-    display: "inline-flex",
-    padding: "8px 12px",
-    borderRadius: 999,
-    background: "rgba(59,130,246,0.14)",
-    border: "1px solid rgba(59,130,246,0.25)",
-    color: "#93c5fd",
-    fontSize: 13,
-    fontWeight: 700,
-    letterSpacing: 0.3,
-    marginBottom: 14,
-  },
-  heroTitle: {
-    fontSize: 38,
-    lineHeight: 1.05,
-    margin: 0,
-  },
-  heroText: {
-    color: "#94a3b8",
-    marginTop: 14,
-    maxWidth: 980,
-    fontSize: 16,
-    lineHeight: 1.7,
-  },
-  heroGrid: {
-    display: "grid",
-    gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-    gap: 16,
-    marginTop: 24,
-  },
-  miniCard: {
-    borderRadius: 20,
-    padding: 18,
-    background: "rgba(2,6,23,0.45)",
-    border: "1px solid rgba(148,163,184,0.16)",
-  },
-  miniLabel: {
-    fontSize: 12,
-    color: "#94a3b8",
-  },
-  miniValue: {
-    fontWeight: 800,
-    fontSize: 20,
-    marginTop: 8,
-    wordBreak: "break-word",
-  },
-  miniText: {
-    color: "#cbd5e1",
-    marginTop: 10,
-    marginBottom: 0,
-    lineHeight: 1.6,
-  },
-  feedbackBox: {
-    borderRadius: 18,
-    padding: 16,
-    marginBottom: 20,
-    border: "1px solid rgba(148,163,184,0.18)",
-    lineHeight: 1.6,
-  },
-  feedbackSuccess: {
-    background: "rgba(16,185,129,0.12)",
-    border: "1px solid rgba(16,185,129,0.35)",
-    color: "#bbf7d0",
-  },
-  feedbackError: {
-    background: "rgba(239,68,68,0.12)",
-    border: "1px solid rgba(239,68,68,0.35)",
-    color: "#fecaca",
-  },
-  feedbackInfo: {
-    background: "rgba(59,130,246,0.12)",
-    border: "1px solid rgba(59,130,246,0.35)",
-    color: "#bfdbfe",
-  },
-  toolbar: {
-    display: "flex",
-    flexWrap: "wrap",
-    gap: 12,
-    marginBottom: 20,
-  },
-  primaryButton: {
-    borderRadius: 14,
-    border: "1px solid rgba(59,130,246,0.35)",
-    background:
-      "linear-gradient(135deg, rgba(59,130,246,0.22), rgba(16,185,129,0.18))",
-    color: "#eff6ff",
-    fontWeight: 800,
-    cursor: "pointer",
-    padding: "14px 18px",
-    fontSize: 15,
-  },
-  secondaryLink: {
-    borderRadius: 14,
-    border: "1px solid rgba(148,163,184,0.2)",
-    background: "rgba(2,6,23,0.45)",
-    color: "#dbeafe",
-    fontWeight: 800,
-    textDecoration: "none",
-    padding: "14px 18px",
-  },
-  loadingCard: {
-    borderRadius: 20,
-    padding: 24,
-    background: "rgba(15,23,42,0.72)",
-    border: "1px solid rgba(148,163,184,0.16)",
-    color: "#cbd5e1",
-  },
-  emptyCard: {
-    borderRadius: 20,
-    padding: 24,
-    background: "rgba(15,23,42,0.72)",
-    border: "1px solid rgba(148,163,184,0.16)",
-    color: "#cbd5e1",
-  },
-  listWrap: {
-    display: "grid",
-    gap: 18,
-  },
-  card: {
-    borderRadius: 24,
-    padding: 22,
-    background: "rgba(15,23,42,0.72)",
-    border: "1px solid rgba(148,163,184,0.16)",
-    boxShadow: "0 20px 80px rgba(0,0,0,0.28)",
-  },
-  cardHeader: {
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
-    gap: 16,
-    marginBottom: 18,
-    flexWrap: "wrap",
-  },
-  cardTitle: {
-    fontSize: 24,
-    fontWeight: 800,
-    lineHeight: 1.2,
-  },
-  cardSubtitle: {
-    marginTop: 6,
-    color: "#94a3b8",
-    fontSize: 13,
-    wordBreak: "break-all",
-  },
-  statusWrap: {
-    display: "flex",
-    gap: 8,
-    flexWrap: "wrap",
-  },
-  badgeMini: {
-    borderRadius: 999,
-    padding: "8px 12px",
-    background: "rgba(30,41,59,0.9)",
-    border: "1px solid rgba(148,163,184,0.16)",
-    color: "#e2e8f0",
-    fontWeight: 800,
-    fontSize: 12,
-  },
-  actionRow: {
-    display: "flex",
-    flexWrap: "wrap",
-    gap: 10,
-    marginBottom: 18,
-  },
-  actionButtonPrimary: {
-    borderRadius: 12,
-    border: "1px solid rgba(16,185,129,0.35)",
-    background: "rgba(16,185,129,0.14)",
-    color: "#bbf7d0",
-    fontWeight: 800,
-    cursor: "pointer",
-    padding: "12px 14px",
-    fontSize: 14,
-  },
-  actionButton: {
-    borderRadius: 12,
-    border: "1px solid rgba(148,163,184,0.2)",
-    background: "rgba(2,6,23,0.55)",
-    color: "#dbeafe",
-    fontWeight: 700,
-    cursor: "pointer",
-    padding: "12px 14px",
-    fontSize: 14,
-  },
-  actionButtonDanger: {
-    borderRadius: 12,
-    border: "1px solid rgba(239,68,68,0.35)",
-    background: "rgba(239,68,68,0.12)",
-    color: "#fecaca",
-    fontWeight: 800,
-    cursor: "pointer",
-    padding: "12px 14px",
-    fontSize: 14,
-  },
-  inlineActions: {
-    display: "flex",
-    gap: 10,
-    flexWrap: "wrap",
-  },
-  metaGrid: {
-    display: "grid",
-    gridTemplateColumns: "repeat(auto-fit, minmax(190px, 1fr))",
-    gap: 12,
-    marginBottom: 16,
-  },
-  infoItem: {
-    borderRadius: 16,
-    padding: 14,
-    background: "rgba(2,6,23,0.4)",
-    border: "1px solid rgba(148,163,184,0.14)",
-  },
-  infoLabel: {
-    color: "#94a3b8",
-    fontSize: 12,
-    marginBottom: 8,
-  },
-  infoValue: {
-    color: "#f8fafc",
-    fontWeight: 700,
-    lineHeight: 1.5,
-    wordBreak: "break-word",
-  },
-  publicLayerCard: {
-    borderRadius: 18,
-    padding: 16,
-    background: "rgba(16,185,129,0.08)",
-    border: "1px solid rgba(16,185,129,0.16)",
-    marginBottom: 16,
-  },
-  publicLayerHeader: {
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
-    gap: 12,
-    flexWrap: "wrap",
-    marginBottom: 12,
-  },
-  grid2: {
-    display: "grid",
-    gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",
-    gap: 16,
-    marginBottom: 16,
-  },
-  fieldWrap: {
-    display: "flex",
-    flexDirection: "column",
-    gap: 8,
-  },
-  label: {
-    fontSize: 14,
-    fontWeight: 700,
-    color: "#dbeafe",
-  },
-  input: {
-    width: "100%",
-    borderRadius: 14,
-    border: "1px solid rgba(148,163,184,0.18)",
-    background: "rgba(2,6,23,0.55)",
-    color: "#ffffff",
-    padding: "14px 16px",
-    outline: "none",
-    fontSize: 15,
-  },
-  select: {
-    width: "100%",
-    borderRadius: 14,
-    border: "1px solid rgba(148,163,184,0.18)",
-    background: "rgba(2,6,23,0.55)",
-    color: "#ffffff",
-    padding: "14px 16px",
-    outline: "none",
-    fontSize: 15,
-  },
-  choiceGrid: {
-    display: "grid",
-    gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-    gap: 12,
-  },
-  choiceButton: {
-    borderRadius: 16,
-    border: "1px solid rgba(148,163,184,0.18)",
-    background: "rgba(2,6,23,0.45)",
-    color: "#e5eef8",
-    padding: "15px 16px",
-    textAlign: "left",
-    fontWeight: 700,
-    cursor: "pointer",
-  },
-  choiceButtonActive: {
-    border: "1px solid rgba(16,185,129,0.45)",
-    background: "rgba(16,185,129,0.12)",
-    color: "#86efac",
-  },
-  sectionGrid: {
-    display: "grid",
-    gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
-    gap: 14,
-    marginBottom: 16,
-  },
-  blockCard: {
-    borderRadius: 18,
-    padding: 16,
-    background: "rgba(2,6,23,0.4)",
-    border: "1px solid rgba(148,163,184,0.14)",
-  },
-  blockTitle: {
-    fontSize: 14,
-    fontWeight: 800,
-    color: "#dbeafe",
-    marginBottom: 12,
-  },
-  emptyText: {
-    color: "#94a3b8",
-    lineHeight: 1.6,
-  },
-  tagWrap: {
-    display: "flex",
-    flexWrap: "wrap",
-    gap: 10,
-  },
-  tag: {
-    borderRadius: 999,
-    border: "1px solid rgba(148,163,184,0.16)",
-    background: "rgba(15,23,42,0.85)",
-    color: "#e2e8f0",
-    padding: "10px 14px",
-    fontWeight: 700,
-  },
-  coverageCard: {
-    borderRadius: 18,
-    padding: 16,
-    background: "rgba(2,6,23,0.4)",
-    border: "1px solid rgba(148,163,184,0.14)",
-    marginBottom: 16,
-  },
-  areaList: {
-    display: "grid",
-    gap: 12,
-  },
-  areaItem: {
-    borderRadius: 16,
-    padding: 14,
-    background: "rgba(15,23,42,0.8)",
-    border: "1px solid rgba(148,163,184,0.14)",
-  },
-  areaStrong: {
-    fontWeight: 800,
-    color: "#f8fafc",
-    marginBottom: 6,
-  },
-  areaText: {
-    color: "#cbd5e1",
-    lineHeight: 1.6,
-  },
-  areaObs: {
-    color: "#94a3b8",
-    lineHeight: 1.6,
-    marginTop: 6,
-  },
-  descBox: {
-    borderRadius: 18,
-    padding: 16,
-    background: "rgba(2,6,23,0.4)",
-    border: "1px solid rgba(148,163,184,0.14)",
-  },
-  descText: {
-    color: "#cbd5e1",
-    lineHeight: 1.7,
-    whiteSpace: "pre-wrap",
-  },
+function Pill({
+  label,
+  textColor,
+  bgColor,
+  borderColor,
+}: {
+  label: string;
+  textColor: string;
+  bgColor: string;
+  borderColor: string;
+}) {
+  return (
+    <span
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        minHeight: 34,
+        padding: "0 12px",
+        borderRadius: 999,
+        fontSize: 12,
+        fontWeight: 800,
+        color: textColor,
+        background: bgColor,
+        border: `1px solid ${borderColor}`,
+      }}
+    >
+      {label}
+    </span>
+  );
+}
+
+function MessageBox({
+  tone,
+  title,
+  text,
+}: {
+  tone: "info" | "success" | "danger";
+  title: string;
+  text: string;
+}) {
+  const palette =
+    tone === "success"
+      ? {
+          bg: "rgba(34,197,94,0.10)",
+          border: "rgba(34,197,94,0.18)",
+          title: "#15803d",
+          text: "#166534",
+        }
+      : tone === "danger"
+        ? {
+            bg: "rgba(239,68,68,0.10)",
+            border: "rgba(239,68,68,0.18)",
+            title: "#b91c1c",
+            text: "#7f1d1d",
+          }
+        : {
+            bg: "rgba(37,99,235,0.08)",
+            border: "rgba(37,99,235,0.18)",
+            title: "#2563eb",
+            text: "#1e3a8a",
+          };
+
+  return (
+    <div
+      style={{
+        borderRadius: 18,
+        padding: 14,
+        background: palette.bg,
+        border: `1px solid ${palette.border}`,
+      }}
+    >
+      <div
+        style={{
+          fontSize: 13,
+          fontWeight: 900,
+          color: palette.title,
+          marginBottom: 6,
+          textTransform: "uppercase",
+          letterSpacing: "0.03em",
+        }}
+      >
+        {title}
+      </div>
+      <div
+        style={{
+          color: palette.text,
+          lineHeight: 1.7,
+          fontWeight: 700,
+          fontSize: 14,
+        }}
+      >
+        {text}
+      </div>
+    </div>
+  );
+}
+
+const secondaryButtonStyle: React.CSSProperties = {
+  minHeight: 46,
+  padding: "0 16px",
+  borderRadius: 14,
+  textDecoration: "none",
+  display: "inline-flex",
+  alignItems: "center",
+  justifyContent: "center",
+  fontWeight: 800,
+  fontSize: 14,
+  color: "#0f172a",
+  border: "1px solid rgba(37,99,235,0.20)",
+  background: "linear-gradient(180deg,#ffffff 0%,#f1f5f9 100%)",
+  boxShadow: "0 8px 20px rgba(15,23,42,0.05)",
 };
