@@ -505,6 +505,32 @@ export default function HomePage() {
 
         <HomePatrocinadoresHighlight />
 
+        <section style={tutorialHomeStyle}>
+          <div style={tutorialContentStyle}>
+            <div style={tutorialBadgeStyle}>Guia rápido</div>
+
+            <h2 style={tutorialTitleStyle}>
+              Não sabe por onde começar na Aurora?
+            </h2>
+
+            <p style={tutorialTextStyle}>
+              A Aurora possui várias áreas e possibilidades. Para evitar erros,
+              entender melhor a plataforma e aumentar suas chances de gerar
+              negócios, siga o passo a passo oficial.
+            </p>
+
+            <div style={tutorialActionsStyle}>
+              <Link href="/como-usar" style={tutorialPrimaryButton}>
+                Ver como usar a Aurora
+              </Link>
+
+              <Link href="/cadastro-geral" style={tutorialSecondaryButton}>
+                Fazer cadastro agora
+              </Link>
+            </div>
+          </div>
+        </section>
+
         <section
           style={{
             border: "1px solid rgba(15,23,42,0.08)",
@@ -832,4 +858,70 @@ const secondaryBigButtonStyle: React.CSSProperties = {
   alignItems: "center",
   boxShadow: "0 10px 22px rgba(15,23,42,0.05)",
   fontSize: 14,
+};
+
+const tutorialHomeStyle: React.CSSProperties = {
+  border: "1px solid rgba(15,23,42,0.08)",
+  background:
+    "linear-gradient(135deg, rgba(37,99,235,0.06), rgba(16,185,129,0.06))",
+  borderRadius: 24,
+  padding: "22px 18px",
+  display: "grid",
+  gap: 10,
+  boxShadow: "0 14px 34px rgba(15,23,42,0.05)",
+};
+
+const tutorialContentStyle: React.CSSProperties = {
+  maxWidth: 900,
+  margin: "0 auto",
+  textAlign: "center",
+};
+
+const tutorialBadgeStyle: React.CSSProperties = {
+  fontSize: 12,
+  fontWeight: 900,
+  color: "#16a34a",
+  textTransform: "uppercase",
+  marginBottom: 6,
+};
+
+const tutorialTitleStyle: React.CSSProperties = {
+  fontSize: "clamp(20px, 4vw, 28px)",
+  fontWeight: 900,
+  margin: 0,
+  color: "#0f172a",
+};
+
+const tutorialTextStyle: React.CSSProperties = {
+  marginTop: 8,
+  color: "rgba(15,23,42,0.68)",
+  lineHeight: 1.7,
+  fontSize: 15,
+};
+
+const tutorialActionsStyle: React.CSSProperties = {
+  marginTop: 14,
+  display: "flex",
+  gap: 10,
+  justifyContent: "center",
+  flexWrap: "wrap",
+};
+
+const tutorialPrimaryButton: React.CSSProperties = {
+  padding: "12px 18px",
+  borderRadius: 12,
+  background: "#2563eb",
+  color: "#fff",
+  textDecoration: "none",
+  fontWeight: 900,
+};
+
+const tutorialSecondaryButton: React.CSSProperties = {
+  padding: "12px 18px",
+  borderRadius: 12,
+  background: "#ffffff",
+  border: "1px solid #e2e8f0",
+  color: "#0f172a",
+  textDecoration: "none",
+  fontWeight: 800,
 };
