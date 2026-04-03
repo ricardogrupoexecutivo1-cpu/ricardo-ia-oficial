@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import type { CSSProperties } from "react";
 
 type Cliente = {
   id: string;
@@ -177,176 +178,120 @@ export default function LocadoraAdminPage() {
   const veiculosRecentes = [...veiculos].slice(0, 5);
 
   return (
-    <main
-      style={{
-        minHeight: "100vh",
-        background:
-          "radial-gradient(circle at top, rgba(34,197,94,0.12), transparent 20%), linear-gradient(180deg, #020617 0%, #03111f 45%, #000000 100%)",
-        color: "#ffffff",
-        padding: "24px 16px 72px",
-      }}
-    >
-      <div style={{ maxWidth: 1240, margin: "0 auto" }}>
-        <div
-          style={{
-            display: "flex",
-            flexWrap: "wrap",
-            gap: 10,
-            marginBottom: 18,
-          }}
-        >
-          <Link href="/locadora" style={topLink}>
-            Voltar à locadora
-          </Link>
-
-          <Link href="/cadastro-veiculos" style={topLink}>
-            Cadastro de veículos
-          </Link>
-
-          <Link href="/locadora/clientes" style={topLink}>
-            Clientes
-          </Link>
-
-          <Link href="/locadora/propostas" style={topLink}>
-            Propostas
-          </Link>
-
-          <Link href="/locadora/importar" style={topLink}>
-            Importar CSV
-          </Link>
-        </div>
-
-        <header style={heroBox}>
-          <div style={{ display: "grid", gap: 14 }}>
-            <div style={pillGreen}>
-              <span>📊</span>
-              <span>Dashboard completo da locadora</span>
-            </div>
-
-            <h1
-              style={{
-                margin: 0,
-                fontSize: "clamp(32px, 6vw, 58px)",
-                lineHeight: 1.02,
-                fontWeight: 900,
-                letterSpacing: "-0.04em",
-              }}
-            >
-              Controle comercial, operacional e de propostas
-            </h1>
-
-            <p
-              style={{
-                margin: 0,
-                maxWidth: 900,
-                color: "rgba(226,232,240,0.82)",
-                fontSize: "clamp(15px, 3vw, 19px)",
-                lineHeight: 1.7,
-              }}
-            >
-              Painel central da Aurora Locadora para acompanhar clientes, frota,
-              propostas, importação e potencial de fechamento. Estamos em constante
-              atualização e pode haver momentos de instabilidade.
-            </p>
-
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-                gap: 12,
-                marginTop: 4,
-              }}
-            >
-              <Link href="/locadora/propostas" style={ctaGreen}>
-                Abrir propostas
-              </Link>
-
-              <Link href="/locadora/importar" style={ctaBlue}>
-                Importar frota CSV
-              </Link>
-
-              <Link href="/cadastro-veiculos" style={ctaDark}>
-                Cadastrar veículo
-              </Link>
-
-              <Link href="/locadora/clientes" style={ctaDark}>
-                Ver clientes
-              </Link>
-            </div>
+    <main style={mainStyle}>
+      <section style={containerStyle}>
+        <header style={headerStyle}>
+          <div style={{ display: "grid", gap: 4 }}>
+            <div style={logoStyle}>ricardoiaoficial.com</div>
+            <div style={titleStyle}>Aurora Locadora • dashboard administrativo</div>
           </div>
+
+          <div style={badgeStyle}>Sistema em evolução</div>
         </header>
 
-        <section style={panelForm}>
-          <div style={pillBlue}>
+        <nav style={topNavStyle}>
+          <Link href="/locadora" style={topLinkStyle}>
+            Voltar à locadora
+          </Link>
+          <Link href="/cadastro-veiculos" style={topLinkStyle}>
+            Cadastro de veículos
+          </Link>
+          <Link href="/locadora/clientes" style={topLinkStyle}>
+            Clientes
+          </Link>
+          <Link href="/locadora/propostas" style={topLinkStyle}>
+            Propostas
+          </Link>
+          <Link href="/locadora/importar" style={topLinkStyle}>
+            Importar CSV
+          </Link>
+        </nav>
+
+        <section style={heroCardStyle}>
+          <div style={pillGreenStyle}>
+            <span>📊</span>
+            <span>Dashboard completo da locadora</span>
+          </div>
+
+          <h1 style={heroTitleStyle}>
+            Controle comercial, operacional e de propostas
+          </h1>
+
+          <p style={heroTextStyle}>
+            Painel central da Aurora Locadora para acompanhar clientes, frota,
+            propostas, importação e potencial de fechamento. Estamos em constante
+            atualização e pode haver momentos de instabilidade.
+          </p>
+
+          <div style={heroActionsGridStyle}>
+            <Link href="/locadora/propostas" style={ctaPrimaryStyle}>
+              Abrir propostas
+            </Link>
+
+            <Link href="/locadora/importar" style={ctaPrimaryGreenStyle}>
+              Importar frota CSV
+            </Link>
+
+            <Link href="/cadastro-veiculos" style={ctaSecondaryStyle}>
+              Cadastrar veículo
+            </Link>
+
+            <Link href="/locadora/clientes" style={ctaSecondaryStyle}>
+              Ver clientes
+            </Link>
+          </div>
+        </section>
+
+        <section style={panelCardStyle}>
+          <div style={pillBlueStyle}>
             <span>🔐</span>
             <span>Identificação do operador</span>
           </div>
 
-          <h2 style={panelTitle}>Carregar dashboard do operador certo</h2>
+          <h2 style={panelTitleStyle}>Carregar dashboard do operador certo</h2>
 
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",
-              gap: 12,
-              marginTop: 12,
-            }}
-          >
+          <div style={formGridStyle}>
             <input
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="E-mail do operador"
-              style={input}
+              style={inputStyle}
             />
 
             <input
               value={projectId}
               onChange={(e) => setProjectId(e.target.value)}
               placeholder="Project ID (opcional)"
-              style={input}
+              style={inputStyle}
             />
           </div>
 
-          <div
-            style={{
-              display: "flex",
-              flexWrap: "wrap",
-              gap: 10,
-              marginTop: 12,
-            }}
-          >
-            <button onClick={salvarECarregar} style={buttonGreen}>
+          <div style={buttonRowStyle}>
+            <button onClick={salvarECarregar} style={buttonPrimaryStyle}>
               Salvar e carregar dashboard
             </button>
 
             <button
               onClick={() => carregarDashboard(email.trim(), projectId.trim())}
-              style={buttonDark}
+              style={buttonSecondaryStyle}
             >
               Recarregar agora
             </button>
           </div>
 
-          <p style={helperText}>
+          <p style={helperTextStyle}>
             Dica: use o e-mail <strong>ricardogrupoexecutivo1@gmail.com</strong>. Se
             quiser filtrar por projeto, use o project ID da locadora.
           </p>
         </section>
 
-        {erro ? <div style={errorBox}>{erro}</div> : null}
+        {erro ? <div style={errorBoxStyle}>{erro}</div> : null}
 
         {carregando ? (
-          <div style={loadingBox}>Carregando dashboard...</div>
+          <div style={loadingBoxStyle}>Carregando dashboard...</div>
         ) : (
           <>
-            <section
-              style={{
-                marginTop: 18,
-                display: "grid",
-                gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-                gap: 14,
-              }}
-            >
+            <section style={statsGridStyle}>
               <StatCard label="Clientes no banco" value={String(totalClientes)} detail="Base ativa da locadora" />
               <StatCard label="Veículos no banco" value={String(totalVeiculos)} detail="Frota total cadastrada" />
               <StatCard label="Veículos disponíveis" value={String(veiculosDisponiveis)} detail="Prontos para operação" />
@@ -361,43 +306,21 @@ export default function LocadoraAdminPage() {
               />
             </section>
 
-            <section
-              style={{
-                marginTop: 18,
-                display: "grid",
-                gridTemplateColumns: "1fr 1fr",
-                gap: 16,
-              }}
-            >
-              <div style={panel}>
-                <div style={pillBlue}>
+            <section style={twoColumnGridStyle}>
+              <div style={panelCardStyle}>
+                <div style={pillBlueStyle}>
                   <span>🧠</span>
                   <span>Resumo estratégico</span>
                 </div>
 
-                <h2 style={panelTitle}>Visão rápida do momento da locadora</h2>
+                <h2 style={panelTitleStyle}>Visão rápida do momento da locadora</h2>
 
-                <div style={{ display: "grid", gap: 10 }}>
-                  <InfoRow
-                    label="Operador"
-                    value={email || "Não identificado"}
-                  />
-                  <InfoRow
-                    label="Projeto"
-                    value={projectId || "Sem projectId salvo"}
-                  />
-                  <InfoRow
-                    label="Clientes cadastrados"
-                    value={String(totalClientes)}
-                  />
-                  <InfoRow
-                    label="Frota cadastrada"
-                    value={String(totalVeiculos)}
-                  />
-                  <InfoRow
-                    label="Funil em aberto"
-                    value={String(propostasAbertas)}
-                  />
+                <div style={stackStyle}>
+                  <InfoRow label="Operador" value={email || "Não identificado"} />
+                  <InfoRow label="Projeto" value={projectId || "Sem projectId salvo"} />
+                  <InfoRow label="Clientes cadastrados" value={String(totalClientes)} />
+                  <InfoRow label="Frota cadastrada" value={String(totalVeiculos)} />
+                  <InfoRow label="Funil em aberto" value={String(propostasAbertas)} />
                   <InfoRow
                     label="Valor aprovado"
                     value={formatCurrency(valorTotalPropostasAprovadas)}
@@ -405,28 +328,28 @@ export default function LocadoraAdminPage() {
                 </div>
               </div>
 
-              <div style={panel}>
-                <div style={pillGreen}>
+              <div style={panelCardStyle}>
+                <div style={pillGreenStyle}>
                   <span>🚀</span>
                   <span>Ações rápidas</span>
                 </div>
 
-                <h2 style={panelTitle}>Atalhos para operação comercial</h2>
+                <h2 style={panelTitleStyle}>Atalhos para operação comercial</h2>
 
-                <div style={{ display: "grid", gap: 10 }}>
-                  <Link href="/locadora/propostas" style={ctaDarkBlock}>
+                <div style={stackStyle}>
+                  <Link href="/locadora/propostas" style={ctaBlockSecondaryStyle}>
                     Criar e acompanhar propostas
                   </Link>
 
-                  <Link href="/locadora/importar" style={ctaDarkBlock}>
+                  <Link href="/locadora/importar" style={ctaBlockSecondaryStyle}>
                     Importar frota em massa
                   </Link>
 
-                  <Link href="/cadastro-veiculos" style={ctaDarkBlock}>
+                  <Link href="/cadastro-veiculos" style={ctaBlockSecondaryStyle}>
                     Cadastrar novo veículo
                   </Link>
 
-                  <Link href="/locadora/clientes" style={ctaDarkBlock}>
+                  <Link href="/locadora/clientes" style={ctaBlockSecondaryStyle}>
                     Abrir lista de clientes
                   </Link>
 
@@ -434,7 +357,7 @@ export default function LocadoraAdminPage() {
                     href="https://wa.me/5531997490074"
                     target="_blank"
                     rel="noreferrer"
-                    style={whatsBlock}
+                    style={ctaBlockWhatsStyle}
                   >
                     Falar no WhatsApp comercial
                   </a>
@@ -442,38 +365,31 @@ export default function LocadoraAdminPage() {
               </div>
             </section>
 
-            <section
-              style={{
-                marginTop: 18,
-                display: "grid",
-                gridTemplateColumns: "1fr 1fr 1fr",
-                gap: 16,
-              }}
-            >
-              <div style={panel}>
-                <div style={pillGreen}>
+            <section style={threeColumnGridStyle}>
+              <div style={panelCardStyle}>
+                <div style={pillGreenStyle}>
                   <span>👤</span>
                   <span>Clientes recentes</span>
                 </div>
 
-                <h3 style={subTitle}>Últimos clientes carregados</h3>
+                <h3 style={subTitleStyle}>Últimos clientes carregados</h3>
 
                 {clientesRecentes.length === 0 ? (
                   <EmptyState text="Nenhum cliente encontrado." />
                 ) : (
-                  <div style={{ display: "grid", gap: 10 }}>
+                  <div style={stackStyle}>
                     {clientesRecentes.map((cliente) => (
-                      <div key={cliente.id} style={listCard}>
-                        <strong style={itemTitle}>
+                      <div key={cliente.id} style={listCardStyle}>
+                        <strong style={itemTitleStyle}>
                           {cliente.nome || "Sem nome"}
                         </strong>
-                        <span style={itemText}>
+                        <span style={itemTextStyle}>
                           {cliente.whatsapp ? `WhatsApp: ${cliente.whatsapp}` : "Sem WhatsApp"}
                         </span>
-                        <span style={itemText}>
+                        <span style={itemTextStyle}>
                           {cliente.email || "Sem e-mail"}
                         </span>
-                        <span style={itemText}>
+                        <span style={itemTextStyle}>
                           {[cliente.cidade, cliente.estado].filter(Boolean).join(" - ") || "Local não informado"}
                         </span>
                       </div>
@@ -482,30 +398,30 @@ export default function LocadoraAdminPage() {
                 )}
               </div>
 
-              <div style={panel}>
-                <div style={pillBlue}>
+              <div style={panelCardStyle}>
+                <div style={pillBlueStyle}>
                   <span>🚗</span>
                   <span>Veículos recentes</span>
                 </div>
 
-                <h3 style={subTitle}>Últimos veículos carregados</h3>
+                <h3 style={subTitleStyle}>Últimos veículos carregados</h3>
 
                 {veiculosRecentes.length === 0 ? (
                   <EmptyState text="Nenhum veículo encontrado." />
                 ) : (
-                  <div style={{ display: "grid", gap: 10 }}>
+                  <div style={stackStyle}>
                     {veiculosRecentes.map((veiculo) => (
-                      <div key={veiculo.id} style={listCard}>
-                        <strong style={itemTitle}>
+                      <div key={veiculo.id} style={listCardStyle}>
+                        <strong style={itemTitleStyle}>
                           {veiculo.titulo || "Sem título"}
                         </strong>
-                        <span style={itemText}>
+                        <span style={itemTextStyle}>
                           {[veiculo.marca, veiculo.modelo].filter(Boolean).join(" • ") || "Sem marca/modelo"}
                         </span>
-                        <span style={itemText}>
+                        <span style={itemTextStyle}>
                           {[veiculo.ano, veiculo.cor].filter(Boolean).join(" • ") || "Sem ano/cor"}
                         </span>
-                        <span style={itemText}>
+                        <span style={itemTextStyle}>
                           Placa: {veiculo.placa || "Não informada"} • Status: {veiculo.status || "Sem status"}
                         </span>
                       </div>
@@ -514,30 +430,30 @@ export default function LocadoraAdminPage() {
                 )}
               </div>
 
-              <div style={panel}>
-                <div style={pillGreen}>
+              <div style={panelCardStyle}>
+                <div style={pillGreenStyle}>
                   <span>📄</span>
                   <span>Propostas recentes</span>
                 </div>
 
-                <h3 style={subTitle}>Últimas propostas do funil</h3>
+                <h3 style={subTitleStyle}>Últimas propostas do funil</h3>
 
                 {propostasRecentes.length === 0 ? (
                   <EmptyState text="Nenhuma proposta encontrada." />
                 ) : (
-                  <div style={{ display: "grid", gap: 10 }}>
+                  <div style={stackStyle}>
                     {propostasRecentes.map((proposta) => (
-                      <div key={proposta.id} style={listCard}>
-                        <strong style={itemTitle}>
+                      <div key={proposta.id} style={listCardStyle}>
+                        <strong style={itemTitleStyle}>
                           {proposta.cliente_nome || "Cliente não informado"}
                         </strong>
-                        <span style={itemText}>
+                        <span style={itemTextStyle}>
                           Veículo: {proposta.veiculo_nome || "Não informado"}
                         </span>
-                        <span style={itemText}>
+                        <span style={itemTextStyle}>
                           Valor: {formatCurrency(proposta.valor)}
                         </span>
-                        <span style={itemText}>
+                        <span style={itemTextStyle}>
                           Status: {proposta.status || "Sem status"}
                         </span>
                       </div>
@@ -548,7 +464,7 @@ export default function LocadoraAdminPage() {
             </section>
           </>
         )}
-      </div>
+      </section>
     </main>
   );
 }
@@ -563,25 +479,25 @@ function StatCard({
   detail: string;
 }) {
   return (
-    <div style={statCard}>
-      <span style={statLabel}>{label}</span>
-      <strong style={statValue}>{value}</strong>
-      <span style={statDetail}>{detail}</span>
+    <div style={statCardStyle}>
+      <span style={statLabelStyle}>{label}</span>
+      <strong style={statValueStyle}>{value}</strong>
+      <span style={statDetailStyle}>{detail}</span>
     </div>
   );
 }
 
 function InfoRow({ label, value }: { label: string; value: string }) {
   return (
-    <div style={infoRow}>
-      <span style={infoLabel}>{label}</span>
-      <strong style={infoValue}>{value}</strong>
+    <div style={infoRowStyle}>
+      <span style={infoLabelStyle}>{label}</span>
+      <strong style={infoValueStyle}>{value}</strong>
     </div>
   );
 }
 
 function EmptyState({ text }: { text: string }) {
-  return <div style={emptyBox}>{text}</div>;
+  return <div style={emptyBoxStyle}>{text}</div>;
 }
 
 function formatCurrency(value: string | number | undefined) {
@@ -600,70 +516,73 @@ function formatCurrency(value: string | number | undefined) {
   });
 }
 
-const heroBox = {
-  borderRadius: 28,
-  padding: 22,
-  border: "1px solid rgba(74,222,128,0.16)",
+const mainStyle: CSSProperties = {
+  minHeight: "100vh",
   background:
-    "linear-gradient(180deg, rgba(7,18,30,0.98) 0%, rgba(3,12,23,0.98) 100%)",
-  boxShadow: "0 24px 80px rgba(0,0,0,0.38)",
+    "radial-gradient(circle at top, rgba(59,130,246,0.10), transparent 18%), radial-gradient(circle at left, rgba(16,185,129,0.10), transparent 24%), linear-gradient(180deg, #eef6ff 0%, #f7fbff 36%, #edf7f3 100%)",
+  color: "#0f172a",
+  padding: "24px 16px 72px",
 };
 
-const panel = {
+const containerStyle: CSSProperties = {
+  maxWidth: 1240,
+  margin: "0 auto",
+  display: "grid",
+  gap: 18,
+};
+
+const headerStyle: CSSProperties = {
+  display: "flex",
+  justifyContent: "space-between",
+  alignItems: "center",
+  gap: 12,
+  flexWrap: "wrap",
+  border: "1px solid rgba(15,23,42,0.08)",
+  background: "rgba(255,255,255,0.78)",
+  backdropFilter: "blur(14px)",
   borderRadius: 24,
-  padding: 20,
-  border: "1px solid rgba(148,163,184,0.12)",
-  background:
-    "linear-gradient(180deg, rgba(8,18,32,0.98) 0%, rgba(6,13,24,0.98) 100%)",
+  padding: "14px",
+  boxShadow: "0 18px 42px rgba(15,23,42,0.07)",
 };
 
-const panelForm = {
-  marginTop: 18,
-  borderRadius: 24,
-  padding: 20,
-  border: "1px solid rgba(148,163,184,0.12)",
-  background:
-    "linear-gradient(180deg, rgba(8,18,32,0.98) 0%, rgba(6,13,24,0.98) 100%)",
-};
-
-const input = {
-  width: "100%",
-  minHeight: 50,
-  padding: "0 14px",
-  borderRadius: 14,
-  border: "1px solid rgba(148,163,184,0.20)",
-  background: "rgba(255,255,255,0.03)",
-  color: "#ffffff",
-};
-
-const buttonGreen = {
-  minHeight: 48,
-  padding: "0 16px",
-  borderRadius: 14,
-  border: "none",
-  background: "linear-gradient(135deg, #22c55e, #4ade80)",
-  color: "#04130a",
+const logoStyle: CSSProperties = {
+  fontSize: 11,
   fontWeight: 900,
+  letterSpacing: "0.08em",
+  textTransform: "uppercase",
+  color: "#2563eb",
 };
 
-const buttonDark = {
-  minHeight: 48,
-  padding: "0 16px",
-  borderRadius: 14,
-  border: "1px solid rgba(148,163,184,0.20)",
-  background: "rgba(15,23,42,0.72)",
-  color: "#e5e7eb",
-  fontWeight: 800,
+const titleStyle: CSSProperties = {
+  fontSize: 18,
+  fontWeight: 900,
+  lineHeight: 1.2,
+  color: "#0f172a",
 };
 
-const helperText = {
-  marginTop: 10,
-  color: "rgba(226,232,240,0.72)",
-  lineHeight: 1.6,
-  fontSize: 14,
+const badgeStyle: CSSProperties = {
+  display: "inline-flex",
+  alignItems: "center",
+  justifyContent: "center",
+  minHeight: 36,
+  padding: "0 12px",
+  borderRadius: 999,
+  background: "rgba(37,99,235,0.08)",
+  border: "1px solid rgba(37,99,235,0.16)",
+  color: "#2563eb",
+  fontSize: 12,
+  fontWeight: 900,
+  textTransform: "uppercase",
+  letterSpacing: "0.06em",
 };
 
-const topLink = {
+const topNavStyle: CSSProperties = {
+  display: "flex",
+  flexWrap: "wrap",
+  gap: 10,
+};
+
+const topLinkStyle: CSSProperties = {
   display: "inline-flex",
   alignItems: "center",
   justifyContent: "center",
@@ -673,43 +592,150 @@ const topLink = {
   textDecoration: "none",
   fontWeight: 700,
   fontSize: 14,
-  color: "#dbeafe",
-  background: "rgba(255,255,255,0.03)",
-  border: "1px solid rgba(148,163,184,0.14)",
+  color: "#0f172a",
+  background: "rgba(255,255,255,0.78)",
+  border: "1px solid rgba(15,23,42,0.08)",
+  boxShadow: "0 8px 16px rgba(15,23,42,0.04)",
 };
 
-const ctaGreen = {
-  textDecoration: "none",
-  borderRadius: 16,
-  padding: "14px 16px",
-  background: "linear-gradient(135deg, #22c55e, #4ade80)",
-  color: "#04130a",
+const heroCardStyle: CSSProperties = {
+  borderRadius: 28,
+  padding: 22,
+  border: "1px solid rgba(15,23,42,0.08)",
+  background:
+    "linear-gradient(180deg, rgba(255,255,255,0.92) 0%, rgba(255,255,255,0.80) 100%)",
+  boxShadow: "0 24px 60px rgba(15,23,42,0.08)",
+  display: "grid",
+  gap: 14,
+};
+
+const panelCardStyle: CSSProperties = {
+  borderRadius: 24,
+  padding: 20,
+  border: "1px solid rgba(15,23,42,0.08)",
+  background:
+    "linear-gradient(180deg, rgba(255,255,255,0.92) 0%, rgba(255,255,255,0.82) 100%)",
+  boxShadow: "0 18px 42px rgba(15,23,42,0.06)",
+  display: "grid",
+  gap: 12,
+};
+
+const heroTitleStyle: CSSProperties = {
+  margin: 0,
+  fontSize: "clamp(32px, 6vw, 58px)",
+  lineHeight: 1.02,
   fontWeight: 900,
-  textAlign: "center" as const,
+  letterSpacing: "-0.04em",
+  color: "#0f172a",
 };
 
-const ctaBlue = {
-  textDecoration: "none",
-  borderRadius: 16,
-  padding: "14px 16px",
-  background: "linear-gradient(135deg, #3b82f6, #60a5fa)",
-  color: "#eff6ff",
+const heroTextStyle: CSSProperties = {
+  margin: 0,
+  maxWidth: 900,
+  color: "rgba(15,23,42,0.74)",
+  fontSize: "clamp(15px, 3vw, 19px)",
+  lineHeight: 1.7,
+  fontWeight: 700,
+};
+
+const heroActionsGridStyle: CSSProperties = {
+  display: "grid",
+  gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+  gap: 12,
+  marginTop: 4,
+};
+
+const formGridStyle: CSSProperties = {
+  display: "grid",
+  gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",
+  gap: 12,
+  marginTop: 12,
+};
+
+const inputStyle: CSSProperties = {
+  width: "100%",
+  minHeight: 50,
+  padding: "0 14px",
+  borderRadius: 14,
+  border: "1px solid rgba(15,23,42,0.10)",
+  background: "rgba(255,255,255,0.96)",
+  color: "#0f172a",
+  boxShadow: "0 8px 20px rgba(15,23,42,0.03)",
+};
+
+const buttonRowStyle: CSSProperties = {
+  display: "flex",
+  flexWrap: "wrap",
+  gap: 10,
+  marginTop: 12,
+};
+
+const buttonPrimaryStyle: CSSProperties = {
+  minHeight: 48,
+  padding: "0 16px",
+  borderRadius: 14,
+  border: "1px solid rgba(37,99,235,0.16)",
+  background: "linear-gradient(135deg, #2563eb, #3b82f6)",
+  color: "#ffffff",
   fontWeight: 900,
-  textAlign: "center" as const,
+  boxShadow: "0 14px 30px rgba(37,99,235,0.16)",
+  cursor: "pointer",
 };
 
-const ctaDark = {
-  textDecoration: "none",
-  borderRadius: 16,
-  padding: "14px 16px",
-  background: "rgba(15,23,42,0.72)",
-  border: "1px solid rgba(148,163,184,0.20)",
-  color: "#e5e7eb",
+const buttonSecondaryStyle: CSSProperties = {
+  minHeight: 48,
+  padding: "0 16px",
+  borderRadius: 14,
+  border: "1px solid rgba(15,23,42,0.08)",
+  background: "rgba(255,255,255,0.78)",
+  color: "#0f172a",
   fontWeight: 800,
-  textAlign: "center" as const,
+  boxShadow: "0 10px 22px rgba(15,23,42,0.05)",
+  cursor: "pointer",
 };
 
-const ctaDarkBlock = {
+const helperTextStyle: CSSProperties = {
+  marginTop: 10,
+  color: "rgba(15,23,42,0.70)",
+  lineHeight: 1.6,
+  fontSize: 14,
+};
+
+const ctaPrimaryStyle: CSSProperties = {
+  textDecoration: "none",
+  borderRadius: 16,
+  padding: "14px 16px",
+  background: "linear-gradient(135deg, #2563eb, #3b82f6)",
+  color: "#ffffff",
+  fontWeight: 900,
+  textAlign: "center",
+  boxShadow: "0 14px 30px rgba(37,99,235,0.16)",
+};
+
+const ctaPrimaryGreenStyle: CSSProperties = {
+  textDecoration: "none",
+  borderRadius: 16,
+  padding: "14px 16px",
+  background: "linear-gradient(135deg, #16a34a, #22c55e)",
+  color: "#ffffff",
+  fontWeight: 900,
+  textAlign: "center",
+  boxShadow: "0 12px 28px rgba(34,197,94,0.16)",
+};
+
+const ctaSecondaryStyle: CSSProperties = {
+  textDecoration: "none",
+  borderRadius: 16,
+  padding: "14px 16px",
+  background: "rgba(255,255,255,0.78)",
+  border: "1px solid rgba(15,23,42,0.08)",
+  color: "#0f172a",
+  fontWeight: 800,
+  textAlign: "center",
+  boxShadow: "0 10px 22px rgba(15,23,42,0.05)",
+};
+
+const ctaBlockSecondaryStyle: CSSProperties = {
   display: "inline-flex",
   alignItems: "center",
   justifyContent: "center",
@@ -719,12 +745,13 @@ const ctaDarkBlock = {
   textDecoration: "none",
   fontWeight: 800,
   fontSize: 14,
-  color: "#e5e7eb",
-  background: "rgba(15,23,42,0.72)",
-  border: "1px solid rgba(148,163,184,0.20)",
+  color: "#0f172a",
+  background: "rgba(255,255,255,0.78)",
+  border: "1px solid rgba(15,23,42,0.08)",
+  boxShadow: "0 10px 22px rgba(15,23,42,0.05)",
 };
 
-const whatsBlock = {
+const ctaBlockWhatsStyle: CSSProperties = {
   display: "inline-flex",
   alignItems: "center",
   justifyContent: "center",
@@ -734,139 +761,166 @@ const whatsBlock = {
   textDecoration: "none",
   fontWeight: 900,
   fontSize: 14,
-  color: "#04110a",
+  color: "#ffffff",
   background: "#25D366",
 };
 
-const pillGreen = {
+const pillGreenStyle: CSSProperties = {
   display: "inline-flex",
   alignItems: "center",
   gap: 8,
   padding: "8px 12px",
   borderRadius: 999,
-  background: "rgba(34,197,94,0.12)",
-  border: "1px solid rgba(74,222,128,0.22)",
-  color: "#bbf7d0",
+  background: "rgba(34,197,94,0.10)",
+  border: "1px solid rgba(34,197,94,0.18)",
+  color: "#166534",
   fontSize: 13,
   fontWeight: 800,
+  width: "fit-content",
 };
 
-const pillBlue = {
+const pillBlueStyle: CSSProperties = {
   display: "inline-flex",
   alignItems: "center",
   gap: 8,
   padding: "8px 12px",
   borderRadius: 999,
-  background: "rgba(59,130,246,0.12)",
-  border: "1px solid rgba(96,165,250,0.22)",
-  color: "#dbeafe",
+  background: "rgba(37,99,235,0.08)",
+  border: "1px solid rgba(37,99,235,0.16)",
+  color: "#2563eb",
   fontSize: 13,
   fontWeight: 800,
+  width: "fit-content",
 };
 
-const statCard = {
+const statsGridStyle: CSSProperties = {
+  display: "grid",
+  gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+  gap: 14,
+};
+
+const statCardStyle: CSSProperties = {
   borderRadius: 22,
   padding: 18,
-  background:
-    "linear-gradient(180deg, rgba(8,18,32,0.98) 0%, rgba(6,13,24,0.98) 100%)",
-  border: "1px solid rgba(148,163,184,0.12)",
+  background: "rgba(255,255,255,0.82)",
+  border: "1px solid rgba(15,23,42,0.08)",
   display: "grid",
   gap: 8,
+  boxShadow: "0 14px 30px rgba(15,23,42,0.05)",
 };
 
-const statLabel = {
-  color: "#93c5fd",
+const statLabelStyle: CSSProperties = {
+  color: "#2563eb",
   fontSize: 13,
   fontWeight: 800,
 };
 
-const statValue = {
-  color: "#f8fffb",
+const statValueStyle: CSSProperties = {
+  color: "#0f172a",
   fontSize: 30,
   lineHeight: 1,
 };
 
-const statDetail = {
-  color: "rgba(226,232,240,0.68)",
+const statDetailStyle: CSSProperties = {
+  color: "rgba(15,23,42,0.68)",
   fontSize: 13,
   lineHeight: 1.5,
 };
 
-const panelTitle = {
+const panelTitleStyle: CSSProperties = {
   margin: "14px 0 14px",
   fontSize: 28,
   lineHeight: 1.15,
-  color: "#f8fffb",
+  color: "#0f172a",
 };
 
-const subTitle = {
+const subTitleStyle: CSSProperties = {
   margin: "14px 0 12px",
   fontSize: 22,
   lineHeight: 1.15,
-  color: "#f8fffb",
+  color: "#0f172a",
 };
 
-const infoRow = {
+const twoColumnGridStyle: CSSProperties = {
+  display: "grid",
+  gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
+  gap: 16,
+};
+
+const threeColumnGridStyle: CSSProperties = {
+  display: "grid",
+  gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
+  gap: 16,
+};
+
+const stackStyle: CSSProperties = {
+  display: "grid",
+  gap: 10,
+};
+
+const infoRowStyle: CSSProperties = {
   display: "grid",
   gap: 6,
   padding: 12,
   borderRadius: 14,
-  background: "rgba(255,255,255,0.03)",
-  border: "1px solid rgba(148,163,184,0.10)",
+  background: "rgba(255,255,255,0.86)",
+  border: "1px solid rgba(15,23,42,0.08)",
+  boxShadow: "0 10px 24px rgba(15,23,42,0.04)",
 };
 
-const infoLabel = {
-  color: "#93c5fd",
+const infoLabelStyle: CSSProperties = {
+  color: "#2563eb",
   fontSize: 12,
   fontWeight: 800,
 };
 
-const infoValue = {
-  color: "#f8fffb",
+const infoValueStyle: CSSProperties = {
+  color: "#0f172a",
   fontSize: 15,
 };
 
-const listCard = {
+const listCardStyle: CSSProperties = {
   display: "grid",
   gap: 6,
   padding: 14,
   borderRadius: 16,
-  background: "rgba(255,255,255,0.03)",
-  border: "1px solid rgba(148,163,184,0.10)",
+  background: "rgba(255,255,255,0.86)",
+  border: "1px solid rgba(15,23,42,0.08)",
+  boxShadow: "0 10px 24px rgba(15,23,42,0.04)",
 };
 
-const itemTitle = {
-  color: "#f8fffb",
+const itemTitleStyle: CSSProperties = {
+  color: "#0f172a",
   fontSize: 16,
 };
 
-const itemText = {
-  color: "rgba(226,232,240,0.72)",
+const itemTextStyle: CSSProperties = {
+  color: "rgba(15,23,42,0.72)",
   fontSize: 13,
   lineHeight: 1.5,
 };
 
-const loadingBox = {
-  marginTop: 18,
+const loadingBoxStyle: CSSProperties = {
   padding: 18,
   borderRadius: 18,
-  background: "rgba(255,255,255,0.03)",
-  border: "1px solid rgba(148,163,184,0.10)",
+  background: "rgba(255,255,255,0.82)",
+  border: "1px solid rgba(15,23,42,0.08)",
+  color: "#0f172a",
+  boxShadow: "0 18px 42px rgba(15,23,42,0.06)",
 };
 
-const errorBox = {
-  marginTop: 18,
+const errorBoxStyle: CSSProperties = {
   padding: 18,
   borderRadius: 18,
-  background: "rgba(127,29,29,0.22)",
-  border: "1px solid rgba(248,113,113,0.28)",
-  color: "#fecaca",
+  background: "rgba(239,68,68,0.08)",
+  border: "1px solid rgba(239,68,68,0.18)",
+  color: "#b91c1c",
 };
 
-const emptyBox = {
+const emptyBoxStyle: CSSProperties = {
   padding: 14,
   borderRadius: 14,
-  background: "rgba(255,255,255,0.03)",
-  border: "1px solid rgba(148,163,184,0.10)",
-  color: "rgba(226,232,240,0.70)",
+  background: "rgba(255,255,255,0.86)",
+  border: "1px solid rgba(15,23,42,0.08)",
+  color: "rgba(15,23,42,0.70)",
 };
