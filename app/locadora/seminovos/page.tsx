@@ -1,83 +1,69 @@
 "use client";
 
 import Link from "next/link";
+import type { CSSProperties } from "react";
 
 export default function LocadoraSeminovosPage() {
   return (
     <main style={mainStyle}>
-      <section style={container}>
-        {/* HEADER */}
-        <header style={header}>
-          <Link href="/locadora" style={navBtn}>
+      <section style={containerStyle}>
+        <header style={headerStyle}>
+          <Link href="/locadora" style={navBtnStyle}>
             ← Voltar para Locadora
           </Link>
 
-          <div style={badge}>
-            🚗 Seminovos Aurora
-          </div>
+          <div style={badgeStyle}>🚗 Seminovos Aurora</div>
         </header>
 
-        {/* HERO */}
-        <section style={hero}>
-          <div style={chip}>Aurora Locadora</div>
+        <section style={heroStyle}>
+          <div style={chipStyle}>Aurora Locadora</div>
 
-          <h1 style={title}>
+          <h1 style={titleStyle}>
             Seminovos de locadoras com alta visibilidade e conversão
           </h1>
 
-          <p style={text}>
-            Publique veículos seminovos com acesso direto, integração com WhatsApp
-            e navegação dentro do ecossistema Aurora para aumentar tráfego,
-            contato e fechamento comercial.
+          <p style={textStyle}>
+            Publique veículos seminovos com acesso direto, integração com
+            WhatsApp e navegação dentro do ecossistema Aurora para aumentar
+            tráfego, contato e fechamento comercial.
           </p>
 
-          <div style={pillWrap}>
-            <div style={pill}>Venda direta</div>
-            <div style={pill}>WhatsApp integrado</div>
-            <div style={pill}>Link compartilhável</div>
-            <div style={pill}>Tráfego interno</div>
+          <div style={pillWrapStyle}>
+            <div style={pillStyle}>Venda direta</div>
+            <div style={pillStyle}>WhatsApp integrado</div>
+            <div style={pillStyle}>Link compartilhável</div>
+            <div style={pillStyle}>Tráfego interno</div>
           </div>
         </section>
 
-        {/* AÇÕES */}
-        <section style={actions}>
+        <section style={actionsStyle}>
           <a
             href="https://wa.me/5531997490074"
             target="_blank"
-            style={primaryBtn}
+            rel="noreferrer"
+            style={primaryBtnStyle}
           >
             📲 Falar com comercial
           </a>
 
-          <Link href="/anunciar/cadastro" style={secondaryBtn}>
+          <Link href="/anunciar/cadastro" style={secondaryBtnStyle}>
             ✍️ Publicar seminovo
           </Link>
 
-          <Link href="/locadora/cadastros" style={secondaryBtn}>
+          <Link href="/locadora/cadastros" style={secondaryBtnStyle}>
             Central de cadastros
           </Link>
         </section>
 
-        {/* LISTA */}
-        <section style={grid}>
-          <Card
-            title="Toyota Hilux 2023"
-            meta="Diesel • Automática • BH"
-          />
-          <Card
-            title="Corolla 2022"
-            meta="Flex • Automático • SP"
-          />
-          <Card
-            title="Fiat Strada 2023"
-            meta="Manual • MG"
-          />
+        <section style={gridStyle}>
+          <Card title="Toyota Hilux 2023" meta="Diesel • Automática • BH" />
+          <Card title="Corolla 2022" meta="Flex • Automático • SP" />
+          <Card title="Fiat Strada 2023" meta="Manual • MG" />
         </section>
 
-        {/* ESTRATÉGIA */}
-        <section style={strategy}>
-          <div style={strategyTitle}>Estratégia</div>
-          <div style={strategyText}>
+        <section style={strategyStyle}>
+          <div style={strategyTitleStyle}>Estratégia</div>
+          <div style={strategyTextStyle}>
             Os seminovos devem gerar entrada direta e ao mesmo tempo manter o
             usuário navegando dentro da Aurora, aumentando retenção e descoberta
             de novos negócios.
@@ -88,20 +74,26 @@ export default function LocadoraSeminovosPage() {
   );
 }
 
-/* COMPONENTE */
-function Card({ title, meta }: any) {
+function Card({
+  title,
+  meta,
+}: {
+  title: string;
+  meta: string;
+}) {
   return (
-    <div style={card}>
-      <div style={image}>Veículo</div>
-      <div style={body}>
-        <div style={cardTitle}>{title}</div>
-        <div style={cardMeta}>{meta}</div>
-        <div style={price}>R$ 000.000</div>
+    <div style={cardStyle}>
+      <div style={imageStyle}>Veículo</div>
+      <div style={bodyStyle}>
+        <div style={cardTitleStyle}>{title}</div>
+        <div style={cardMetaStyle}>{meta}</div>
+        <div style={priceStyle}>R$ 000.000</div>
 
         <a
           href="https://wa.me/5531997490074"
           target="_blank"
-          style={whats}
+          rel="noreferrer"
+          style={whatsStyle}
         >
           Tenho interesse
         </a>
@@ -110,155 +102,212 @@ function Card({ title, meta }: any) {
   );
 }
 
-/* ESTILOS */
-const mainStyle = {
+const mainStyle: CSSProperties = {
   minHeight: "100vh",
   background:
-    "linear-gradient(180deg, #eef6ff 0%, #f7fbff 40%, #edf7f3 100%)",
+    "radial-gradient(circle at top, rgba(59,130,246,0.10), transparent 18%), radial-gradient(circle at right, rgba(16,185,129,0.10), transparent 24%), linear-gradient(180deg, #eef6ff 0%, #f7fbff 40%, #edf7f3 100%)",
   color: "#0f172a",
+  overflow: "hidden",
 };
 
-const container = {
+const containerStyle: CSSProperties = {
   maxWidth: 1200,
   margin: "0 auto",
-  padding: 20,
+  padding: "18px 16px 72px",
   display: "grid",
   gap: 20,
 };
 
-const header = {
+const headerStyle: CSSProperties = {
   display: "flex",
   justifyContent: "space-between",
   alignItems: "center",
+  gap: 12,
+  flexWrap: "wrap",
 };
 
-const navBtn = {
+const navBtnStyle: CSSProperties = {
   padding: "10px 14px",
   borderRadius: 999,
-  background: "#fff",
-  border: "1px solid #e5e7eb",
+  background: "rgba(255,255,255,0.78)",
+  border: "1px solid rgba(15,23,42,0.08)",
   textDecoration: "none",
+  color: "#0f172a",
+  fontWeight: 800,
+  boxShadow: "0 8px 16px rgba(15,23,42,0.04)",
 };
 
-const badge = {
-  background: "#e0ecff",
+const badgeStyle: CSSProperties = {
+  background: "rgba(37,99,235,0.08)",
   color: "#2563eb",
-  padding: "6px 12px",
+  padding: "8px 12px",
   borderRadius: 999,
   fontWeight: 800,
+  border: "1px solid rgba(37,99,235,0.16)",
 };
 
-const hero = {
-  background: "#fff",
-  padding: 20,
-  borderRadius: 20,
-  border: "1px solid #e5e7eb",
+const heroStyle: CSSProperties = {
+  background:
+    "linear-gradient(180deg, rgba(255,255,255,0.88), rgba(255,255,255,0.74))",
+  padding: 24,
+  borderRadius: 24,
+  border: "1px solid rgba(15,23,42,0.08)",
+  boxShadow: "0 22px 70px rgba(15,23,42,0.09)",
+  display: "grid",
+  gap: 16,
 };
 
-const chip = {
-  background: "#e0ecff",
-  padding: "6px 10px",
+const chipStyle: CSSProperties = {
+  background: "rgba(37,99,235,0.08)",
+  padding: "8px 12px",
   borderRadius: 999,
   color: "#2563eb",
+  fontWeight: 800,
+  width: "fit-content",
+  border: "1px solid rgba(37,99,235,0.16)",
 };
 
-const title = {
-  fontSize: 28,
+const titleStyle: CSSProperties = {
+  margin: 0,
+  fontSize: "clamp(32px, 6vw, 52px)",
   fontWeight: 900,
+  lineHeight: 1.02,
+  letterSpacing: "-0.04em",
+  color: "#0f172a",
 };
 
-const text = {
-  color: "#475569",
+const textStyle: CSSProperties = {
+  margin: 0,
+  color: "rgba(15,23,42,0.72)",
+  lineHeight: 1.7,
+  fontSize: 16,
+  fontWeight: 700,
+  maxWidth: 880,
 };
 
-const pillWrap = {
+const pillWrapStyle: CSSProperties = {
   display: "flex",
   gap: 8,
   flexWrap: "wrap",
 };
 
-const pill = {
-  background: "#f1f5f9",
-  padding: "6px 10px",
+const pillStyle: CSSProperties = {
+  background: "rgba(255,255,255,0.86)",
+  padding: "8px 12px",
   borderRadius: 999,
+  border: "1px solid rgba(15,23,42,0.08)",
+  color: "#0f172a",
+  fontWeight: 700,
+  boxShadow: "0 8px 16px rgba(15,23,42,0.04)",
 };
 
-const actions = {
+const actionsStyle: CSSProperties = {
   display: "flex",
   gap: 10,
   flexWrap: "wrap",
 };
 
-const primaryBtn = {
-  background: "#2563eb",
+const primaryBtnStyle: CSSProperties = {
+  background: "linear-gradient(135deg, #2563eb, #3b82f6)",
   color: "#fff",
   padding: "12px 16px",
   borderRadius: 12,
+  textDecoration: "none",
+  fontWeight: 900,
+  border: "1px solid rgba(37,99,235,0.16)",
+  boxShadow: "0 14px 30px rgba(37,99,235,0.16)",
 };
 
-const secondaryBtn = {
-  background: "#fff",
-  border: "1px solid #e5e7eb",
+const secondaryBtnStyle: CSSProperties = {
+  background: "rgba(255,255,255,0.78)",
+  border: "1px solid rgba(15,23,42,0.08)",
   padding: "12px 16px",
   borderRadius: 12,
+  textDecoration: "none",
+  color: "#0f172a",
+  fontWeight: 800,
+  boxShadow: "0 10px 22px rgba(15,23,42,0.05)",
 };
 
-const grid = {
+const gridStyle: CSSProperties = {
   display: "grid",
+  gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
   gap: 16,
 };
 
-const card = {
-  background: "#fff",
+const cardStyle: CSSProperties = {
+  background: "rgba(255,255,255,0.82)",
   borderRadius: 20,
-  border: "1px solid #e5e7eb",
+  border: "1px solid rgba(15,23,42,0.08)",
+  overflow: "hidden",
+  boxShadow: "0 18px 42px rgba(15,23,42,0.06)",
 };
 
-const image = {
+const imageStyle: CSSProperties = {
   height: 150,
-  background: "#e2e8f0",
+  background: "linear-gradient(135deg, #dbeafe, #dcfce7)",
   display: "flex",
   alignItems: "center",
   justifyContent: "center",
-};
-
-const body = {
-  padding: 16,
-};
-
-const cardTitle = {
+  color: "#0f172a",
   fontWeight: 900,
+  fontSize: 22,
 };
 
-const cardMeta = {
+const bodyStyle: CSSProperties = {
+  padding: 16,
+  display: "grid",
+  gap: 8,
+};
+
+const cardTitleStyle: CSSProperties = {
+  fontWeight: 900,
+  fontSize: 18,
+  color: "#0f172a",
+};
+
+const cardMetaStyle: CSSProperties = {
   color: "#64748b",
+  fontWeight: 700,
 };
 
-const price = {
+const priceStyle: CSSProperties = {
   fontWeight: 900,
   fontSize: 20,
+  color: "#0f172a",
 };
 
-const whats = {
+const whatsStyle: CSSProperties = {
   marginTop: 10,
-  display: "inline-block",
+  display: "inline-flex",
+  alignItems: "center",
+  justifyContent: "center",
   background: "#22c55e",
   color: "#fff",
-  padding: "8px 12px",
+  padding: "10px 12px",
   borderRadius: 10,
+  textDecoration: "none",
+  fontWeight: 800,
+  width: "fit-content",
 };
 
-const strategy = {
-  background: "#fff",
+const strategyStyle: CSSProperties = {
+  background: "rgba(255,255,255,0.82)",
   padding: 20,
   borderRadius: 20,
-  border: "1px solid #e5e7eb",
+  border: "1px solid rgba(15,23,42,0.08)",
+  boxShadow: "0 18px 42px rgba(15,23,42,0.06)",
 };
 
-const strategyTitle = {
+const strategyTitleStyle: CSSProperties = {
   fontWeight: 900,
+  fontSize: 18,
+  color: "#0f172a",
+  marginBottom: 8,
 };
 
-const strategyText = {
+const strategyTextStyle: CSSProperties = {
   color: "#475569",
+  lineHeight: 1.7,
+  fontWeight: 700,
 };
