@@ -206,6 +206,74 @@ function buildDraftPayload(data: DraftPayload): DraftPayload {
   };
 }
 
+function serializeError(error: unknown) {
+  if (error instanceof Error) {
+    return {
+      name: error.name,
+      message: error.message,
+      stack: error.stack,
+    };
+  }
+
+  if (typeof error === "object" && error !== null) {
+    const plainObject: Record<string, unknown> = {};
+
+    for (const key of Object.getOwnPropertyNames(error)) {
+      try {
+        plainObject[key] = (error as Record<string, unknown>)[key];
+      } catch {
+        plainObject[key] = "[unreadable]";
+      }
+    }
+
+    try {
+      return JSON.parse(JSON.stringify(plainObject));
+    } catch {
+      return plainObject;
+    }
+  }
+
+  return {
+    value: String(error),
+  };
+}
+
+function extractErrorMessage(error: unknown) {
+  if (error instanceof Error && error.message) {
+    return error.message;
+  }
+
+  if (typeof error === "string" && error.trim()) {
+    return error;
+  }
+
+  if (typeof error === "object" && error !== null) {
+    const maybe = error as Record<string, unknown>;
+
+    const candidates = [
+      maybe.message,
+      maybe.details,
+      maybe.hint,
+      maybe.error_description,
+      maybe.code,
+      maybe.error,
+    ];
+
+    for (const item of candidates) {
+      if (typeof item === "string" && item.trim()) {
+        return item;
+      }
+    }
+  }
+
+  return "Falha ao salvar o cadastro real.";
+}
+
+function throwStageError(stage: string, error: unknown): never {
+  const message = extractErrorMessage(error);
+  throw new Error(`${stage}: ${message}`);
+}
+
 export default function CadastroGeralPage() {
   const router = useRouter();
 
@@ -242,7 +310,7 @@ export default function CadastroGeralPage() {
   const [cidadePublica, setCidadePublica] = useState("");
   const [estadoPublico, setEstadoPublico] = useState("");
 
-  const [mostrarNomePublico, setMostrarNomePublico] = useState(false);
+  const [mostrarNomePublico, setMostrarNomePublico] = useState(true);
   const [mostrarDescricaoPublica, setMostrarDescricaoPublica] = useState(true);
   const [mostrarCidadePublica, setMostrarCidadePublica] = useState(true);
   const [mostrarEstadoPublico, setMostrarEstadoPublico] = useState(true);
@@ -374,7 +442,11 @@ export default function CadastroGeralPage() {
       setDescricaoPublicaCurta(parsed.descricaoPublicaCurta || "");
       setCidadePublica(parsed.cidadePublica || "");
       setEstadoPublico(parsed.estadoPublico || "");
-      setMostrarNomePublico(parsed.mostrarNomePublico || false);
+      setMostrarNomePublico(
+        parsed.mostrarNomePublico !== undefined
+          ? parsed.mostrarNomePublico
+          : true
+      );
       setMostrarDescricaoPublica(
         parsed.mostrarDescricaoPublica !== undefined
           ? parsed.mostrarDescricaoPublica
@@ -476,7 +548,7 @@ export default function CadastroGeralPage() {
     setDescricaoPublicaCurta("");
     setCidadePublica("");
     setEstadoPublico("");
-    setMostrarNomePublico(false);
+    setMostrarNomePublico(true);
     setMostrarDescricaoPublica(true);
     setMostrarCidadePublica(true);
     setMostrarEstadoPublico(true);
@@ -503,9 +575,13 @@ export default function CadastroGeralPage() {
       primeira_origem: "cadastro_geral",
     }));
 
-    await supabase
+    const { error } = await supabase
       .from("cadastro_vocabulario")
       .upsert(payload, { onConflict: "tipo,termo" });
+
+    if (error) {
+      throwStageError(`cadastro_vocabulario (${tipo})`, error);
+    }
   }
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
@@ -518,6 +594,8 @@ export default function CadastroGeralPage() {
     setCadastroIdSalvo("");
 
     try {
+      console.log("[cadastro-geral] submit:start");
+
       const supabase = getSupabaseBrowserClient();
 
       if (!supabase) {
@@ -529,12 +607,28 @@ export default function CadastroGeralPage() {
       let userId: string | null = null;
 
       try {
+        console.log("[cadastro-geral] auth:getSession:start");
+
         const {
           data: { session },
+          error: sessionError,
         } = await supabase.auth.getSession();
 
+        if (sessionError) {
+          console.warn(
+            "[cadastro-geral] auth:getSession:error",
+            serializeError(sessionError)
+          );
+        }
+
         userId = session?.user?.id ?? null;
-      } catch {
+
+        console.log("[cadastro-geral] auth:getSession:done", { userId });
+      } catch (sessionCatch) {
+        console.warn(
+          "[cadastro-geral] auth:getSession:catch",
+          serializeError(sessionCatch)
+        );
         userId = null;
       }
 
@@ -546,7 +640,12 @@ export default function CadastroGeralPage() {
 
       try {
         localStorage.setItem(DRAFT_KEY, JSON.stringify(draftPayload));
-      } catch {}
+      } catch (draftError) {
+        console.warn(
+          "[cadastro-geral] localStorage:draft:error",
+          serializeError(draftError)
+        );
+      }
 
       const perfisLimpos = perfisSelecionados.map(sanitizeValue).filter(Boolean);
       const segmentosLimpos = segmentos.map(sanitizeValue).filter(Boolean);
@@ -585,6 +684,11 @@ export default function CadastroGeralPage() {
         mostrar_produtos_publicos: mostrarProdutosPublicos,
       };
 
+      console.log(
+        "[cadastro-geral] cadastros_gerais:insert:start",
+        cadastroPayload
+      );
+
       const { data: cadastroCriado, error: cadastroError } = await supabase
         .from("cadastros_gerais")
         .insert(cadastroPayload)
@@ -592,12 +696,22 @@ export default function CadastroGeralPage() {
         .single();
 
       if (cadastroError) {
-        throw cadastroError;
+        throwStageError("cadastros_gerais", cadastroError);
       }
 
-      const cadastroId = cadastroCriado.id as string;
+      const cadastroId = cadastroCriado?.id as string | undefined;
+
+      if (!cadastroId) {
+        throw new Error("cadastros_gerais: id não retornado após inserção.");
+      }
+
+      console.log("[cadastro-geral] cadastros_gerais:insert:done", {
+        cadastroId,
+      });
 
       if (perfisLimpos.length > 0) {
+        console.log("[cadastro-geral] cadastro_perfis:insert:start", perfisLimpos);
+
         const { error } = await supabase.from("cadastro_perfis").insert(
           perfisLimpos.map((perfil) => ({
             cadastro_id: cadastroId,
@@ -606,11 +720,21 @@ export default function CadastroGeralPage() {
         );
 
         if (error) {
-          console.warn("Falha parcial em cadastro_perfis:", error.message);
+          console.warn(
+            "[cadastro-geral] cadastro_perfis:warn",
+            serializeError(error)
+          );
+        } else {
+          console.log("[cadastro-geral] cadastro_perfis:insert:done");
         }
       }
 
       if (segmentosLimpos.length > 0) {
+        console.log(
+          "[cadastro-geral] cadastro_segmentos:insert:start",
+          segmentosLimpos
+        );
+
         const { error } = await supabase.from("cadastro_segmentos").insert(
           segmentosLimpos.map((nome) => ({
             cadastro_id: cadastroId,
@@ -619,11 +743,21 @@ export default function CadastroGeralPage() {
         );
 
         if (error) {
-          console.warn("Falha parcial em cadastro_segmentos:", error.message);
+          console.warn(
+            "[cadastro-geral] cadastro_segmentos:warn",
+            serializeError(error)
+          );
+        } else {
+          console.log("[cadastro-geral] cadastro_segmentos:insert:done");
         }
       }
 
       if (produtosLimpos.length > 0) {
+        console.log(
+          "[cadastro-geral] cadastro_produtos_servicos:insert:start",
+          produtosLimpos
+        );
+
         const { error } = await supabase
           .from("cadastro_produtos_servicos")
           .insert(
@@ -635,9 +769,11 @@ export default function CadastroGeralPage() {
 
         if (error) {
           console.warn(
-            "Falha parcial em cadastro_produtos_servicos:",
-            error.message
+            "[cadastro-geral] cadastro_produtos_servicos:warn",
+            serializeError(error)
           );
+        } else {
+          console.log("[cadastro-geral] cadastro_produtos_servicos:insert:done");
         }
       }
 
@@ -645,6 +781,11 @@ export default function CadastroGeralPage() {
         atendimentoTipo === "especificos" &&
         segmentosEspecificosLimpos.length > 0
       ) {
+        console.log(
+          "[cadastro-geral] cadastro_segmentos_atendidos:insert:start",
+          segmentosEspecificosLimpos
+        );
+
         const { error } = await supabase
           .from("cadastro_segmentos_atendidos")
           .insert(
@@ -656,38 +797,52 @@ export default function CadastroGeralPage() {
 
         if (error) {
           console.warn(
-            "Falha parcial em cadastro_segmentos_atendidos:",
-            error.message
+            "[cadastro-geral] cadastro_segmentos_atendidos:warn",
+            serializeError(error)
           );
+        } else {
+          console.log("[cadastro-geral] cadastro_segmentos_atendidos:insert:done");
         }
       }
 
-      {
-        const { error: coberturaError } = await supabase
-          .from("cadastro_areas_cobertura")
-          .insert({
-            cadastro_id: cadastroId,
-            coverage_type: coverageType,
-            pais: "Brasil",
-            estado: estadoBase || null,
-            regiao: regiaoBase.trim() || null,
-            cidade: cidadeBase.trim() || null,
-            observacao: observacaoCobertura.trim() || null,
-          });
+      console.log("[cadastro-geral] cadastro_areas_cobertura:insert:start");
 
-        if (coberturaError) {
-          console.warn(
-            "Falha parcial em cadastro_areas_cobertura:",
-            coberturaError.message
-          );
-        }
+      const { error: coberturaError } = await supabase
+        .from("cadastro_areas_cobertura")
+        .insert({
+          cadastro_id: cadastroId,
+          coverage_type: coverageType,
+          pais: "Brasil",
+          estado: estadoBase || null,
+          regiao: regiaoBase.trim() || null,
+          cidade: cidadeBase.trim() || null,
+          observacao: observacaoCobertura.trim() || null,
+        });
+
+      if (coberturaError) {
+        console.warn(
+          "[cadastro-geral] cadastro_areas_cobertura:warn",
+          serializeError(coberturaError)
+        );
+      } else {
+        console.log("[cadastro-geral] cadastro_areas_cobertura:insert:done");
       }
 
+      console.log("[cadastro-geral] cadastro_vocabulario:perfil:start");
       await insertVocabulary(supabase, "perfil", perfisLimpos);
+
+      console.log("[cadastro-geral] cadastro_vocabulario:segmento:start");
       await insertVocabulary(supabase, "segmento", segmentosLimpos);
+
+      console.log(
+        "[cadastro-geral] cadastro_vocabulario:produto_servico:start"
+      );
       await insertVocabulary(supabase, "produto_servico", produtosLimpos);
 
       if (atendimentoTipo === "especificos") {
+        console.log(
+          "[cadastro-geral] cadastro_vocabulario:segmento_atendido:start"
+        );
         await insertVocabulary(
           supabase,
           "segmento_atendido",
@@ -698,7 +853,12 @@ export default function CadastroGeralPage() {
       try {
         localStorage.setItem("aurora-cadastro-geral-email", email.trim() || "");
         localStorage.removeItem(DRAFT_KEY);
-      } catch {}
+      } catch (storageError) {
+        console.warn(
+          "[cadastro-geral] localStorage:final:error",
+          serializeError(storageError)
+        );
+      }
 
       setCadastroIdSalvo(cadastroId);
       setFeedbackType("success");
@@ -710,14 +870,18 @@ export default function CadastroGeralPage() {
 
       clearForm();
 
+      console.log("[cadastro-geral] submit:success", { cadastroId });
+
       router.push(
         `/cadastro/sucesso?status=ok&email=${emailSafe}&id=${cadastroId}`
       );
-    } catch (error) {
-      const message =
-        error instanceof Error
-          ? error.message
-          : "Falha ao salvar o cadastro real.";
+    } catch (error: unknown) {
+      const serialized = serializeError(error);
+
+      console.error("[cadastro-geral] submit:error:raw", error);
+      console.error("[cadastro-geral] submit:error:serialized", serialized);
+
+      const message = extractErrorMessage(error);
 
       setFeedbackType("error");
       setFeedback(message);
@@ -909,7 +1073,8 @@ export default function CadastroGeralPage() {
             </div>
 
             <div style={styles.inlineInfo}>
-              Cobertura selecionada: <strong>{formatCoverageLabel(coverageType)}</strong>
+              Cobertura selecionada:{" "}
+              <strong>{formatCoverageLabel(coverageType)}</strong>
             </div>
 
             <div style={styles.grid2}>
@@ -962,7 +1127,11 @@ export default function CadastroGeralPage() {
                 placeholder="Digite um segmento e clique para adicionar"
                 style={styles.input}
               />
-              <button type="button" onClick={handleAddSegmento} style={styles.addButton}>
+              <button
+                type="button"
+                onClick={handleAddSegmento}
+                style={styles.addButton}
+              >
                 Adicionar segmento
               </button>
             </div>
@@ -991,7 +1160,11 @@ export default function CadastroGeralPage() {
                 placeholder="Digite um produto ou serviço e clique para adicionar"
                 style={styles.input}
               />
-              <button type="button" onClick={handleAddProduto} style={styles.addButton}>
+              <button
+                type="button"
+                onClick={handleAddProduto}
+                style={styles.addButton}
+              >
                 Adicionar produto/serviço
               </button>
             </div>
@@ -1193,7 +1366,7 @@ function NavLink({
       href={href}
       style={{
         ...styles.topLink,
-        borderColor: color,
+        border: `1px solid ${color}`,
         color,
       }}
     >
@@ -1485,17 +1658,17 @@ const styles: Record<string, CSSProperties> = {
   feedbackSuccess: {
     background:
       "linear-gradient(135deg, rgba(16,185,129,0.08), rgba(255,255,255,0.76))",
-    borderColor: "rgba(16,185,129,0.20)",
+    border: "1px solid rgba(16,185,129,0.20)",
   },
   feedbackError: {
     background:
       "linear-gradient(135deg, rgba(239,68,68,0.08), rgba(255,255,255,0.76))",
-    borderColor: "rgba(239,68,68,0.20)",
+    border: "1px solid rgba(239,68,68,0.20)",
   },
   feedbackInfo: {
     background:
       "linear-gradient(135deg, rgba(37,99,235,0.08), rgba(255,255,255,0.76))",
-    borderColor: "rgba(37,99,235,0.20)",
+    border: "1px solid rgba(37,99,235,0.20)",
   },
   formWrap: {
     display: "grid",
@@ -1585,7 +1758,7 @@ const styles: Record<string, CSSProperties> = {
   choiceButtonActive: {
     background:
       "linear-gradient(135deg, rgba(37,99,235,0.10), rgba(59,130,246,0.06))",
-    borderColor: "rgba(37,99,235,0.18)",
+    border: "1px solid rgba(37,99,235,0.18)",
     color: "#1d4ed8",
   },
   inlineInfo: {
