@@ -43,436 +43,299 @@ export default async function CadastrosPublicosPage({
       });
 
   return (
-    <main
-      style={{
-        minHeight: "100vh",
-        background:
-          "radial-gradient(circle at top, rgba(34,197,94,0.16), transparent 20%), linear-gradient(180deg, #03110d 0%, #071712 38%, #030504 100%)",
-        color: "#ecfdf5",
-        padding: "24px 16px 80px",
-      }}
-    >
-      <div
-        style={{
-          maxWidth: 1200,
-          margin: "0 auto",
-          display: "grid",
-          gap: 18,
-        }}
-      >
-        <div
-          style={{
-            display: "flex",
-            flexWrap: "wrap",
-            gap: 10,
-          }}
-        >
-          <Link href="/" style={navLinkStyle}>
-            Voltar à Home
-          </Link>
-          <Link href="/guardiao" style={navLinkStyle}>
-            Ir para o Guardião
-          </Link>
-          <Link href="/cadastro" style={navLinkStyle}>
-            Novo cadastro
-          </Link>
-          <Link href="/mineracao" style={navLinkStyle}>
-            Mineração
-          </Link>
+    <main style={mainStyle}>
+      <section style={containerStyle}>
+        {/* HEADER */}
+        <header style={headerStyle}>
+          <div>
+            <div style={logoStyle}>ricardoiaoficial.com</div>
+            <div style={titleStyle}>
+              Buscar empresas • vitrine pública da Aurora
+            </div>
+          </div>
+
+          <div style={badgeStyle}>Sistema em evolução</div>
+        </header>
+
+        {/* NAV */}
+        <div style={navWrap}>
+          <Link href="/" style={navLinkStyle}>Home</Link>
+          <Link href="/guardiao" style={navLinkStyle}>Guardião</Link>
+          <Link href="/cadastro-geral" style={navLinkStyle}>Cadastrar</Link>
+          <Link href="/financeiro" style={navLinkStyle}>Financeiro</Link>
         </div>
 
-        <section style={heroCardStyle}>
-          <div style={badgeStyle}>Busca pública segura</div>
+        {/* HERO */}
+        <section style={heroCard}>
+          <div style={chipStyle}>Busca pública segura</div>
 
-          <h1
-            style={{
-              margin: 0,
-              fontSize: "clamp(28px, 4vw, 42px)",
-              lineHeight: 1.08,
-            }}
-          >
-            Cadastros públicos da Aurora
+          <h1 style={heroTitle}>
+            Encontre empresas, fornecedores e oportunidades reais
           </h1>
 
-          <p
-            style={{
-              margin: 0,
-              color: "rgba(236,253,245,0.78)",
-              lineHeight: 1.7,
-              maxWidth: 980,
-            }}
-          >
-            Esta vitrine mostra apenas cadastros ativos e públicos, com exibição
-            segura. Dados pessoais, dados internos e informações sensíveis não são
-            expostos nesta área. Estamos em constante atualização e pode haver
-            momentos de instabilidade.
+          <p style={heroText}>
+            Esta vitrine mostra apenas dados públicos autorizados. Informações
+            sensíveis permanecem protegidas. A Aurora está em constante
+            evolução e pode haver instabilidade durante melhorias.
           </p>
 
-          <form
-            action="/cadastros"
-            method="get"
-            style={{
-              display: "flex",
-              gap: 10,
-              flexWrap: "wrap",
-              marginTop: 4,
-            }}
-          >
+          {/* BUSCA */}
+          <form action="/cadastros" method="get" style={searchWrap}>
             <input
               type="text"
               name="q"
               defaultValue={rawQuery}
-              placeholder="Buscar por empresa, cidade, segmento, produto ou cobertura"
-              style={searchInputStyle}
+              placeholder="Buscar empresa, cidade, segmento..."
+              style={inputStyle}
             />
 
-            <button type="submit" style={primaryButtonStyle}>
-              Atualizar busca
+            <button type="submit" style={primaryButton}>
+              Buscar
             </button>
           </form>
 
-          <div
-            style={{
-              borderRadius: 18,
-              padding: "14px 16px",
-              background: "rgba(34,197,94,0.10)",
-              border: "1px solid rgba(34,197,94,0.20)",
-              color: "#d1fae5",
-              lineHeight: 1.6,
-            }}
-          >
-            Busca pública segura carregada com sucesso. Apenas dados públicos estão
-            sendo exibidos.
-          </div>
-
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-              gap: 12,
-            }}
-          >
-            <MiniInfo
-              title="Cadastros públicos"
-              value={String(companies.length)}
-              text="Quantidade total pública carregada."
-            />
-            <MiniInfo
-              title="Resultado da busca"
-              value={String(filtered.length)}
-              text="Quantidade encontrada com o filtro atual."
-            />
-            <MiniInfo
-              title="Privacidade"
-              value="Protegida"
-              text="Apenas informações públicas liberadas aparecem aqui."
-            />
+          {/* STATS */}
+          <div style={statsGrid}>
+            <MiniInfo title="Cadastros" value={String(companies.length)} />
+            <MiniInfo title="Resultados" value={String(filtered.length)} />
+            <MiniInfo title="Privacidade" value="Ativa" />
           </div>
         </section>
 
+        {/* RESULTADOS */}
         {filtered.length === 0 ? (
-          <section style={emptyCardStyle}>
-            Nenhum cadastro público encontrado para esta busca.
-          </section>
+          <div style={emptyCard}>
+            Nenhum resultado encontrado para sua busca.
+          </div>
         ) : (
-          <section
-            style={{
-              display: "grid",
-              gap: 16,
-            }}
-          >
+          <section style={grid}>
             {filtered.map((company) => {
-              const publicUrl = `/empresa/${company.slug}`;
+              const url = `/empresa/${company.slug}`;
 
               return (
-                <article key={company.id} style={cardStyle}>
-                  <div
-                    style={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      gap: 16,
-                      flexWrap: "wrap",
-                    }}
-                  >
-                    <div style={{ display: "grid", gap: 8 }}>
-                      <div
-                        style={{
-                          fontSize: 24,
-                          fontWeight: 900,
-                          lineHeight: 1.1,
-                        }}
-                      >
+                <article key={company.id} style={card}>
+                  <div style={cardHeader}>
+                    <div>
+                      <div style={companyName}>
                         {company.publicName}
                       </div>
-
-                      <div
-                        style={{
-                          color: "rgba(236,253,245,0.74)",
-                          fontWeight: 700,
-                        }}
-                      >
-                        {[company.city, company.state].filter(Boolean).join(" • ") ||
-                          "Localidade não informada"}
+                      <div style={companyLocation}>
+                        {[company.city, company.state].filter(Boolean).join(" • ")}
                       </div>
                     </div>
 
-                    <div
-                      style={{
-                        display: "inline-flex",
-                        alignItems: "center",
-                        height: "fit-content",
-                        borderRadius: 999,
-                        padding: "8px 12px",
-                        background: "rgba(34,197,94,0.10)",
-                        border: "1px solid rgba(34,197,94,0.20)",
-                        color: "#86efac",
-                        fontWeight: 800,
-                      }}
-                    >
-                      Público
-                    </div>
+                    <div style={publicBadge}>Público</div>
                   </div>
 
-                  <div style={metaGridStyle}>
-                    <InfoBox label="Cobertura" value={company.coverage || "Não informado"} />
-                    <InfoBox label="Atendimento" value={company.serviceMode || "Não informado"} />
-                    <InfoBox label="Estado-base" value={company.state || "-"} />
-                    <InfoBox label="Cidade-base" value={company.city || "-"} />
-                    <InfoBox label="Segmentos" value={company.segment || "Não informado"} />
-                    <InfoBox
-                      label="Descrição pública"
-                      value={
-                        company.publicDescription ||
-                        "Sem descrição pública ainda."
-                      }
-                    />
+                  <div style={metaGrid}>
+                    <Info label="Segmento" value={company.segment} />
+                    <Info label="Cobertura" value={company.coverage} />
+                    <Info label="Descrição" value={company.publicDescription} />
                   </div>
 
-                  <div
-                    style={{
-                      display: "flex",
-                      gap: 10,
-                      flexWrap: "wrap",
-                      marginTop: 4,
-                    }}
-                  >
-                    <Link href={publicUrl} style={primaryLinkButtonStyle}>
-                      Ver perfil público
+                  <div style={cardActions}>
+                    <Link href={url} style={primaryButton}>
+                      Ver empresa
                     </Link>
 
-                    <a
-                      href={publicUrl}
-                      style={secondaryLinkButtonStyle}
-                    >
-                      Copiar/abrir link
-                    </a>
-
-                    {company.whatsapp ? (
+                    {company.whatsapp && (
                       <a
                         href={`https://wa.me/${company.whatsapp.replace(/\D+/g, "")}`}
                         target="_blank"
-                        rel="noreferrer"
-                        style={secondaryLinkButtonStyle}
+                        style={secondaryButton}
                       >
-                        Falar no WhatsApp
+                        WhatsApp
                       </a>
-                    ) : null}
+                    )}
                   </div>
                 </article>
               );
             })}
           </section>
         )}
-      </div>
+      </section>
     </main>
   );
 }
 
-function MiniInfo({
-  title,
-  value,
-  text,
-}: {
-  title: string;
-  value: string;
-  text: string;
-}) {
+/* COMPONENTES */
+function MiniInfo({ title, value }: any) {
   return (
-    <div
-      style={{
-        borderRadius: 18,
-        padding: 16,
-        background: "rgba(255,255,255,0.04)",
-        border: "1px solid rgba(255,255,255,0.08)",
-      }}
-    >
-      <div style={{ fontSize: 12, color: "rgba(236,253,245,0.62)" }}>{title}</div>
-      <div
-        style={{
-          marginTop: 8,
-          fontSize: 24,
-          fontWeight: 900,
-          color: "#ecfdf5",
-        }}
-      >
-        {value}
-      </div>
-      <div
-        style={{
-          marginTop: 8,
-          color: "rgba(236,253,245,0.70)",
-          lineHeight: 1.6,
-          fontSize: 14,
-        }}
-      >
-        {text}
-      </div>
+    <div style={miniCard}>
+      <div style={miniTitle}>{title}</div>
+      <div style={miniValue}>{value}</div>
     </div>
   );
 }
 
-function InfoBox({
-  label,
-  value,
-}: {
-  label: string;
-  value: string;
-}) {
+function Info({ label, value }: any) {
   return (
-    <div
-      style={{
-        borderRadius: 16,
-        padding: 14,
-        background: "rgba(255,255,255,0.03)",
-        border: "1px solid rgba(255,255,255,0.06)",
-        display: "grid",
-        gap: 8,
-      }}
-    >
-      <div
-        style={{
-          fontSize: 12,
-          color: "rgba(236,253,245,0.62)",
-        }}
-      >
-        {label}
-      </div>
-      <div
-        style={{
-          fontWeight: 800,
-          lineHeight: 1.6,
-          color: "#ecfdf5",
-          whiteSpace: "pre-wrap",
-        }}
-      >
-        {value}
-      </div>
+    <div style={infoBox}>
+      <div style={infoLabel}>{label}</div>
+      <div style={infoValue}>{value || "-"}</div>
     </div>
   );
 }
 
-const navLinkStyle: React.CSSProperties = {
+/* ESTILOS */
+const mainStyle = {
+  minHeight: "100vh",
+  background:
+    "linear-gradient(180deg, #eef6ff 0%, #f7fbff 40%, #edf7f3 100%)",
+  color: "#0f172a",
+};
+
+const containerStyle = {
+  maxWidth: 1200,
+  margin: "0 auto",
+  padding: 20,
+  display: "grid",
+  gap: 20,
+};
+
+const headerStyle = {
+  display: "flex",
+  justifyContent: "space-between",
+  alignItems: "center",
+};
+
+const logoStyle = { fontSize: 12, fontWeight: 900, color: "#2563eb" };
+const titleStyle = { fontSize: 18, fontWeight: 900 };
+
+const badgeStyle = {
+  padding: "6px 12px",
+  borderRadius: 999,
+  background: "#e0ecff",
+  color: "#2563eb",
+  fontWeight: 800,
+};
+
+const navWrap = { display: "flex", gap: 8, flexWrap: "wrap" };
+
+const navLinkStyle = {
+  padding: "8px 12px",
+  borderRadius: 999,
+  background: "#fff",
+  border: "1px solid #e5e7eb",
   textDecoration: "none",
-  color: "#ecfdf5",
-  border: "1px solid rgba(255,255,255,0.10)",
-  background: "rgba(255,255,255,0.04)",
-  borderRadius: 12,
-  padding: "10px 14px",
+  color: "#0f172a",
   fontWeight: 700,
 };
 
-const heroCardStyle: React.CSSProperties = {
-  border: "1px solid rgba(255,255,255,0.08)",
-  background: "rgba(7,18,13,0.82)",
-  borderRadius: 28,
-  padding: "24px 20px",
-  boxShadow: "0 18px 60px rgba(0,0,0,0.20)",
+const heroCard = {
+  background: "#fff",
+  borderRadius: 24,
+  padding: 20,
+  border: "1px solid #e5e7eb",
   display: "grid",
   gap: 16,
 };
 
-const badgeStyle: React.CSSProperties = {
-  display: "inline-flex",
-  width: "fit-content",
-  alignItems: "center",
-  gap: 8,
-  padding: "8px 12px",
+const chipStyle = {
+  background: "#e0ecff",
+  color: "#2563eb",
+  padding: "6px 10px",
   borderRadius: 999,
-  background: "rgba(34,197,94,0.10)",
-  border: "1px solid rgba(34,197,94,0.26)",
-  color: "#86efac",
-  fontSize: 13,
   fontWeight: 800,
+  width: "fit-content",
 };
 
-const searchInputStyle: React.CSSProperties = {
+const heroTitle = { fontSize: 28, fontWeight: 900 };
+const heroText = { color: "#475569", lineHeight: 1.6 };
+
+const searchWrap = { display: "flex", gap: 10, flexWrap: "wrap" };
+
+const inputStyle = {
   flex: 1,
-  minWidth: 260,
-  borderRadius: 16,
-  border: "1px solid rgba(255,255,255,0.10)",
-  background: "rgba(255,255,255,0.04)",
-  color: "#ecfdf5",
-  padding: "14px 16px",
-  fontSize: 15,
-  outline: "none",
+  padding: 14,
+  borderRadius: 12,
+  border: "1px solid #e5e7eb",
 };
 
-const primaryButtonStyle: React.CSSProperties = {
-  borderRadius: 16,
-  border: "1px solid rgba(34,197,94,0.28)",
-  background: "linear-gradient(135deg, #22c55e, #4ade80)",
-  color: "#04110a",
-  padding: "14px 18px",
+const primaryButton = {
+  background: "#2563eb",
+  color: "#fff",
+  padding: "12px 16px",
+  borderRadius: 12,
+  border: "none",
   fontWeight: 900,
-  cursor: "pointer",
 };
 
-const emptyCardStyle: React.CSSProperties = {
-  borderRadius: 24,
-  padding: 22,
-  border: "1px solid rgba(255,255,255,0.08)",
-  background: "rgba(7,18,13,0.78)",
-  color: "rgba(236,253,245,0.82)",
+const secondaryButton = {
+  background: "#fff",
+  border: "1px solid #e5e7eb",
+  padding: "12px 16px",
+  borderRadius: 12,
 };
 
-const cardStyle: React.CSSProperties = {
-  borderRadius: 24,
-  padding: 22,
-  border: "1px solid rgba(255,255,255,0.08)",
-  background: "rgba(7,18,13,0.78)",
-  boxShadow: "0 18px 60px rgba(0,0,0,0.16)",
+const statsGrid = {
+  display: "grid",
+  gridTemplateColumns: "repeat(auto-fit, minmax(120px,1fr))",
+  gap: 10,
+};
+
+const miniCard = {
+  background: "#f8fafc",
+  padding: 14,
+  borderRadius: 12,
+};
+
+const miniTitle = { fontSize: 12, color: "#64748b" };
+const miniValue = { fontSize: 20, fontWeight: 900 };
+
+const emptyCard = {
+  background: "#fff",
+  padding: 20,
+  borderRadius: 20,
+  border: "1px solid #e5e7eb",
+};
+
+const grid = {
   display: "grid",
   gap: 16,
 };
 
-const metaGridStyle: React.CSSProperties = {
+const card = {
+  background: "#fff",
+  padding: 20,
+  borderRadius: 20,
+  border: "1px solid #e5e7eb",
   display: "grid",
-  gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
   gap: 12,
 };
 
-const primaryLinkButtonStyle: React.CSSProperties = {
-  textDecoration: "none",
-  color: "#04110a",
-  background: "linear-gradient(135deg, #22c55e, #4ade80)",
-  border: "1px solid rgba(34,197,94,0.28)",
-  borderRadius: 16,
-  padding: "14px 18px",
-  fontWeight: 900,
-  display: "inline-flex",
-  justifyContent: "center",
-  alignItems: "center",
+const cardHeader = {
+  display: "flex",
+  justifyContent: "space-between",
 };
 
-const secondaryLinkButtonStyle: React.CSSProperties = {
-  textDecoration: "none",
-  color: "#ecfdf5",
-  background: "rgba(255,255,255,0.04)",
-  border: "1px solid rgba(255,255,255,0.10)",
-  borderRadius: 16,
-  padding: "14px 18px",
+const companyName = { fontSize: 20, fontWeight: 900 };
+const companyLocation = { color: "#64748b" };
+
+const publicBadge = {
+  background: "#dcfce7",
+  padding: "4px 10px",
+  borderRadius: 999,
   fontWeight: 800,
-  display: "inline-flex",
-  justifyContent: "center",
-  alignItems: "center",
+};
+
+const metaGrid = {
+  display: "grid",
+  gridTemplateColumns: "repeat(auto-fit, minmax(200px,1fr))",
+  gap: 10,
+};
+
+const infoBox = {
+  background: "#f8fafc",
+  padding: 12,
+  borderRadius: 12,
+};
+
+const infoLabel = { fontSize: 12, color: "#64748b" };
+const infoValue = { fontWeight: 800 };
+
+const cardActions = {
+  display: "flex",
+  gap: 10,
+  flexWrap: "wrap",
 };
