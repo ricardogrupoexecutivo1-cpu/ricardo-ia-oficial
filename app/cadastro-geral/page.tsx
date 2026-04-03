@@ -62,6 +62,7 @@ const PERFIS_BASE = [
   "Parceiro",
   "Autônomo",
   "Representante comercial",
+  "Motorista / Condutor",
 ];
 
 const SEGMENTOS_SUGERIDOS = [
@@ -71,6 +72,10 @@ const SEGMENTOS_SUGERIDOS = [
   "Imobiliárias",
   "Locadora",
   "Transportes",
+  "Motorista",
+  "Condutor",
+  "Motorista particular",
+  "Motorista executivo",
   "Indústria",
   "Comércio",
   "Tecnologia",
@@ -850,6 +855,11 @@ export default function CadastroGeralPage() {
             title="2. Tipo de perfil"
             text="O cadastro pode representar mais de um papel dentro da plataforma."
           >
+            <div style={styles.inlineHighlight}>
+              Motorista / Condutor agora aparece como opção visível para facilitar
+              o cadastro de quem busca entrada rápida e direta na Aurora.
+            </div>
+
             <div style={styles.choiceGrid}>
               {PERFIS_BASE.map((perfil) => {
                 const active = perfisSelecionados.includes(perfil);
@@ -934,6 +944,11 @@ export default function CadastroGeralPage() {
             title="4. Segmentos da operação"
             text="O sistema precisa crescer com o usuário. Por isso este bloco é aberto, editável e expansível."
           >
+            <div style={styles.inlineHighlight}>
+              Para reduzir evasão, segmentos ligados a motorista e condutor agora
+              ficam visíveis logo nas sugestões.
+            </div>
+
             <SuggestionRow
               title="Sugestões"
               items={SEGMENTOS_SUGERIDOS}
@@ -1580,6 +1595,18 @@ const styles: Record<string, CSSProperties> = {
     border: "1px solid rgba(15,23,42,0.08)",
     color: "rgba(15,23,42,0.72)",
     fontSize: 14,
+    boxShadow: "0 8px 18px rgba(15,23,42,0.04)",
+  },
+  inlineHighlight: {
+    borderRadius: 16,
+    padding: "14px 16px",
+    background:
+      "linear-gradient(135deg, rgba(37,99,235,0.08), rgba(16,185,129,0.08))",
+    border: "1px solid rgba(37,99,235,0.14)",
+    color: "#0f172a",
+    fontSize: 14,
+    lineHeight: 1.7,
+    fontWeight: 700,
     boxShadow: "0 8px 18px rgba(15,23,42,0.04)",
   },
   suggestionWrap: {
