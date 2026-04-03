@@ -4,497 +4,261 @@ import Link from "next/link";
 
 export default function LocadoraSeminovosPage() {
   return (
-    <main
-      style={{
-        minHeight: "100vh",
-        background:
-          "radial-gradient(circle at top, rgba(34,197,94,0.14), transparent 0%, transparent 28%), radial-gradient(circle at right top, rgba(20,184,166,0.12), transparent 0%, transparent 22%), linear-gradient(180deg, #041018 0%, #02060d 100%)",
-        color: "#eef6ff",
-        overflowX: "hidden",
-      }}
-    >
-      <section
-        style={{
-          maxWidth: 1240,
-          margin: "0 auto",
-          padding: "24px 16px 88px",
-        }}
-      >
-        <div
-          style={{
-            display: "flex",
-            flexWrap: "wrap",
-            alignItems: "center",
-            justifyContent: "space-between",
-            gap: 12,
-            marginBottom: 20,
-          }}
-        >
-          <Link href="/locadora" style={secondaryButton}>
+    <main style={mainStyle}>
+      <section style={container}>
+        {/* HEADER */}
+        <header style={header}>
+          <Link href="/locadora" style={navBtn}>
             ← Voltar para Locadora
           </Link>
 
-          <div
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              gap: 10,
-              padding: "8px 14px",
-              borderRadius: 999,
-              background: "rgba(34,197,94,0.10)",
-              border: "1px solid rgba(34,197,94,0.24)",
-              color: "#b9f7cf",
-              fontWeight: 800,
-              fontSize: 13,
-            }}
-          >
-            <span aria-hidden="true">🚗</span>
-            <span>Seminovos Aurora</span>
+          <div style={badge}>
+            🚗 Seminovos Aurora
           </div>
-        </div>
+        </header>
 
-        <div
-          className="aurora-seminovos-grid"
-          style={{
-            display: "grid",
-            gridTemplateColumns: "minmax(0, 1fr) minmax(320px, 420px)",
-            gap: 22,
-          }}
-        >
-          <article style={heroCard}>
-            <div
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: 8,
-                padding: "8px 12px",
-                borderRadius: 999,
-                background: "rgba(255,255,255,0.05)",
-                border: "1px solid rgba(255,255,255,0.07)",
-                color: "#b8d7ff",
-                fontWeight: 800,
-                fontSize: 12,
-                marginBottom: 18,
-              }}
-            >
-              <span aria-hidden="true">🚘</span>
-              <span>Aurora Locadoras</span>
-            </div>
+        {/* HERO */}
+        <section style={hero}>
+          <div style={chip}>Aurora Locadora</div>
 
-            <h1
-              style={{
-                margin: 0,
-                fontSize: "clamp(34px, 7vw, 62px)",
-                lineHeight: 1.02,
-                letterSpacing: "-0.04em",
-                fontWeight: 900,
-                maxWidth: 780,
-              }}
-            >
-              Seminovos de locadoras com acesso rápido e tráfego forte
-            </h1>
+          <h1 style={title}>
+            Seminovos de locadoras com alta visibilidade e conversão
+          </h1>
 
-            <p
-              style={{
-                marginTop: 18,
-                marginBottom: 0,
-                color: "#d5e5f7",
-                fontSize: "clamp(17px, 3.6vw, 21px)",
-                lineHeight: 1.72,
-                maxWidth: 760,
-              }}
-            >
-              Área pensada para locadoras publicarem veículos seminovos com
-              acesso direto, contato comercial rápido e navegação pelo site
-              inteiro para aumentar visibilidade e conversão.
-            </p>
+          <p style={text}>
+            Publique veículos seminovos com acesso direto, integração com WhatsApp
+            e navegação dentro do ecossistema Aurora para aumentar tráfego,
+            contato e fechamento comercial.
+          </p>
 
-            <div
-              style={{
-                display: "flex",
-                flexWrap: "wrap",
-                gap: 12,
-                marginTop: 26,
-              }}
-            >
-              <div style={pillStyle}>Venda de seminovos</div>
-              <div style={pillStyle}>Link direto</div>
-              <div style={pillStyle}>WhatsApp comercial</div>
-              <div style={pillStyle}>Tráfego pelo site</div>
-            </div>
-
-            <div style={infoBox}>
-              <div style={infoLabel}>PLANO FUNDADORES</div>
-              <div style={infoText}>
-                Uso gratuito por tempo limitado durante a fase inicial da
-                plataforma. No futuro, novos planos e recursos premium serão
-                ativados.
-              </div>
-            </div>
-          </article>
-
-          <aside style={sideCard}>
-            <div
-              style={{
-                display: "grid",
-                gap: 12,
-              }}
-            >
-              <a
-                href="https://wa.me/5531997490074"
-                target="_blank"
-                rel="noreferrer"
-                style={whatsButton}
-              >
-                📲 Falar com Comercial
-              </a>
-
-              <Link href="/anunciar/cadastro" style={greenButton}>
-                ✍️ Publicar meu seminovo
-              </Link>
-
-              <Link href="/locadora/cadastros" style={secondaryButton}>
-                Abrir central de cadastros
-              </Link>
-            </div>
-
-            <div style={sideInfoBox}>
-              <div style={sideInfoTitle}>Importante</div>
-              <div style={sideInfoText}>
-                A locadora pode divulgar o link direto da sua área e ao mesmo
-                tempo manter o usuário navegando por outras páginas da Aurora,
-                aumentando alcance e tráfego.
-              </div>
-            </div>
-          </aside>
-        </div>
-
-        <section style={{ marginTop: 28 }}>
-          <div
-            style={{
-              display: "flex",
-              alignItems: "end",
-              justifyContent: "space-between",
-              gap: 16,
-              flexWrap: "wrap",
-              marginBottom: 16,
-            }}
-          >
-            <div>
-              <h2
-                style={{
-                  margin: 0,
-                  fontSize: 30,
-                  fontWeight: 900,
-                  letterSpacing: "-0.03em",
-                }}
-              >
-                Vitrine inicial de seminovos
-              </h2>
-              <p
-                style={{
-                  margin: "8px 0 0",
-                  color: "#bcd3ea",
-                  fontSize: 15,
-                  lineHeight: 1.6,
-                }}
-              >
-                Estrutura visual pronta para receber anúncios reais da locadora.
-              </p>
-            </div>
-          </div>
-
-          <div
-            className="aurora-seminovos-cards"
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
-              gap: 16,
-            }}
-          >
-            <article style={vehicleCard}>
-              <div style={vehicleImageMock}>SUV / Pickup</div>
-              <div style={vehicleBody}>
-                <h3 style={vehicleTitle}>Toyota Hilux 2023</h3>
-                <div style={vehicleMeta}>Automática • Diesel • Belo Horizonte</div>
-                <div style={vehiclePrice}>R$ 000.000</div>
-                <a
-                  href="https://wa.me/5531997490074"
-                  target="_blank"
-                  rel="noreferrer"
-                  style={vehicleWhats}
-                >
-                  📲 Tenho interesse
-                </a>
-              </div>
-            </article>
-
-            <article style={vehicleCard}>
-              <div style={vehicleImageMock}>Sedan / Executivo</div>
-              <div style={vehicleBody}>
-                <h3 style={vehicleTitle}>Toyota Corolla 2022</h3>
-                <div style={vehicleMeta}>Automático • Flex • São Paulo</div>
-                <div style={vehiclePrice}>R$ 000.000</div>
-                <a
-                  href="https://wa.me/5531997490074"
-                  target="_blank"
-                  rel="noreferrer"
-                  style={vehicleWhats}
-                >
-                  📲 Tenho interesse
-                </a>
-              </div>
-            </article>
-
-            <article style={vehicleCard}>
-              <div style={vehicleImageMock}>Utilitário / Frota</div>
-              <div style={vehicleBody}>
-                <h3 style={vehicleTitle}>Fiat Strada 2023</h3>
-                <div style={vehicleMeta}>Manual • Flex • Minas Gerais</div>
-                <div style={vehiclePrice}>R$ 000.000</div>
-                <a
-                  href="https://wa.me/5531997490074"
-                  target="_blank"
-                  rel="noreferrer"
-                  style={vehicleWhats}
-                >
-                  📲 Tenho interesse
-                </a>
-              </div>
-            </article>
+          <div style={pillWrap}>
+            <div style={pill}>Venda direta</div>
+            <div style={pill}>WhatsApp integrado</div>
+            <div style={pill}>Link compartilhável</div>
+            <div style={pill}>Tráfego interno</div>
           </div>
         </section>
 
-        <section
-          style={{
-            marginTop: 28,
-            padding: 20,
-            borderRadius: 24,
-            background: "rgba(255,255,255,0.03)",
-            border: "1px solid rgba(255,255,255,0.07)",
-          }}
-        >
-          <div
-            style={{
-              fontSize: 12,
-              fontWeight: 800,
-              letterSpacing: "0.2em",
-              color: "#8db5d9",
-              marginBottom: 12,
-            }}
+        {/* AÇÕES */}
+        <section style={actions}>
+          <a
+            href="https://wa.me/5531997490074"
+            target="_blank"
+            style={primaryBtn}
           >
-            ESTRATÉGIA
-          </div>
+            📲 Falar com comercial
+          </a>
 
-          <div
-            style={{
-              color: "#f2f8ff",
-              fontSize: 15,
-              lineHeight: 1.7,
-            }}
-          >
-            A publicação de seminovos deve gerar acesso direto para a área da
-            locadora dentro da Aurora, mantendo navegação livre pelo restante do
-            site para impulsionar tráfego, retenção e descoberta de novos
-            serviços.
+          <Link href="/anunciar/cadastro" style={secondaryBtn}>
+            ✍️ Publicar seminovo
+          </Link>
+
+          <Link href="/locadora/cadastros" style={secondaryBtn}>
+            Central de cadastros
+          </Link>
+        </section>
+
+        {/* LISTA */}
+        <section style={grid}>
+          <Card
+            title="Toyota Hilux 2023"
+            meta="Diesel • Automática • BH"
+          />
+          <Card
+            title="Corolla 2022"
+            meta="Flex • Automático • SP"
+          />
+          <Card
+            title="Fiat Strada 2023"
+            meta="Manual • MG"
+          />
+        </section>
+
+        {/* ESTRATÉGIA */}
+        <section style={strategy}>
+          <div style={strategyTitle}>Estratégia</div>
+          <div style={strategyText}>
+            Os seminovos devem gerar entrada direta e ao mesmo tempo manter o
+            usuário navegando dentro da Aurora, aumentando retenção e descoberta
+            de novos negócios.
           </div>
         </section>
       </section>
-
-      <style jsx global>{`
-        @media (max-width: 980px) {
-          .aurora-seminovos-grid {
-            grid-template-columns: 1fr !important;
-          }
-        }
-      `}</style>
     </main>
   );
 }
 
-const secondaryButton: React.CSSProperties = {
-  display: "inline-flex",
-  alignItems: "center",
-  justifyContent: "center",
-  minHeight: 48,
-  padding: "0 18px",
-  borderRadius: 14,
-  textDecoration: "none",
-  fontWeight: 700,
-  fontSize: 15,
-  color: "#e5e7eb",
-  border: "1px solid rgba(148,163,184,0.28)",
-  background: "rgba(15,23,42,0.62)",
-};
+/* COMPONENTE */
+function Card({ title, meta }: any) {
+  return (
+    <div style={card}>
+      <div style={image}>Veículo</div>
+      <div style={body}>
+        <div style={cardTitle}>{title}</div>
+        <div style={cardMeta}>{meta}</div>
+        <div style={price}>R$ 000.000</div>
 
-const greenButton: React.CSSProperties = {
-  display: "inline-flex",
-  alignItems: "center",
-  justifyContent: "center",
-  minHeight: 50,
-  padding: "0 18px",
-  borderRadius: 14,
-  textDecoration: "none",
-  fontWeight: 800,
-  fontSize: 15,
-  color: "#04110a",
-  background: "linear-gradient(135deg, #22c55e, #86efac)",
-  boxShadow: "0 12px 30px rgba(34,197,94,0.25)",
-};
+        <a
+          href="https://wa.me/5531997490074"
+          target="_blank"
+          style={whats}
+        >
+          Tenho interesse
+        </a>
+      </div>
+    </div>
+  );
+}
 
-const whatsButton: React.CSSProperties = {
-  display: "inline-flex",
-  alignItems: "center",
-  justifyContent: "center",
-  minHeight: 50,
-  padding: "0 18px",
-  borderRadius: 14,
-  textDecoration: "none",
-  fontWeight: 800,
-  fontSize: 15,
-  color: "#04110a",
-  background: "#25D366",
-  boxShadow: "0 12px 30px rgba(37,211,102,0.25)",
-};
-
-const heroCard: React.CSSProperties = {
-  position: "relative",
-  overflow: "hidden",
-  borderRadius: 30,
-  border: "1px solid rgba(255,255,255,0.08)",
+/* ESTILOS */
+const mainStyle = {
+  minHeight: "100vh",
   background:
-    "linear-gradient(180deg, rgba(10,24,36,0.92) 0%, rgba(5,11,18,0.98) 100%)",
-  boxShadow: "0 30px 80px rgba(0,0,0,0.38)",
-  padding: "28px 22px 24px",
-  minWidth: 0,
+    "linear-gradient(180deg, #eef6ff 0%, #f7fbff 40%, #edf7f3 100%)",
+  color: "#0f172a",
 };
 
-const sideCard: React.CSSProperties = {
-  borderRadius: 30,
-  border: "1px solid rgba(255,255,255,0.08)",
-  background:
-    "linear-gradient(180deg, rgba(10,18,30,0.96) 0%, rgba(4,8,14,0.99) 100%)",
-  boxShadow: "0 26px 70px rgba(0,0,0,0.34)",
-  padding: 22,
-  minWidth: 0,
-  alignSelf: "start",
+const container = {
+  maxWidth: 1200,
+  margin: "0 auto",
+  padding: 20,
+  display: "grid",
+  gap: 20,
 };
 
-const pillStyle: React.CSSProperties = {
-  display: "inline-flex",
+const header = {
+  display: "flex",
+  justifyContent: "space-between",
   alignItems: "center",
-  justifyContent: "center",
-  minHeight: 42,
-  padding: "0 16px",
+};
+
+const navBtn = {
+  padding: "10px 14px",
   borderRadius: 999,
-  background: "rgba(255,255,255,0.04)",
-  border: "1px solid rgba(255,255,255,0.08)",
-  color: "#e5f0fb",
-  fontWeight: 700,
-  fontSize: 14,
+  background: "#fff",
+  border: "1px solid #e5e7eb",
+  textDecoration: "none",
 };
 
-const infoBox: React.CSSProperties = {
-  marginTop: 28,
-  padding: 18,
-  borderRadius: 22,
-  background: "rgba(255,255,255,0.03)",
-  border: "1px solid rgba(255,255,255,0.07)",
-};
-
-const infoLabel: React.CSSProperties = {
-  fontSize: 12,
+const badge = {
+  background: "#e0ecff",
+  color: "#2563eb",
+  padding: "6px 12px",
+  borderRadius: 999,
   fontWeight: 800,
-  letterSpacing: "0.2em",
-  color: "#8db5d9",
-  marginBottom: 12,
 };
 
-const infoText: React.CSSProperties = {
-  color: "#f2f8ff",
-  fontSize: 16,
-  lineHeight: 1.7,
+const hero = {
+  background: "#fff",
+  padding: 20,
+  borderRadius: 20,
+  border: "1px solid #e5e7eb",
 };
 
-const sideInfoBox: React.CSSProperties = {
-  marginTop: 18,
-  padding: 16,
-  borderRadius: 18,
-  background: "rgba(255,255,255,0.03)",
-  border: "1px solid rgba(255,255,255,0.07)",
+const chip = {
+  background: "#e0ecff",
+  padding: "6px 10px",
+  borderRadius: 999,
+  color: "#2563eb",
 };
 
-const sideInfoTitle: React.CSSProperties = {
-  color: "#f3f8ff",
-  fontSize: 16,
-  fontWeight: 800,
-  marginBottom: 8,
+const title = {
+  fontSize: 28,
+  fontWeight: 900,
 };
 
-const sideInfoText: React.CSSProperties = {
-  color: "#b8cde3",
-  fontSize: 14,
-  lineHeight: 1.65,
+const text = {
+  color: "#475569",
 };
 
-const vehicleCard: React.CSSProperties = {
-  minWidth: 0,
-  borderRadius: 24,
-  overflow: "hidden",
-  background:
-    "linear-gradient(180deg, rgba(10,24,36,0.92), rgba(5,11,18,0.98))",
-  border: "1px solid rgba(255,255,255,0.08)",
-  boxShadow: "0 22px 60px rgba(0,0,0,0.28)",
+const pillWrap = {
+  display: "flex",
+  gap: 8,
+  flexWrap: "wrap",
 };
 
-const vehicleImageMock: React.CSSProperties = {
-  minHeight: 180,
+const pill = {
+  background: "#f1f5f9",
+  padding: "6px 10px",
+  borderRadius: 999,
+};
+
+const actions = {
+  display: "flex",
+  gap: 10,
+  flexWrap: "wrap",
+};
+
+const primaryBtn = {
+  background: "#2563eb",
+  color: "#fff",
+  padding: "12px 16px",
+  borderRadius: 12,
+};
+
+const secondaryBtn = {
+  background: "#fff",
+  border: "1px solid #e5e7eb",
+  padding: "12px 16px",
+  borderRadius: 12,
+};
+
+const grid = {
+  display: "grid",
+  gap: 16,
+};
+
+const card = {
+  background: "#fff",
+  borderRadius: 20,
+  border: "1px solid #e5e7eb",
+};
+
+const image = {
+  height: 150,
+  background: "#e2e8f0",
   display: "flex",
   alignItems: "center",
   justifyContent: "center",
-  fontWeight: 900,
-  fontSize: 22,
-  letterSpacing: "-0.03em",
-  color: "#d9fbe8",
-  background:
-    "linear-gradient(135deg, rgba(34,197,94,0.22), rgba(20,184,166,0.18))",
 };
 
-const vehicleBody: React.CSSProperties = {
-  padding: 18,
+const body = {
+  padding: 16,
 };
 
-const vehicleTitle: React.CSSProperties = {
-  margin: 0,
-  fontSize: 22,
-  fontWeight: 800,
-};
-
-const vehicleMeta: React.CSSProperties = {
-  marginTop: 8,
-  color: "#cbd5e1",
-  fontSize: 14,
-  lineHeight: 1.6,
-};
-
-const vehiclePrice: React.CSSProperties = {
-  marginTop: 12,
-  color: "#b9f7cf",
-  fontSize: 22,
+const cardTitle = {
   fontWeight: 900,
 };
 
-const vehicleWhats: React.CSSProperties = {
-  display: "inline-flex",
-  alignItems: "center",
-  justifyContent: "center",
-  marginTop: 14,
-  minHeight: 44,
-  padding: "0 14px",
-  borderRadius: 12,
-  textDecoration: "none",
-  fontWeight: 800,
-  fontSize: 14,
-  color: "#04110a",
-  background: "#25D366",
+const cardMeta = {
+  color: "#64748b",
+};
+
+const price = {
+  fontWeight: 900,
+  fontSize: 20,
+};
+
+const whats = {
+  marginTop: 10,
+  display: "inline-block",
+  background: "#22c55e",
+  color: "#fff",
+  padding: "8px 12px",
+  borderRadius: 10,
+};
+
+const strategy = {
+  background: "#fff",
+  padding: 20,
+  borderRadius: 20,
+  border: "1px solid #e5e7eb",
+};
+
+const strategyTitle = {
+  fontWeight: 900,
+};
+
+const strategyText = {
+  color: "#475569",
 };
