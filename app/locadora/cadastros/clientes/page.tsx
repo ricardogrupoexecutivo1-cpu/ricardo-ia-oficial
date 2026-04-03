@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
+import type { CSSProperties } from "react";
 
 type FormState = {
   nome: string;
@@ -162,107 +163,57 @@ export default function LocadoraCadastroClientesPage() {
   }
 
   return (
-    <main
-      style={{
-        minHeight: "100vh",
-        background:
-          "radial-gradient(circle at top, rgba(34,197,94,0.14), transparent 0%, transparent 28%), radial-gradient(circle at right top, rgba(20,184,166,0.12), transparent 0%, transparent 22%), linear-gradient(180deg, #041018 0%, #02060d 100%)",
-        color: "#eef6ff",
-      }}
-    >
-      <section
-        style={{
-          maxWidth: 1180,
-          margin: "0 auto",
-          padding: "24px 16px 88px",
-        }}
-      >
-        <div
-          style={{
-            display: "inline-flex",
-            alignItems: "center",
-            gap: 10,
-            padding: "8px 14px",
-            borderRadius: 999,
-            background: "rgba(34,197,94,0.10)",
-            border: "1px solid rgba(34,197,94,0.24)",
-            color: "#b9f7cf",
-            fontWeight: 800,
-            fontSize: 13,
-            marginBottom: 20,
-          }}
-        >
-          <span aria-hidden="true">👤</span>
-          <span>Cadastro de Clientes · Aurora Locadora</span>
-        </div>
+    <main style={mainStyle}>
+      <section style={containerStyle}>
+        <header style={headerStyle}>
+          <div style={{ display: "grid", gap: 4 }}>
+            <div style={logoStyle}>ricardoiaoficial.com</div>
+            <div style={titleStyle}>Aurora Locadora • cadastro de clientes</div>
+          </div>
 
-        <h1
-          style={{
-            margin: 0,
-            fontSize: "clamp(34px, 8vw, 62px)",
-            lineHeight: 1.02,
-            letterSpacing: "-0.04em",
-            fontWeight: 900,
-            maxWidth: 860,
-          }}
-        >
-          Cadastro de clientes da locadora
-        </h1>
+          <div style={badgeStyle}>Sistema em evolução</div>
+        </header>
 
-        <p
-          style={{
-            marginTop: 18,
-            marginBottom: 0,
-            maxWidth: 860,
-            color: "#d5e5f7",
-            fontSize: "clamp(16px, 3.6vw, 21px)",
-            lineHeight: 1.72,
-          }}
-        >
-          Registre clientes, contato principal, localização e observações
-          comerciais em uma área pronta para operação real. Sistema em constante
-          atualização e pode haver momentos de instabilidade.
-        </p>
-
-        <div
-          style={{
-            display: "flex",
-            flexWrap: "wrap",
-            gap: 12,
-            marginTop: 26,
-          }}
-        >
-          <Link href="/locadora/cadastros" style={secondaryButton}>
+        <div style={topActionsStyle}>
+          <Link href="/locadora/cadastros" style={topLinkStyle}>
             Voltar para central de cadastros
           </Link>
 
-          <Link href="/locadora" style={secondaryButton}>
+          <Link href="/locadora" style={topLinkStyle}>
             Voltar para locadora
           </Link>
 
-          <Link href="/locadora/admin" style={secondaryButton}>
+          <Link href="/locadora/admin" style={topLinkStyle}>
             Área protegida
           </Link>
         </div>
 
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "minmax(0, 1.5fr) minmax(280px, 0.9fr)",
-            gap: 18,
-            marginTop: 32,
-          }}
-        >
-          <section style={panel}>
-            <div style={sectionHeader}>
+        <section style={heroCardStyle}>
+          <div style={pillBlueStyle}>
+            <span>👤</span>
+            <span>Cadastro de Clientes · Aurora Locadora</span>
+          </div>
+
+          <h1 style={heroTitleStyle}>Cadastro de clientes da locadora</h1>
+
+          <p style={heroTextStyle}>
+            Registre clientes, contato principal, localização e observações
+            comerciais em uma área pronta para operação real. Sistema em constante
+            atualização e pode haver momentos de instabilidade.
+          </p>
+        </section>
+
+        <section style={mainGridStyle}>
+          <section style={panelStyle}>
+            <div style={sectionHeaderStyle}>
               <div>
-                <div style={eyebrow}>FORMULÁRIO PRINCIPAL</div>
-                <h2 style={panelTitle}>Dados do cliente</h2>
+                <div style={eyebrowStyle}>FORMULÁRIO PRINCIPAL</div>
+                <h2 style={panelTitleStyle}>Dados do cliente</h2>
               </div>
             </div>
 
-            <div style={grid}>
-              <label style={fieldBlock}>
+            <div style={formGridStyle}>
+              <label style={fieldBlockStyle}>
                 <span style={labelStyle}>Nome do cliente</span>
                 <input
                   style={inputStyle}
@@ -272,7 +223,7 @@ export default function LocadoraCadastroClientesPage() {
                 />
               </label>
 
-              <label style={fieldBlock}>
+              <label style={fieldBlockStyle}>
                 <span style={labelStyle}>CPF / CNPJ</span>
                 <input
                   style={inputStyle}
@@ -282,7 +233,7 @@ export default function LocadoraCadastroClientesPage() {
                 />
               </label>
 
-              <label style={fieldBlock}>
+              <label style={fieldBlockStyle}>
                 <span style={labelStyle}>Telefone</span>
                 <input
                   style={inputStyle}
@@ -292,7 +243,7 @@ export default function LocadoraCadastroClientesPage() {
                 />
               </label>
 
-              <label style={fieldBlock}>
+              <label style={fieldBlockStyle}>
                 <span style={labelStyle}>WhatsApp</span>
                 <input
                   style={inputStyle}
@@ -302,7 +253,7 @@ export default function LocadoraCadastroClientesPage() {
                 />
               </label>
 
-              <label style={fieldBlock}>
+              <label style={fieldBlockStyle}>
                 <span style={labelStyle}>E-mail</span>
                 <input
                   type="email"
@@ -313,7 +264,7 @@ export default function LocadoraCadastroClientesPage() {
                 />
               </label>
 
-              <label style={fieldBlock}>
+              <label style={fieldBlockStyle}>
                 <span style={labelStyle}>Cidade</span>
                 <input
                   style={inputStyle}
@@ -323,7 +274,7 @@ export default function LocadoraCadastroClientesPage() {
                 />
               </label>
 
-              <label style={fieldBlock}>
+              <label style={fieldBlockStyle}>
                 <span style={labelStyle}>Estado</span>
                 <input
                   style={inputStyle}
@@ -334,7 +285,7 @@ export default function LocadoraCadastroClientesPage() {
                 />
               </label>
 
-              <label style={{ ...fieldBlock, gridColumn: "1 / -1" }}>
+              <label style={{ ...fieldBlockStyle, gridColumn: "1 / -1" }}>
                 <span style={labelStyle}>Endereço</span>
                 <input
                   style={inputStyle}
@@ -344,7 +295,7 @@ export default function LocadoraCadastroClientesPage() {
                 />
               </label>
 
-              <label style={{ ...fieldBlock, gridColumn: "1 / -1" }}>
+              <label style={{ ...fieldBlockStyle, gridColumn: "1 / -1" }}>
                 <span style={labelStyle}>Observações comerciais</span>
                 <textarea
                   style={textareaStyle}
@@ -355,32 +306,25 @@ export default function LocadoraCadastroClientesPage() {
               </label>
             </div>
 
-            <div
-              style={{
-                display: "flex",
-                flexWrap: "wrap",
-                gap: 12,
-                marginTop: 22,
-              }}
-            >
-              <button type="button" style={primaryButton} onClick={handleSaveDraft}>
+            <div style={buttonRowStyle}>
+              <button type="button" style={buttonPrimaryStyle} onClick={handleSaveDraft}>
                 Salvar rascunho no navegador
               </button>
 
               <button
                 type="button"
-                style={primaryButton}
+                style={buttonPrimaryStyle}
                 onClick={handleSaveToDatabase}
                 disabled={savingDb}
               >
                 {savingDb ? "Salvando no banco..." : "Salvar cliente no banco"}
               </button>
 
-              <button type="button" style={ghostButton} onClick={handleLoadDraft}>
+              <button type="button" style={buttonSecondaryStyle} onClick={handleLoadDraft}>
                 Carregar rascunho
               </button>
 
-              <button type="button" style={ghostButton} onClick={handleClear}>
+              <button type="button" style={buttonSecondaryStyle} onClick={handleClear}>
                 Limpar formulário
               </button>
 
@@ -388,32 +332,22 @@ export default function LocadoraCadastroClientesPage() {
                 href={whatsappHref}
                 target="_blank"
                 rel="noreferrer"
-                style={whatsButton}
+                style={whatsButtonStyle}
               >
                 Enviar para WhatsApp comercial
               </a>
             </div>
 
-            {saved ? (
-              <div style={successBox}>
-                Rascunho salvo com sucesso neste navegador.
-              </div>
-            ) : null}
-
-            {dbMessage ? (
-              <div style={successBox}>{dbMessage}</div>
-            ) : null}
-
-            {dbError ? (
-              <div style={errorBox}>{dbError}</div>
-            ) : null}
+            {saved ? <div style={successBoxStyle}>Rascunho salvo com sucesso neste navegador.</div> : null}
+            {dbMessage ? <div style={successBoxStyle}>{dbMessage}</div> : null}
+            {dbError ? <div style={errorBoxStyle}>{dbError}</div> : null}
           </section>
 
-          <aside style={panel}>
-            <div style={eyebrow}>RESUMO RÁPIDO</div>
-            <h2 style={panelTitle}>Pré-visualização do cadastro</h2>
+          <aside style={panelStyle}>
+            <div style={eyebrowStyle}>RESUMO RÁPIDO</div>
+            <h2 style={panelTitleStyle}>Pré-visualização do cadastro</h2>
 
-            <div style={summaryBox}>
+            <div style={summaryBoxStyle}>
               <SummaryRow label="Nome" value={form.nome} />
               <SummaryRow label="CPF/CNPJ" value={form.cpfCnpj} />
               <SummaryRow label="Telefone" value={form.telefone} />
@@ -425,32 +359,30 @@ export default function LocadoraCadastroClientesPage() {
             </div>
 
             <div style={{ marginTop: 18 }}>
-              <div style={eyebrow}>DADOS ÚTEIS</div>
-              <div style={infoCard}>
-                <div style={infoLine}>
-                  <strong>WhatsApp limpo:</strong>{" "}
-                  {onlyDigits(form.whatsapp) || "-"}
+              <div style={eyebrowStyle}>DADOS ÚTEIS</div>
+              <div style={infoCardStyle}>
+                <div style={infoLineStyle}>
+                  <strong>WhatsApp limpo:</strong> {onlyDigits(form.whatsapp) || "-"}
                 </div>
-                <div style={infoLine}>
-                  <strong>Telefone limpo:</strong>{" "}
-                  {onlyDigits(form.telefone) || "-"}
+                <div style={infoLineStyle}>
+                  <strong>Telefone limpo:</strong> {onlyDigits(form.telefone) || "-"}
                 </div>
-                <div style={infoLine}>
+                <div style={infoLineStyle}>
                   <strong>UF:</strong> {form.estado.toUpperCase() || "-"}
                 </div>
               </div>
             </div>
 
             <div style={{ marginTop: 18 }}>
-              <div style={eyebrow}>PRÓXIMO PASSO</div>
-              <div style={infoCard}>
+              <div style={eyebrowStyle}>PRÓXIMO PASSO</div>
+              <div style={infoCardStyle}>
                 Depois disso, podemos criar a listagem real dos clientes
                 cadastrados dentro da área da locadora e conectar com propostas,
                 bancos e operação comercial.
               </div>
             </div>
           </aside>
-        </div>
+        </section>
       </section>
     </main>
   );
@@ -464,32 +396,156 @@ function SummaryRow({
   value: string;
 }) {
   return (
-    <div
-      style={{
-        display: "grid",
-        gridTemplateColumns: "110px 1fr",
-        gap: 10,
-        padding: "10px 0",
-        borderBottom: "1px solid rgba(255,255,255,0.06)",
-      }}
-    >
-      <div style={{ color: "#93a9bf", fontWeight: 700 }}>{label}</div>
-      <div style={{ color: "#eef6ff", wordBreak: "break-word" }}>
-        {value || "-"}
-      </div>
+    <div style={summaryRowStyle}>
+      <div style={summaryLabelStyle}>{label}</div>
+      <div style={summaryValueStyle}>{value || "-"}</div>
     </div>
   );
 }
 
-const panel: React.CSSProperties = {
-  borderRadius: 24,
-  padding: 22,
-  background: "linear-gradient(180deg, rgba(10,24,36,0.92), rgba(5,11,18,0.98))",
-  border: "1px solid rgba(255,255,255,0.08)",
-  boxShadow: "0 22px 60px rgba(0,0,0,0.28)",
+const mainStyle: CSSProperties = {
+  minHeight: "100vh",
+  background:
+    "radial-gradient(circle at top, rgba(59,130,246,0.10), transparent 18%), radial-gradient(circle at right, rgba(16,185,129,0.10), transparent 24%), linear-gradient(180deg, #eef6ff 0%, #f7fbff 40%, #edf7f3 100%)",
+  color: "#0f172a",
 };
 
-const sectionHeader: React.CSSProperties = {
+const containerStyle: CSSProperties = {
+  maxWidth: 1180,
+  margin: "0 auto",
+  padding: "24px 16px 88px",
+  display: "grid",
+  gap: 18,
+};
+
+const headerStyle: CSSProperties = {
+  display: "flex",
+  justifyContent: "space-between",
+  alignItems: "center",
+  gap: 12,
+  flexWrap: "wrap",
+  border: "1px solid rgba(15,23,42,0.08)",
+  background: "rgba(255,255,255,0.78)",
+  backdropFilter: "blur(14px)",
+  borderRadius: 24,
+  padding: "14px",
+  boxShadow: "0 18px 42px rgba(15,23,42,0.07)",
+};
+
+const logoStyle: CSSProperties = {
+  fontSize: 11,
+  fontWeight: 900,
+  letterSpacing: "0.08em",
+  textTransform: "uppercase",
+  color: "#2563eb",
+};
+
+const titleStyle: CSSProperties = {
+  fontSize: 18,
+  fontWeight: 900,
+  lineHeight: 1.2,
+  color: "#0f172a",
+};
+
+const badgeStyle: CSSProperties = {
+  display: "inline-flex",
+  alignItems: "center",
+  justifyContent: "center",
+  minHeight: 36,
+  padding: "0 12px",
+  borderRadius: 999,
+  background: "rgba(37,99,235,0.08)",
+  border: "1px solid rgba(37,99,235,0.16)",
+  color: "#2563eb",
+  fontSize: 12,
+  fontWeight: 900,
+  textTransform: "uppercase",
+  letterSpacing: "0.06em",
+};
+
+const topActionsStyle: CSSProperties = {
+  display: "flex",
+  flexWrap: "wrap",
+  gap: 12,
+};
+
+const topLinkStyle: CSSProperties = {
+  display: "inline-flex",
+  alignItems: "center",
+  justifyContent: "center",
+  minHeight: 48,
+  padding: "0 18px",
+  borderRadius: 14,
+  textDecoration: "none",
+  fontWeight: 700,
+  fontSize: 15,
+  color: "#0f172a",
+  border: "1px solid rgba(15,23,42,0.08)",
+  background: "rgba(255,255,255,0.78)",
+  boxShadow: "0 10px 22px rgba(15,23,42,0.05)",
+};
+
+const heroCardStyle: CSSProperties = {
+  borderRadius: 24,
+  padding: 22,
+  background:
+    "linear-gradient(180deg, rgba(255,255,255,0.92), rgba(255,255,255,0.82))",
+  border: "1px solid rgba(15,23,42,0.08)",
+  boxShadow: "0 22px 60px rgba(15,23,42,0.08)",
+  display: "grid",
+  gap: 14,
+};
+
+const pillBlueStyle: CSSProperties = {
+  display: "inline-flex",
+  alignItems: "center",
+  gap: 10,
+  padding: "8px 14px",
+  borderRadius: 999,
+  background: "rgba(37,99,235,0.08)",
+  border: "1px solid rgba(37,99,235,0.16)",
+  color: "#2563eb",
+  fontWeight: 800,
+  fontSize: 13,
+  width: "fit-content",
+};
+
+const heroTitleStyle: CSSProperties = {
+  margin: 0,
+  fontSize: "clamp(34px, 8vw, 62px)",
+  lineHeight: 1.02,
+  letterSpacing: "-0.04em",
+  fontWeight: 900,
+  maxWidth: 860,
+  color: "#0f172a",
+};
+
+const heroTextStyle: CSSProperties = {
+  marginTop: 0,
+  marginBottom: 0,
+  maxWidth: 860,
+  color: "rgba(15,23,42,0.72)",
+  fontSize: "clamp(16px, 3.6vw, 21px)",
+  lineHeight: 1.72,
+  fontWeight: 700,
+};
+
+const mainGridStyle: CSSProperties = {
+  display: "grid",
+  gridTemplateColumns: "minmax(0, 1.5fr) minmax(280px, 0.9fr)",
+  gap: 18,
+};
+
+const panelStyle: CSSProperties = {
+  borderRadius: 24,
+  padding: 22,
+  background:
+    "linear-gradient(180deg, rgba(255,255,255,0.92), rgba(255,255,255,0.82))",
+  border: "1px solid rgba(15,23,42,0.08)",
+  boxShadow: "0 22px 60px rgba(15,23,42,0.08)",
+};
+
+const sectionHeaderStyle: CSSProperties = {
   display: "flex",
   alignItems: "center",
   justifyContent: "space-between",
@@ -497,113 +553,109 @@ const sectionHeader: React.CSSProperties = {
   marginBottom: 18,
 };
 
-const eyebrow: React.CSSProperties = {
+const eyebrowStyle: CSSProperties = {
   fontSize: 12,
   fontWeight: 800,
   letterSpacing: "0.18em",
-  color: "#8db5d9",
+  color: "#2563eb",
   marginBottom: 10,
 };
 
-const panelTitle: React.CSSProperties = {
+const panelTitleStyle: CSSProperties = {
   margin: 0,
   fontSize: 28,
   fontWeight: 900,
   lineHeight: 1.1,
+  color: "#0f172a",
 };
 
-const grid: React.CSSProperties = {
+const formGridStyle: CSSProperties = {
   display: "grid",
   gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
   gap: 16,
 };
 
-const fieldBlock: React.CSSProperties = {
+const fieldBlockStyle: CSSProperties = {
   display: "grid",
   gap: 8,
 };
 
-const labelStyle: React.CSSProperties = {
+const labelStyle: CSSProperties = {
   fontSize: 14,
   fontWeight: 700,
-  color: "#d5e5f7",
+  color: "#334155",
 };
 
-const inputStyle: React.CSSProperties = {
+const inputStyle: CSSProperties = {
   width: "100%",
   minHeight: 48,
   borderRadius: 14,
-  border: "1px solid rgba(148,163,184,0.22)",
-  background: "rgba(15,23,42,0.78)",
-  color: "#eef6ff",
+  border: "1px solid rgba(15,23,42,0.10)",
+  background: "rgba(255,255,255,0.96)",
+  color: "#0f172a",
   padding: "0 14px",
   fontSize: 15,
   outline: "none",
+  boxShadow: "0 8px 20px rgba(15,23,42,0.03)",
 };
 
-const textareaStyle: React.CSSProperties = {
+const textareaStyle: CSSProperties = {
   width: "100%",
   minHeight: 140,
   borderRadius: 14,
-  border: "1px solid rgba(148,163,184,0.22)",
-  background: "rgba(15,23,42,0.78)",
-  color: "#eef6ff",
+  border: "1px solid rgba(15,23,42,0.10)",
+  background: "rgba(255,255,255,0.96)",
+  color: "#0f172a",
   padding: 14,
   fontSize: 15,
   outline: "none",
   resize: "vertical",
   fontFamily: "inherit",
+  boxShadow: "0 8px 20px rgba(15,23,42,0.03)",
 };
 
-const primaryButton: React.CSSProperties = {
+const buttonRowStyle: CSSProperties = {
+  display: "flex",
+  flexWrap: "wrap",
+  gap: 12,
+  marginTop: 22,
+};
+
+const buttonPrimaryStyle: CSSProperties = {
   display: "inline-flex",
   alignItems: "center",
   justifyContent: "center",
   minHeight: 48,
   padding: "0 18px",
   borderRadius: 14,
-  border: "none",
+  border: "1px solid rgba(37,99,235,0.16)",
   textDecoration: "none",
   fontWeight: 800,
   fontSize: 15,
   cursor: "pointer",
-  color: "#04110a",
-  background: "linear-gradient(135deg, #22c55e, #86efac)",
-  boxShadow: "0 18px 40px rgba(34,197,94,0.25)",
+  color: "#ffffff",
+  background: "linear-gradient(135deg, #2563eb, #3b82f6)",
+  boxShadow: "0 14px 30px rgba(37,99,235,0.16)",
 };
 
-const ghostButton: React.CSSProperties = {
+const buttonSecondaryStyle: CSSProperties = {
   display: "inline-flex",
   alignItems: "center",
   justifyContent: "center",
   minHeight: 48,
   padding: "0 18px",
   borderRadius: 14,
-  border: "1px solid rgba(148,163,184,0.28)",
+  border: "1px solid rgba(15,23,42,0.08)",
   textDecoration: "none",
   fontWeight: 700,
   fontSize: 15,
   cursor: "pointer",
-  color: "#e5e7eb",
-  background: "rgba(15,23,42,0.62)",
+  color: "#0f172a",
+  background: "rgba(255,255,255,0.78)",
+  boxShadow: "0 10px 22px rgba(15,23,42,0.05)",
 };
 
-const secondaryButton: React.CSSProperties = {
-  display: "inline-flex",
-  alignItems: "center",
-  justifyContent: "center",
-  minHeight: 48,
-  padding: "0 18px",
-  borderRadius: 14,
-  textDecoration: "none",
-  fontWeight: 700,
-  fontSize: 15,
-  color: "#e5e7eb",
-  border: "1px solid rgba(148,163,184,0.28)",
-  background: "rgba(15,23,42,0.62)",
-};
-
-const whatsButton: React.CSSProperties = {
+const whatsButtonStyle: CSSProperties = {
   display: "inline-flex",
   alignItems: "center",
   justifyContent: "center",
@@ -613,49 +665,69 @@ const whatsButton: React.CSSProperties = {
   textDecoration: "none",
   fontWeight: 800,
   fontSize: 15,
-  color: "#04110a",
+  color: "#ffffff",
   background: "#25D366",
-  boxShadow: "0 10px 30px rgba(37,211,102,0.25)",
+  boxShadow: "0 10px 30px rgba(37,211,102,0.20)",
 };
 
-const successBox: React.CSSProperties = {
+const successBoxStyle: CSSProperties = {
   marginTop: 16,
   padding: "14px 16px",
   borderRadius: 16,
-  border: "1px solid rgba(34,197,94,0.24)",
-  background: "rgba(34,197,94,0.10)",
-  color: "#b9f7cf",
+  border: "1px solid rgba(34,197,94,0.18)",
+  background: "rgba(34,197,94,0.08)",
+  color: "#166534",
   fontWeight: 700,
 };
 
-const errorBox: React.CSSProperties = {
+const errorBoxStyle: CSSProperties = {
   marginTop: 16,
   padding: "14px 16px",
   borderRadius: 16,
-  border: "1px solid rgba(248,113,113,0.28)",
-  background: "rgba(127,29,29,0.18)",
-  color: "#fecaca",
+  border: "1px solid rgba(239,68,68,0.18)",
+  background: "rgba(239,68,68,0.08)",
+  color: "#b91c1c",
   fontWeight: 700,
 };
 
-const summaryBox: React.CSSProperties = {
+const summaryBoxStyle: CSSProperties = {
   marginTop: 12,
   borderRadius: 18,
   padding: 16,
-  background: "rgba(255,255,255,0.03)",
-  border: "1px solid rgba(255,255,255,0.07)",
+  background: "rgba(255,255,255,0.86)",
+  border: "1px solid rgba(15,23,42,0.08)",
+  boxShadow: "0 10px 24px rgba(15,23,42,0.04)",
 };
 
-const infoCard: React.CSSProperties = {
+const summaryRowStyle: CSSProperties = {
+  display: "grid",
+  gridTemplateColumns: "110px 1fr",
+  gap: 10,
+  padding: "10px 0",
+  borderBottom: "1px solid rgba(15,23,42,0.08)",
+};
+
+const summaryLabelStyle: CSSProperties = {
+  color: "#64748b",
+  fontWeight: 700,
+};
+
+const summaryValueStyle: CSSProperties = {
+  color: "#0f172a",
+  wordBreak: "break-word",
+};
+
+const infoCardStyle: CSSProperties = {
   borderRadius: 18,
   padding: 16,
-  background: "rgba(255,255,255,0.03)",
-  border: "1px solid rgba(255,255,255,0.07)",
-  color: "#d5e5f7",
+  background: "rgba(255,255,255,0.86)",
+  border: "1px solid rgba(15,23,42,0.08)",
+  color: "#334155",
   lineHeight: 1.7,
   fontSize: 15,
+  boxShadow: "0 10px 24px rgba(15,23,42,0.04)",
 };
 
-const infoLine: React.CSSProperties = {
+const infoLineStyle: CSSProperties = {
   marginBottom: 8,
 };
