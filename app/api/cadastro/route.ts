@@ -34,6 +34,18 @@ function asArrayText(value: unknown) {
     .filter(Boolean);
 }
 
+function normalizeEmail(value: string) {
+  return value.trim().toLowerCase();
+}
+
+function normalizeWhatsapp(value: string) {
+  return value.replace(/\D+/g, "");
+}
+
+function uniqueTextList(values: string[]) {
+  return [...new Set(values.map((item) => item.trim()).filter(Boolean))];
+}
+
 export async function POST(req: Request) {
   try {
     const supabase = getSupabase();
@@ -54,8 +66,8 @@ export async function POST(req: Request) {
     const responsavel = asText(body?.responsavel);
     const empresa = asText(body?.empresa);
     const cnpj = asText(body?.cnpj);
-    const whatsapp = asText(body?.whatsapp);
-    const email = asText(body?.email);
+    const whatsappRaw = asText(body?.whatsapp);
+    const emailRaw = asText(body?.email);
     const descricao = asText(body?.descricao);
     const abrangencia = asText(body?.abrangencia);
     const segmentoPersonalizado = asText(body?.segmentoPersonalizado);
@@ -64,16 +76,15 @@ export async function POST(req: Request) {
     const areas = asArrayText(body?.area);
     const atividades = asArrayText(body?.atividades);
 
-    const areaFinal = [...areas, ...(segmentoPersonalizado ? [segmentoPersonalizado] : [])]
-      .filter(Boolean)
-      .join(", ");
+    const areaFinal = uniqueTextList([
+      ...areas,
+      ...(segmentoPersonalizado ? [segmentoPersonalizado] : []),
+    ]).join(", ");
 
-    const atividadesFinal = [
+    const atividadesFinal = uniqueTextList([
       ...atividades,
       ...(atividadePersonalizada ? [atividadePersonalizada] : []),
-    ]
-      .filter(Boolean)
-      .join(", ");
+    ]).join(", ");
 
     if (!responsavel) {
       return NextResponse.json(
@@ -89,16 +100,27 @@ export async function POST(req: Request) {
       );
     }
 
-    if (!whatsapp) {
+    if (!whatsappRaw) {
       return NextResponse.json(
         { ok: false, error: "Informe o WhatsApp." },
         { status: 400 }
       );
     }
 
-    if (!email) {
+    if (!emailRaw) {
       return NextResponse.json(
         { ok: false, error: "Informe o e-mail." },
+        { status: 400 }
+      );
+    }
+
+    const email = normalizeEmail(emailRaw);
+    const whatsapp = normalizeWhatsapp(whatsappRaw);
+    const now = new Date().toISOString();
+
+    if (!whatsapp) {
+      return NextResponse.json(
+        { ok: false, error: "WhatsApp inválido." },
         { status: 400 }
       );
     }
@@ -112,7 +134,7 @@ export async function POST(req: Request) {
       atividades: atividadesFinal,
       abrangencia,
       descricao,
-      created_at: new Date().toISOString(),
+      created_at: now,
     };
 
     const cadastroPrivado = {
@@ -125,15 +147,17 @@ export async function POST(req: Request) {
       atividades: atividadesFinal,
       abrangencia,
       descricao,
-      created_at: new Date().toISOString(),
+      created_at: now,
     };
 
     console.log("CADASTRO PUBLICO:", cadastroPublico);
     console.log("CADASTRO PRIVADO:", cadastroPrivado);
 
-    const { error: errPublico } = await supabase
+    const { data: publicoSalvo, error: errPublico } = await supabase
       .from("cadastros")
-      .insert([cadastroPublico]);
+      .insert([cadastroPublico])
+      .select()
+      .single();
 
     if (errPublico) {
       console.error("ERRO AO SALVAR cadastros:", errPublico);
@@ -141,37 +165,44 @@ export async function POST(req: Request) {
       return NextResponse.json(
         {
           ok: false,
-          error: `Erro ao salvar cadastro público: ${errPublico.message}`,
+          error: `Erro ao salvar cadastro principal: ${errPublico.message}`,
+          where: "cadastros",
           details: errPublico,
         },
         { status: 500 }
       );
     }
 
-    const { error: errPrivado } = await supabase
+    let privadoSalvo = null;
+    let privateWarning: string | null = null;
+
+    const { data: privadoData, error: errPrivado } = await supabase
       .from("cadastros_privados")
-      .insert([cadastroPrivado]);
+      .insert([cadastroPrivado])
+      .select()
+      .single();
 
     if (errPrivado) {
       console.error("ERRO AO SALVAR cadastros_privados:", errPrivado);
-
-      return NextResponse.json(
-        {
-          ok: false,
-          error: `Erro ao salvar cadastro privado: ${errPrivado.message}`,
-          details: errPrivado,
-        },
-        { status: 500 }
-      );
+      privateWarning = `Cadastro principal salvo, mas o espelho privado falhou: ${errPrivado.message}`;
+    } else {
+      privadoSalvo = privadoData;
     }
 
     return NextResponse.json({
       ok: true,
-      message: "Cadastro salvo com segurança.",
+      message: privateWarning
+        ? "Cadastro principal salvo com alerta no espelho privado."
+        : "Cadastro salvo com segurança.",
+      warning: privateWarning,
       data: {
+        publico: publicoSalvo,
+        privado: privadoSalvo,
         empresa,
         responsavel,
         abrangencia,
+        whatsapp,
+        email,
       },
     });
   } catch (error) {

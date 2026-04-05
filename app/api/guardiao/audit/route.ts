@@ -1,4 +1,3 @@
-import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
 export const runtime = "nodejs";
@@ -6,7 +5,7 @@ export const dynamic = "force-dynamic";
 
 type SearchMode = "smart" | "email" | "nome" | "empresa" | "whatsapp";
 
-type CadastroRow = {
+type BaseCadastroRow = {
   id: string;
   nome_responsavel: string | null;
   nome_empresa: string | null;
@@ -28,30 +27,63 @@ type CadastroRow = {
   updated_at: string | null;
 };
 
-type GenericRow = Record<string, unknown>;
-
-type AuditBody = {
-  term?: unknown;
-  mode?: unknown;
+type RelatedSimpleRow = {
+  cadastro_id: string;
+  nome: string | null;
 };
 
-function json(body: unknown, init?: number | ResponseInit): NextResponse {
-  if (typeof init === "number") {
-    return NextResponse.json(body, { status: init });
+type AreaCoberturaRow = {
+  cadastro_id: string;
+  coverage_type: string | null;
+  pais: string | null;
+  estado: string | null;
+  regiao: string | null;
+  cidade: string | null;
+  observacao: string | null;
+};
+
+type AuditCadastro = BaseCadastroRow & {
+  perfis: RelatedSimpleRow[];
+  segmentos: RelatedSimpleRow[];
+  produtos_servicos: RelatedSimpleRow[];
+  segmentos_atendidos: RelatedSimpleRow[];
+  areas_cobertura: AreaCoberturaRow[];
+};
+
+function getEnv(name: string) {
+  const value = process.env[name];
+  return typeof value === "string" && value.trim() ? value.trim() : "";
+}
+
+function getSupabaseAdmin() {
+  const url =
+    getEnv("SUPABASE_URL") || getEnv("NEXT_PUBLIC_SUPABASE_URL");
+  const key =
+    getEnv("SUPABASE_SERVICE_ROLE_KEY") || getEnv("SUPABASE_ANON_KEY");
+
+  if (!url || !key) {
+    throw new Error(
+      "Supabase não configurado no backend. Verifique SUPABASE_URL/NEXT_PUBLIC_SUPABASE_URL e SUPABASE_SERVICE_ROLE_KEY."
+    );
   }
 
-  return NextResponse.json(body, init);
+  return createClient(url, key, {
+    auth: {
+      persistSession: false,
+      autoRefreshToken: false,
+    },
+  });
 }
 
 function normalizeText(value: unknown) {
   return String(value ?? "")
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
-    .toLowerCase()
-    .trim();
+    .trim()
+    .toLowerCase();
 }
 
-function onlyDigits(value: unknown) {
+function normalizeDigits(value: unknown) {
   return String(value ?? "").replace(/\D/g, "");
 }
 
@@ -65,452 +97,246 @@ function isSearchMode(value: unknown): value is SearchMode {
   );
 }
 
-function getSupabaseServerClient() {
-  const supabaseUrl =
-    process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || "";
-  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
+function smartMatch(row: BaseCadastroRow, term: string) {
+  const textTerm = normalizeText(term);
+  const digitTerm = normalizeDigits(term);
 
-  if (!supabaseUrl) {
-    throw new Error("SUPABASE_URL/NEXT_PUBLIC_SUPABASE_URL não encontrado.");
-  }
+  if (!textTerm && !digitTerm) return true;
 
-  if (!serviceRoleKey) {
-    throw new Error("SUPABASE_SERVICE_ROLE_KEY não encontrada.");
-  }
+  const textCandidates = [
+    row.nome_responsavel,
+    row.nome_empresa,
+    row.email,
+    row.nome_publico,
+    row.cidade_base,
+    row.estado_base,
+    row.cidade_publica,
+    row.estado_publico,
+    row.origem,
+    row.cadastro_tipo,
+  ]
+    .map(normalizeText)
+    .filter(Boolean);
 
-  return createClient(supabaseUrl, serviceRoleKey, {
-    auth: {
-      persistSession: false,
-      autoRefreshToken: false,
-    },
-  });
+  const digitCandidates = [row.whatsapp].map(normalizeDigits).filter(Boolean);
+
+  const textFound = textTerm
+    ? textCandidates.some((value) => value.includes(textTerm))
+    : false;
+
+  const digitFound = digitTerm
+    ? digitCandidates.some((value) => value.includes(digitTerm))
+    : false;
+
+  return textFound || digitFound;
 }
 
-function getCadastroId(row: GenericRow): string {
-  const possible =
-    row.cadastro_id ??
-    row.cadastroId ??
-    row.cadastro ??
-    row.id_cadastro ??
-    row.cadastros_gerais_id ??
-    "";
-
-  return String(possible || "");
-}
-
-function extractBestText(row: GenericRow): string {
-  const preferredKeys = [
-    "nome",
-    "title",
-    "titulo",
-    "perfil",
-    "segmento",
-    "produto",
-    "servico",
-    "servico_nome",
-    "produto_nome",
-    "descricao",
-    "description",
-    "label",
-    "valor",
-    "texto",
-    "observacao",
-    "tipo",
-    "coverage_type",
-    "cidade",
-    "estado",
-    "regiao",
-    "pais",
-  ];
-
-  for (const key of preferredKeys) {
-    const value = row[key];
-    if (typeof value === "string" && value.trim()) {
-      return value.trim();
-    }
-  }
-
-  for (const [key, value] of Object.entries(row)) {
-    if (
-      key !== "id" &&
-      key !== "cadastro_id" &&
-      key !== "created_at" &&
-      key !== "updated_at" &&
-      typeof value === "string" &&
-      value.trim()
-    ) {
-      return value.trim();
-    }
-  }
-
-  return "";
-}
-
-function buildVocabulary(rows: GenericRow[]) {
-  return rows
-    .map((row) => extractBestText(row))
-    .filter((value) => value.length > 0)
-    .map((value) => normalizeText(value));
-}
-
-function buildCoverageVocabulary(rows: GenericRow[]) {
-  return rows.flatMap((row) => {
-    const values = [
-      row.coverage_type,
-      row.pais,
-      row.estado,
-      row.regiao,
-      row.cidade,
-      row.observacao,
-      row.descricao,
-      row.nome,
-      extractBestText(row),
-    ];
-
-    return values
-      .filter(
-        (value) => typeof value === "string" && String(value).trim().length > 0,
-      )
-      .map((value) => normalizeText(value));
-  });
-}
-
-function splitSearchWords(term: string) {
-  return normalizeText(term)
-    .split(/\s+/)
-    .map((word) => word.trim())
-    .filter((word) => word.length > 1);
-}
-
-function removeIgnoredWords(words: string[]) {
-  const ignored = new Set([
-    "ltda",
-    "ltda.",
-    "me",
-    "mei",
-    "eireli",
-    "sa",
-    "s.a",
-    "de",
-    "da",
-    "do",
-    "das",
-    "dos",
-    "e",
-  ]);
-
-  const filtered = words.filter((word) => !ignored.has(word));
-  return filtered.length > 0 ? filtered : words;
-}
-
-function textIncludesAllWords(text: string, words: string[]) {
-  if (!words.length) return true;
-  return words.every((word) => text.includes(word));
-}
-
-function shouldUseWhatsappMatch(
-  rawTerm: string,
-  digitTerm: string,
-  mode: SearchMode,
-) {
-  if (mode === "whatsapp") {
-    return digitTerm.length >= 2;
-  }
-
-  if (mode !== "smart") {
-    return false;
-  }
-
-  const normalized = String(rawTerm ?? "").trim();
-
-  const nonDigitLength = normalized.replace(/[\d\s().\-+]/g, "").length;
-  return digitTerm.length >= 3 && nonDigitLength === 0;
-}
-
-function matchesSearch(
-  row: CadastroRow,
-  term: string,
-  mode: SearchMode,
-  related: {
-    perfis: GenericRow[];
-    segmentos: GenericRow[];
-    produtos: GenericRow[];
-    segmentosAtendidos: GenericRow[];
-    areas: GenericRow[];
-  },
-) {
+function modeMatch(row: BaseCadastroRow, term: string, mode: SearchMode) {
   if (!term.trim()) return true;
 
-  const normalizedTerm = normalizeText(term);
-  const digitTerm = onlyDigits(term);
+  const textTerm = normalizeText(term);
+  const digitTerm = normalizeDigits(term);
 
-  const nomeResponsavel = normalizeText(row.nome_responsavel);
-  const nomeEmpresa = normalizeText(row.nome_empresa);
-  const nomePublico = normalizeText(row.nome_publico);
-  const email = normalizeText(row.email);
-  const whatsapp = onlyDigits(row.whatsapp);
-  const cidadeBase = normalizeText(row.cidade_base);
-  const estadoBase = normalizeText(row.estado_base);
-  const cidadePublica = normalizeText(row.cidade_publica);
-  const estadoPublico = normalizeText(row.estado_publico);
-  const origem = normalizeText(row.origem);
-  const cadastroTipo = normalizeText(row.cadastro_tipo);
-  const atendimentoTipo = normalizeText(row.atendimento_tipo);
-
-  const vocabularyBlob = [
-    ...buildVocabulary(related.perfis),
-    ...buildVocabulary(related.segmentos),
-    ...buildVocabulary(related.produtos),
-    ...buildVocabulary(related.segmentosAtendidos),
-    ...buildCoverageVocabulary(related.areas),
-  ];
-
-  const fullText = [
-    nomeResponsavel,
-    nomeEmpresa,
-    nomePublico,
-    email,
-    cidadeBase,
-    estadoBase,
-    cidadePublica,
-    estadoPublico,
-    origem,
-    cadastroTipo,
-    atendimentoTipo,
-    ...vocabularyBlob,
-  ]
-    .filter(Boolean)
-    .join(" ");
-
-  const words = removeIgnoredWords(splitSearchWords(term));
-  const allowWhatsappMatch = shouldUseWhatsappMatch(term, digitTerm, mode);
-
-  if (mode === "email") {
-    return email.includes(normalizedTerm);
+  switch (mode) {
+    case "email":
+      return normalizeText(row.email).includes(textTerm);
+    case "nome":
+      return (
+        normalizeText(row.nome_responsavel).includes(textTerm) ||
+        normalizeText(row.nome_publico).includes(textTerm)
+      );
+    case "empresa":
+      return normalizeText(row.nome_empresa).includes(textTerm);
+    case "whatsapp":
+      return normalizeDigits(row.whatsapp).includes(digitTerm);
+    case "smart":
+    default:
+      return smartMatch(row, term);
   }
-
-  if (mode === "nome") {
-    return textIncludesAllWords(
-      [nomeResponsavel, nomePublico].filter(Boolean).join(" "),
-      words,
-    );
-  }
-
-  if (mode === "empresa") {
-    return textIncludesAllWords(
-      [nomeEmpresa, nomePublico].filter(Boolean).join(" "),
-      words,
-    );
-  }
-
-  if (mode === "whatsapp") {
-    return digitTerm.length >= 2 && whatsapp.includes(digitTerm);
-  }
-
-  if (allowWhatsappMatch && whatsapp.includes(digitTerm)) {
-    return true;
-  }
-
-  if (normalizedTerm && fullText.includes(normalizedTerm)) {
-    return true;
-  }
-
-  return textIncludesAllWords(fullText, words);
 }
 
-function mapRelated(rows: GenericRow[]) {
-  return rows.map((row) => ({
-    cadastro_id: getCadastroId(row),
-    nome: extractBestText(row) || null,
-    raw: row,
-  }));
+function buildCadastroTipo(row: BaseCadastroRow) {
+  if (row.cadastro_completo === true) return "completo";
+  return row.cadastro_tipo || "basico";
 }
 
-export async function POST(request: NextRequest) {
+function groupByCadastroId<T extends { cadastro_id: string }>(rows: T[]) {
+  const map = new Map<string, T[]>();
+
+  for (const row of rows) {
+    const current = map.get(row.cadastro_id) || [];
+    current.push(row);
+    map.set(row.cadastro_id, current);
+  }
+
+  return map;
+}
+
+export async function POST(request: Request) {
   try {
-    const body = (await request.json().catch(() => null)) as AuditBody | null;
+    const body = (await request.json().catch(() => ({}))) as {
+      term?: unknown;
+      mode?: unknown;
+    };
 
-    if (!body || typeof body !== "object") {
-      return json({ ok: false, error: "Body inválido." }, 400);
-    }
-
-    const term = String(body.term ?? "").trim();
+    const term = typeof body.term === "string" ? body.term.trim() : "";
     const mode: SearchMode = isSearchMode(body.mode) ? body.mode : "smart";
 
-    const supabase = getSupabaseServerClient();
+    const supabase = getSupabaseAdmin();
 
-    const { data: baseRows, error: baseError } = await supabase
+    const baseSelect = [
+      "id",
+      "nome_responsavel",
+      "nome_empresa",
+      "email",
+      "whatsapp",
+      "cidade_base",
+      "estado_base",
+      "cidade_publica",
+      "estado_publico",
+      "nome_publico",
+      "coverage_type",
+      "atendimento_tipo",
+      "status",
+      "is_public",
+      "origem",
+      "cadastro_tipo",
+      "cadastro_completo",
+      "created_at",
+      "updated_at",
+    ].join(", ");
+
+    const { data: baseData, error: baseError } = await supabase
       .from("cadastros_gerais")
-      .select(
-        [
-          "id",
-          "nome_responsavel",
-          "nome_empresa",
-          "email",
-          "whatsapp",
-          "cidade_base",
-          "estado_base",
-          "cidade_publica",
-          "estado_publico",
-          "nome_publico",
-          "coverage_type",
-          "atendimento_tipo",
-          "status",
-          "is_public",
-          "origem",
-          "cadastro_tipo",
-          "cadastro_completo",
-          "created_at",
-          "updated_at",
-        ].join(","),
-      )
-      .order("created_at", { ascending: false })
-      .limit(1000);
+      .select(baseSelect)
+      .order("updated_at", { ascending: false, nullsFirst: false })
+      .order("created_at", { ascending: false, nullsFirst: false });
 
     if (baseError) {
       throw new Error(`Erro ao ler cadastros_gerais: ${baseError.message}`);
     }
 
-    const cadastros = ((baseRows ?? []) as unknown as CadastroRow[]).filter(
-      (item) => item && typeof item.id === "string",
-    );
+    const cadastrosBase = (baseData || []) as BaseCadastroRow[];
 
-    if (cadastros.length === 0) {
-      return json({
-        ok: true,
-        mode,
-        term,
-        totals: {
-          total: 0,
-          publicos: 0,
-          privados: 0,
-          rascunhos: 0,
-          ativos: 0,
-        },
-        cadastros: [],
-      });
+    const filtrados = cadastrosBase.filter((row) => modeMatch(row, term, mode));
+    const ids = filtrados.map((row) => row.id);
+
+    let perfis: RelatedSimpleRow[] = [];
+    let segmentos: RelatedSimpleRow[] = [];
+    let produtosServicos: RelatedSimpleRow[] = [];
+    let segmentosAtendidos: RelatedSimpleRow[] = [];
+    let areasCobertura: AreaCoberturaRow[] = [];
+
+    if (ids.length > 0) {
+      const [
+        perfisRes,
+        segmentosRes,
+        produtosRes,
+        atendidosRes,
+        coberturaRes,
+      ] = await Promise.all([
+        supabase
+          .from("cadastro_perfis")
+          .select("cadastro_id, nome:perfil")
+          .in("cadastro_id", ids),
+        supabase
+          .from("cadastro_segmentos")
+          .select("cadastro_id, nome")
+          .in("cadastro_id", ids),
+        supabase
+          .from("cadastro_produtos_servicos")
+          .select("cadastro_id, nome")
+          .in("cadastro_id", ids),
+        supabase
+          .from("cadastro_segmentos_atendidos")
+          .select("cadastro_id, nome")
+          .in("cadastro_id", ids),
+        supabase
+          .from("cadastro_areas_cobertura")
+          .select(
+            "cadastro_id, coverage_type, pais, estado, regiao, cidade, observacao"
+          )
+          .in("cadastro_id", ids),
+      ]);
+
+      if (perfisRes.error) {
+        throw new Error(`Erro ao ler cadastro_perfis: ${perfisRes.error.message}`);
+      }
+      if (segmentosRes.error) {
+        throw new Error(
+          `Erro ao ler cadastro_segmentos: ${segmentosRes.error.message}`
+        );
+      }
+      if (produtosRes.error) {
+        throw new Error(
+          `Erro ao ler cadastro_produtos_servicos: ${produtosRes.error.message}`
+        );
+      }
+      if (atendidosRes.error) {
+        throw new Error(
+          `Erro ao ler cadastro_segmentos_atendidos: ${atendidosRes.error.message}`
+        );
+      }
+      if (coberturaRes.error) {
+        throw new Error(
+          `Erro ao ler cadastro_areas_cobertura: ${coberturaRes.error.message}`
+        );
+      }
+
+      perfis = (perfisRes.data || []) as RelatedSimpleRow[];
+      segmentos = (segmentosRes.data || []) as RelatedSimpleRow[];
+      produtosServicos = (produtosRes.data || []) as RelatedSimpleRow[];
+      segmentosAtendidos = (atendidosRes.data || []) as RelatedSimpleRow[];
+      areasCobertura = (coberturaRes.data || []) as AreaCoberturaRow[];
     }
 
-    const cadastroIds = cadastros.map((item) => item.id);
+    const perfisMap = groupByCadastroId(perfis);
+    const segmentosMap = groupByCadastroId(segmentos);
+    const produtosMap = groupByCadastroId(produtosServicos);
+    const atendidosMap = groupByCadastroId(segmentosAtendidos);
+    const coberturaMap = groupByCadastroId(areasCobertura);
 
-    const [
-      perfisResp,
-      segmentosResp,
-      produtosResp,
-      segmentosAtendidosResp,
-      areasResp,
-    ] = await Promise.all([
-      supabase.from("cadastro_perfis").select("*").in("cadastro_id", cadastroIds),
-      supabase
-        .from("cadastro_segmentos")
-        .select("*")
-        .in("cadastro_id", cadastroIds),
-      supabase
-        .from("cadastro_produtos_servicos")
-        .select("*")
-        .in("cadastro_id", cadastroIds),
-      supabase
-        .from("cadastro_segmentos_atendidos")
-        .select("*")
-        .in("cadastro_id", cadastroIds),
-      supabase
-        .from("cadastro_areas_cobertura")
-        .select("*")
-        .in("cadastro_id", cadastroIds),
-    ]);
-
-    if (perfisResp.error) {
-      throw new Error(`Erro ao ler cadastro_perfis: ${perfisResp.error.message}`);
-    }
-
-    if (segmentosResp.error) {
-      throw new Error(
-        `Erro ao ler cadastro_segmentos: ${segmentosResp.error.message}`,
-      );
-    }
-
-    if (produtosResp.error) {
-      throw new Error(
-        `Erro ao ler cadastro_produtos_servicos: ${produtosResp.error.message}`,
-      );
-    }
-
-    if (segmentosAtendidosResp.error) {
-      throw new Error(
-        `Erro ao ler cadastro_segmentos_atendidos: ${segmentosAtendidosResp.error.message}`,
-      );
-    }
-
-    if (areasResp.error) {
-      throw new Error(
-        `Erro ao ler cadastro_areas_cobertura: ${areasResp.error.message}`,
-      );
-    }
-
-    const perfis = (perfisResp.data ?? []) as GenericRow[];
-    const segmentos = (segmentosResp.data ?? []) as GenericRow[];
-    const produtos = (produtosResp.data ?? []) as GenericRow[];
-    const segmentosAtendidos = (segmentosAtendidosResp.data ?? []) as GenericRow[];
-    const areas = (areasResp.data ?? []) as GenericRow[];
-
-    const completos = cadastros.map((row) => ({
+    const cadastros: AuditCadastro[] = filtrados.map((row) => ({
       ...row,
-      perfis: mapRelated(perfis.filter((item) => getCadastroId(item) === row.id)),
-      segmentos: mapRelated(
-        segmentos.filter((item) => getCadastroId(item) === row.id),
-      ),
-      produtos_servicos: mapRelated(
-        produtos.filter((item) => getCadastroId(item) === row.id),
-      ),
-      segmentos_atendidos: mapRelated(
-        segmentosAtendidos.filter((item) => getCadastroId(item) === row.id),
-      ),
-      areas_cobertura: areas.filter((item) => getCadastroId(item) === row.id),
+      cadastro_tipo: buildCadastroTipo(row),
+      perfis: perfisMap.get(row.id) || [],
+      segmentos: segmentosMap.get(row.id) || [],
+      produtos_servicos: produtosMap.get(row.id) || [],
+      segmentos_atendidos: atendidosMap.get(row.id) || [],
+      areas_cobertura: coberturaMap.get(row.id) || [],
     }));
 
-    const filtrados = completos.filter((row) =>
-      matchesSearch(row, term, mode, {
-        perfis: row.perfis ?? [],
-        segmentos: row.segmentos ?? [],
-        produtos: row.produtos_servicos ?? [],
-        segmentosAtendidos: row.segmentos_atendidos ?? [],
-        areas: row.areas_cobertura ?? [],
-      }),
-    );
-
     const totals = {
-      total: filtrados.length,
-      publicos: filtrados.filter((item) => item.is_public).length,
-      privados: filtrados.filter((item) => !item.is_public).length,
-      rascunhos: filtrados.filter(
-        (item) => (item.status || "rascunho").toLowerCase() === "rascunho",
+      total: cadastros.length,
+      publicos: cadastros.filter((item) => item.is_public).length,
+      privados: cadastros.filter((item) => !item.is_public).length,
+      rascunhos: cadastros.filter(
+        (item) => normalizeText(item.status || "rascunho") === "rascunho"
       ).length,
-      ativos: filtrados.filter(
-        (item) => (item.status || "").toLowerCase() === "ativo",
+      ativos: cadastros.filter(
+        (item) => normalizeText(item.status) === "ativo"
       ).length,
     };
 
-    return json({
+    return Response.json({
       ok: true,
       mode,
       term,
       totals,
-      cadastros: filtrados,
+      cadastros,
     });
   } catch (error) {
     const message =
       error instanceof Error
         ? error.message
-        : "Erro inesperado ao auditar cadastros no Guardião.";
+        : "Falha ao auditar os cadastros reais do Guardião.";
 
-    console.error("POST /api/guardiao/audit ERROR:", error);
-
-    return json(
+    return Response.json(
       {
         ok: false,
         error: message,
       },
-      500,
+      { status: 500 }
     );
   }
 }

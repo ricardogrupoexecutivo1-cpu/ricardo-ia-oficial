@@ -489,6 +489,53 @@ export default function CadastroGeralPage() {
     if (!draftLoaded) return;
 
     try {
+      const rawPrefill = localStorage.getItem("aurora_prefill_snapshot");
+      const lastEmail =
+        localStorage.getItem("aurora_last_login_email") ||
+        localStorage.getItem("aurora_signup_email") ||
+        "";
+
+      if (!rawPrefill && !lastEmail) return;
+
+      let parsed: any = null;
+
+      if (rawPrefill) {
+        try {
+          parsed = JSON.parse(rawPrefill);
+        } catch {}
+      }
+
+      if (parsed) {
+        setNomeResponsavel((prev) => prev || parsed.fullName || "");
+        setNomeEmpresa((prev) => prev || parsed.companyName || "");
+        setWhatsapp((prev) => prev || parsed.whatsapp || "");
+        setCidadeBase((prev) => prev || parsed.city || "");
+        setEstadoBase((prev) => prev || parsed.state || "");
+
+        setSegmentos((prev) => {
+          if (prev.length > 0) return prev;
+          if (parsed.segment) return [parsed.segment];
+          return prev;
+        });
+      }
+
+      if (lastEmail) {
+        setEmail((prev) => prev || lastEmail);
+      }
+
+      setFeedbackType("info");
+      setFeedback(
+        "Dados anteriores encontrados e aplicados automaticamente para acelerar seu cadastro."
+      );
+    } catch (err) {
+      console.warn("[prefill] erro ao aplicar prefill", err);
+    }
+  }, [draftLoaded]);
+
+  useEffect(() => {
+    if (!draftLoaded) return;
+
+    try {
       localStorage.setItem(DRAFT_KEY, JSON.stringify(draftPayload));
     } catch {}
   }, [draftLoaded, draftPayload]);
@@ -584,6 +631,56 @@ export default function CadastroGeralPage() {
     }
   }
 
+  async function findExistingCadastroIdByEmail(
+    supabase: SupabaseClient,
+    emailValue: string
+  ) {
+    const normalizedEmail = emailValue.trim().toLowerCase();
+
+    if (!normalizedEmail) return null;
+
+    const { data, error } = await supabase
+      .from("cadastros_gerais")
+      .select("id, updated_at, created_at, status, origem")
+      .eq("email", normalizedEmail)
+      .order("updated_at", { ascending: false })
+      .limit(1);
+
+    if (error) {
+      throwStageError("cadastros_gerais busca existente", error);
+    }
+
+    if (!data || data.length === 0) {
+      return null;
+    }
+
+    return data[0]?.id as string | null;
+  }
+
+  async function deleteExistingRelatedRows(
+    supabase: SupabaseClient,
+    cadastroId: string
+  ) {
+    const tables = [
+      "cadastro_perfis",
+      "cadastro_segmentos",
+      "cadastro_produtos_servicos",
+      "cadastro_segmentos_atendidos",
+      "cadastro_areas_cobertura",
+    ];
+
+    for (const table of tables) {
+      const { error } = await supabase
+        .from(table)
+        .delete()
+        .eq("cadastro_id", cadastroId);
+
+      if (error) {
+        throwStageError(`${table} limpeza`, error);
+      }
+    }
+  }
+
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
 
@@ -654,12 +751,18 @@ export default function CadastroGeralPage() {
         .map(sanitizeValue)
         .filter(Boolean);
 
+      const normalizedEmail = email.trim().toLowerCase() || null;
+      const nomeEmpresaFinal =
+        nomeEmpresa.trim() || nomeResponsavel.trim() || null;
+      const nomeResponsavelFinal =
+        nomeResponsavel.trim() || nomeEmpresa.trim() || null;
+
       const cadastroPayload = {
         user_id: userId,
-        nome_responsavel: nomeResponsavel.trim() || null,
-        nome_empresa: nomeEmpresa.trim() || null,
+        nome_responsavel: nomeResponsavelFinal,
+        nome_empresa: nomeEmpresaFinal,
         whatsapp: whatsapp.trim() || null,
-        email: email.trim() || null,
+        email: normalizedEmail,
         site: site.trim() || null,
         instagram: instagram.trim() || null,
         coverage_type: coverageType,
@@ -672,6 +775,8 @@ export default function CadastroGeralPage() {
         status: "rascunho",
         is_public: false,
         origem: "cadastro_geral",
+        cadastro_completo: true,
+        updated_at: new Date().toISOString(),
         nome_publico: nomePublico.trim() || null,
         descricao_publica_curta: descricaoPublicaCurta.trim() || null,
         cidade_publica: cidadePublica.trim() || null,
@@ -684,33 +789,76 @@ export default function CadastroGeralPage() {
         mostrar_produtos_publicos: mostrarProdutosPublicos,
       };
 
-      console.log(
-        "[cadastro-geral] cadastros_gerais:insert:start",
-        cadastroPayload
+      let cadastroId: string | null = null;
+
+      const existingCadastroId = await findExistingCadastroIdByEmail(
+        supabase,
+        email.trim()
       );
 
-      const { data: cadastroCriado, error: cadastroError } = await supabase
-        .from("cadastros_gerais")
-        .insert(cadastroPayload)
-        .select("id")
-        .single();
+      if (existingCadastroId) {
+        console.log("[cadastro-geral] cadastros_gerais:update:start", {
+          cadastroId: existingCadastroId,
+          cadastroPayload,
+        });
 
-      if (cadastroError) {
-        throwStageError("cadastros_gerais", cadastroError);
+        const { data: cadastroAtualizado, error: cadastroUpdateError } =
+          await supabase
+            .from("cadastros_gerais")
+            .update(cadastroPayload)
+            .eq("id", existingCadastroId)
+            .select("id")
+            .single();
+
+        if (cadastroUpdateError) {
+          throwStageError("cadastros_gerais update", cadastroUpdateError);
+        }
+
+        cadastroId =
+          (cadastroAtualizado?.id as string | undefined) || existingCadastroId;
+
+        await deleteExistingRelatedRows(supabase, cadastroId);
+
+        console.log("[cadastro-geral] cadastros_gerais:update:done", {
+          cadastroId,
+        });
+      } else {
+        console.log(
+          "[cadastro-geral] cadastros_gerais:insert:start",
+          cadastroPayload
+        );
+
+        const { data: cadastroCriado, error: cadastroInsertError } =
+          await supabase
+            .from("cadastros_gerais")
+            .insert(cadastroPayload)
+            .select("id")
+            .single();
+
+        if (cadastroInsertError) {
+          throwStageError("cadastros_gerais insert", cadastroInsertError);
+        }
+
+        cadastroId = cadastroCriado?.id as string | undefined;
+
+        if (!cadastroId) {
+          throw new Error("cadastros_gerais: id não retornado após inserção.");
+        }
+
+        console.log("[cadastro-geral] cadastros_gerais:insert:done", {
+          cadastroId,
+        });
       }
-
-      const cadastroId = cadastroCriado?.id as string | undefined;
 
       if (!cadastroId) {
-        throw new Error("cadastros_gerais: id não retornado após inserção.");
+        throw new Error("Cadastro não identificado para salvar os vínculos.");
       }
 
-      console.log("[cadastro-geral] cadastros_gerais:insert:done", {
-        cadastroId,
-      });
-
       if (perfisLimpos.length > 0) {
-        console.log("[cadastro-geral] cadastro_perfis:insert:start", perfisLimpos);
+        console.log(
+          "[cadastro-geral] cadastro_perfis:insert:start",
+          perfisLimpos
+        );
 
         const { error } = await supabase.from("cadastro_perfis").insert(
           perfisLimpos.map((perfil) => ({
@@ -801,7 +949,9 @@ export default function CadastroGeralPage() {
             serializeError(error)
           );
         } else {
-          console.log("[cadastro-geral] cadastro_segmentos_atendidos:insert:done");
+          console.log(
+            "[cadastro-geral] cadastro_segmentos_atendidos:insert:done"
+          );
         }
       }
 
@@ -863,7 +1013,7 @@ export default function CadastroGeralPage() {
       setCadastroIdSalvo(cadastroId);
       setFeedbackType("success");
       setFeedback(
-        "Cadastro realizado com sucesso. Seus dados foram salvos com segurança na Aurora. Sistema em constante atualização e proteção ativa."
+        "Cadastro salvo com sucesso. A Aurora marcou o registro como completo e atualizou o rascunho existente quando encontrou o mesmo e-mail."
       );
 
       const emailSafe = encodeURIComponent(email.trim() || "");

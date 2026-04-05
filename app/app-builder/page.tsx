@@ -52,7 +52,7 @@ export default function AppBuilderPage() {
   const [generatingModules, setGeneratingModules] = useState(false);
   const [feedback, setFeedback] = useState("");
   const [feedbackType, setFeedbackType] = useState<"success" | "error" | "info">(
-    "info"
+    "info",
   );
 
   function updateField(name: string, value: string) {
@@ -64,9 +64,9 @@ export default function AppBuilderPage() {
     try {
       const res = await fetch(
         `/api/app-builder/projects?ownerEmail=${encodeURIComponent(
-          form.ownerEmail.trim()
+          form.ownerEmail.trim(),
         )}`,
-        { cache: "no-store" }
+        { cache: "no-store" },
       );
       const data = await res.json();
 
@@ -93,7 +93,7 @@ export default function AppBuilderPage() {
     try {
       const res = await fetch(
         `/api/app-builder/modules?projectId=${encodeURIComponent(projectId)}`,
-        { cache: "no-store" }
+        { cache: "no-store" },
       );
       const data = await res.json();
 
@@ -192,7 +192,7 @@ export default function AppBuilderPage() {
     } catch (error) {
       setFeedbackType("error");
       setFeedback(
-        error instanceof Error ? error.message : "Erro inesperado ao salvar."
+        error instanceof Error ? error.message : "Erro inesperado ao salvar.",
       );
     } finally {
       setSavingProject(false);
@@ -214,7 +214,7 @@ export default function AppBuilderPage() {
 
       if (!form.desiredPages.trim() && !form.desiredFeatures.trim()) {
         throw new Error(
-          "Preencha páginas desejadas ou funcionalidades desejadas antes de gerar a estrutura técnica."
+          "Preencha páginas desejadas ou funcionalidades desejadas antes de gerar a estrutura técnica.",
         );
       }
 
@@ -249,7 +249,7 @@ export default function AppBuilderPage() {
       setFeedbackType("success");
       setFeedback(
         data?.message ||
-          `Estrutura técnica gerada com sucesso. Módulos criados: ${data?.created ?? 0}.`
+          `Estrutura técnica gerada com sucesso. Módulos criados: ${data?.created ?? 0}.`,
       );
 
       await loadModules(form.projectId);
@@ -259,7 +259,7 @@ export default function AppBuilderPage() {
       setFeedback(
         error instanceof Error
           ? error.message
-          : "Erro inesperado ao gerar módulos."
+          : "Erro inesperado ao gerar módulos.",
       );
     } finally {
       setGeneratingModules(false);
@@ -268,6 +268,7 @@ export default function AppBuilderPage() {
 
   useEffect(() => {
     loadProjects();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -280,10 +281,10 @@ export default function AppBuilderPage() {
     <main style={styles.main}>
       <div style={styles.container}>
         <div style={styles.topNav}>
-          <NavLink href="/" label="Home" color="#93c5fd" />
-          <NavLink href="/guardiao" label="Guardião" color="#facc15" />
-          <NavLink href="/cadastro" label="Cadastro" color="#86efac" />
-          <NavLink href="/chat" label="Chat Aurora" color="#c4b5fd" />
+          <NavLink href="/" label="Home" color="#2563eb" />
+          <NavLink href="/guardiao" label="Guardião" color="#0f766e" />
+          <NavLink href="/cadastro" label="Cadastro" color="#16a34a" />
+          <NavLink href="/chat" label="Chat Aurora" color="#7c3aed" />
         </div>
 
         <section style={styles.heroCard}>
@@ -430,8 +431,8 @@ export default function AppBuilderPage() {
                 ...(feedbackType === "success"
                   ? styles.feedbackSuccess
                   : feedbackType === "error"
-                  ? styles.feedbackError
-                  : styles.feedbackInfo),
+                    ? styles.feedbackError
+                    : styles.feedbackInfo),
               }}
             >
               {feedback}
@@ -484,7 +485,7 @@ export default function AppBuilderPage() {
             <div style={styles.listGrid}>
               {projects.map((p) => (
                 <div key={p.id} style={styles.listCard}>
-                  <strong style={{ fontSize: 18 }}>
+                  <strong style={{ fontSize: 18, color: "#0f172a" }}>
                     {p.app_name || "Projeto sem nome"}
                   </strong>
 
@@ -522,7 +523,7 @@ export default function AppBuilderPage() {
             <div style={styles.listGrid}>
               {modules.map((mod) => (
                 <div key={mod.id} style={styles.listCard}>
-                  <strong style={{ fontSize: 18 }}>
+                  <strong style={{ fontSize: 18, color: "#0f172a" }}>
                     {mod.module_name || "Módulo sem nome"}
                   </strong>
 
@@ -578,9 +579,11 @@ function NavLink({
         color,
         textDecoration: "none",
         border: `1px solid ${color}33`,
+        background: "rgba(255,255,255,0.76)",
         borderRadius: 999,
         padding: "10px 14px",
-        fontWeight: 700,
+        fontWeight: 800,
+        boxShadow: "0 8px 18px rgba(15,23,42,0.04)",
       }}
     >
       {label}
@@ -643,8 +646,8 @@ const styles: Record<string, React.CSSProperties> = {
   main: {
     minHeight: "100vh",
     background:
-      "radial-gradient(circle at top, rgba(16,185,129,0.14), transparent 25%), #050816",
-    color: "#e5eef8",
+      "radial-gradient(circle at top, rgba(59,130,246,0.10), transparent 18%), radial-gradient(circle at left, rgba(34,197,94,0.10), transparent 24%), linear-gradient(180deg, #eef6ff 0%, #f7fbff 36%, #edf7f3 100%)",
+    color: "#0f172a",
     padding: "32px 16px 80px",
   },
   container: {
@@ -658,23 +661,24 @@ const styles: Record<string, React.CSSProperties> = {
     marginBottom: 16,
   },
   heroCard: {
-    border: "1px solid rgba(148,163,184,0.18)",
-    background: "rgba(15,23,42,0.72)",
+    border: "1px solid rgba(15,23,42,0.08)",
+    background:
+      "linear-gradient(180deg, rgba(255,255,255,0.92), rgba(255,255,255,0.80))",
     backdropFilter: "blur(10px)",
     borderRadius: 24,
     padding: 24,
-    boxShadow: "0 20px 80px rgba(0,0,0,0.35)",
+    boxShadow: "0 20px 60px rgba(15,23,42,0.08)",
     marginBottom: 24,
   },
   badge: {
     display: "inline-flex",
     padding: "8px 12px",
     borderRadius: 999,
-    background: "rgba(16,185,129,0.14)",
-    border: "1px solid rgba(16,185,129,0.25)",
-    color: "#86efac",
+    background: "rgba(37,99,235,0.08)",
+    border: "1px solid rgba(37,99,235,0.16)",
+    color: "#2563eb",
     fontSize: 13,
-    fontWeight: 700,
+    fontWeight: 800,
     letterSpacing: 0.3,
     marginBottom: 14,
   },
@@ -682,13 +686,15 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: 38,
     lineHeight: 1.05,
     margin: 0,
+    color: "#0f172a",
   },
   heroText: {
-    color: "#94a3b8",
+    color: "rgba(15,23,42,0.72)",
     marginTop: 14,
     maxWidth: 940,
     fontSize: 16,
     lineHeight: 1.7,
+    fontWeight: 700,
   },
   heroGrid: {
     display: "grid",
@@ -699,52 +705,63 @@ const styles: Record<string, React.CSSProperties> = {
   miniCard: {
     borderRadius: 20,
     padding: 18,
-    background: "rgba(2,6,23,0.45)",
-    border: "1px solid rgba(148,163,184,0.16)",
+    background:
+      "linear-gradient(180deg, rgba(255,255,255,0.84), rgba(255,255,255,0.68))",
+    border: "1px solid rgba(15,23,42,0.08)",
+    boxShadow: "0 8px 18px rgba(15,23,42,0.04)",
   },
   miniLabel: {
     fontSize: 12,
-    color: "#94a3b8",
+    color: "#64748b",
+    fontWeight: 800,
+    textTransform: "uppercase",
+    letterSpacing: "0.04em",
   },
   miniValue: {
-    fontWeight: 800,
+    fontWeight: 900,
     fontSize: 20,
     marginTop: 8,
     wordBreak: "break-word",
+    color: "#0f172a",
   },
   miniText: {
-    color: "#cbd5e1",
+    color: "rgba(15,23,42,0.72)",
     marginTop: 10,
     marginBottom: 0,
     lineHeight: 1.6,
+    fontWeight: 700,
   },
   formCard: {
-    border: "1px solid rgba(148,163,184,0.18)",
-    background: "rgba(15,23,42,0.72)",
+    border: "1px solid rgba(15,23,42,0.08)",
+    background:
+      "linear-gradient(180deg, rgba(255,255,255,0.92), rgba(255,255,255,0.80))",
     backdropFilter: "blur(10px)",
     borderRadius: 24,
     padding: 24,
-    boxShadow: "0 20px 80px rgba(0,0,0,0.35)",
+    boxShadow: "0 20px 60px rgba(15,23,42,0.08)",
     marginBottom: 24,
   },
   sectionCard: {
-    border: "1px solid rgba(148,163,184,0.18)",
-    background: "rgba(15,23,42,0.72)",
+    border: "1px solid rgba(15,23,42,0.08)",
+    background:
+      "linear-gradient(180deg, rgba(255,255,255,0.92), rgba(255,255,255,0.80))",
     backdropFilter: "blur(10px)",
     borderRadius: 24,
     padding: 24,
-    boxShadow: "0 20px 80px rgba(0,0,0,0.35)",
+    boxShadow: "0 20px 60px rgba(15,23,42,0.08)",
     marginBottom: 24,
   },
   sectionTitle: {
     fontSize: 24,
     margin: 0,
+    color: "#0f172a",
   },
   sectionText: {
-    color: "#94a3b8",
+    color: "rgba(15,23,42,0.72)",
     marginTop: 8,
     marginBottom: 0,
     lineHeight: 1.7,
+    fontWeight: 700,
   },
   grid2: {
     display: "grid",
@@ -758,41 +775,44 @@ const styles: Record<string, React.CSSProperties> = {
   },
   label: {
     fontSize: 14,
-    fontWeight: 700,
-    color: "#dbeafe",
+    fontWeight: 800,
+    color: "#0f172a",
   },
   input: {
     width: "100%",
     borderRadius: 14,
-    border: "1px solid rgba(148,163,184,0.18)",
-    background: "rgba(2,6,23,0.55)",
-    color: "#ffffff",
+    border: "1px solid rgba(15,23,42,0.10)",
+    background: "rgba(255,255,255,0.85)",
+    color: "#0f172a",
     padding: "14px 16px",
     outline: "none",
     fontSize: 15,
+    fontWeight: 700,
   },
   select: {
     width: "100%",
     borderRadius: 14,
-    border: "1px solid rgba(148,163,184,0.18)",
-    background: "rgba(2,6,23,0.55)",
-    color: "#ffffff",
+    border: "1px solid rgba(15,23,42,0.10)",
+    background: "rgba(255,255,255,0.85)",
+    color: "#0f172a",
     padding: "14px 16px",
     outline: "none",
     fontSize: 15,
+    fontWeight: 700,
   },
   textarea: {
     minHeight: 140,
     resize: "vertical",
     borderRadius: 16,
-    border: "1px solid rgba(148,163,184,0.18)",
-    background: "rgba(2,6,23,0.55)",
-    color: "#ffffff",
+    border: "1px solid rgba(15,23,42,0.10)",
+    background: "rgba(255,255,255,0.85)",
+    color: "#0f172a",
     padding: "16px",
     outline: "none",
     fontSize: 15,
     lineHeight: 1.6,
     width: "100%",
+    fontWeight: 700,
   },
   actions: {
     display: "flex",
@@ -808,55 +828,58 @@ const styles: Record<string, React.CSSProperties> = {
   },
   primaryButton: {
     borderRadius: 14,
-    border: "1px solid rgba(16,185,129,0.35)",
-    background:
-      "linear-gradient(135deg, rgba(16,185,129,0.24), rgba(59,130,246,0.18))",
-    color: "#ecfeff",
-    fontWeight: 800,
-    cursor: "pointer",
-    padding: "14px 18px",
-    fontSize: 15,
-  },
-  primaryButtonStrong: {
-    borderRadius: 14,
-    border: "1px solid rgba(250,204,21,0.35)",
-    background:
-      "linear-gradient(135deg, rgba(250,204,21,0.24), rgba(16,185,129,0.18))",
-    color: "#fefce8",
+    border: "1px solid rgba(37,99,235,0.16)",
+    background: "linear-gradient(135deg, #2563eb, #3b82f6)",
+    color: "#ffffff",
     fontWeight: 900,
     cursor: "pointer",
     padding: "14px 18px",
     fontSize: 15,
+    boxShadow: "0 12px 28px rgba(37,99,235,0.16)",
+  },
+  primaryButtonStrong: {
+    borderRadius: 14,
+    border: "1px solid rgba(16,185,129,0.20)",
+    background: "linear-gradient(135deg, #16a34a, #22c55e)",
+    color: "#ffffff",
+    fontWeight: 900,
+    cursor: "pointer",
+    padding: "14px 18px",
+    fontSize: 15,
+    boxShadow: "0 12px 28px rgba(34,197,94,0.16)",
   },
   secondaryButton: {
     borderRadius: 14,
-    border: "1px solid rgba(148,163,184,0.2)",
-    background: "rgba(2,6,23,0.45)",
-    color: "#dbeafe",
+    border: "1px solid rgba(15,23,42,0.08)",
+    background: "rgba(255,255,255,0.78)",
+    color: "#0f172a",
     fontWeight: 800,
     cursor: "pointer",
     padding: "14px 18px",
     fontSize: 15,
+    boxShadow: "0 8px 18px rgba(15,23,42,0.04)",
   },
   smallButton: {
     borderRadius: 12,
-    border: "1px solid rgba(16,185,129,0.35)",
-    background: "rgba(16,185,129,0.14)",
-    color: "#86efac",
-    fontWeight: 800,
+    border: "1px solid rgba(37,99,235,0.16)",
+    background: "linear-gradient(135deg, #2563eb, #3b82f6)",
+    color: "#ffffff",
+    fontWeight: 900,
     cursor: "pointer",
     padding: "10px 14px",
     fontSize: 14,
+    boxShadow: "0 10px 22px rgba(37,99,235,0.16)",
   },
   smallButtonGhost: {
     borderRadius: 12,
-    border: "1px solid rgba(148,163,184,0.2)",
-    background: "rgba(2,6,23,0.45)",
-    color: "#dbeafe",
+    border: "1px solid rgba(15,23,42,0.08)",
+    background: "rgba(255,255,255,0.78)",
+    color: "#0f172a",
     fontWeight: 800,
     cursor: "pointer",
     padding: "10px 14px",
     fontSize: 14,
+    boxShadow: "0 8px 18px rgba(15,23,42,0.04)",
   },
   listGrid: {
     display: "grid",
@@ -866,39 +889,43 @@ const styles: Record<string, React.CSSProperties> = {
   listCard: {
     borderRadius: 18,
     padding: 18,
-    background: "rgba(2,6,23,0.45)",
-    border: "1px solid rgba(148,163,184,0.16)",
+    background:
+      "linear-gradient(180deg, rgba(255,255,255,0.84), rgba(255,255,255,0.68))",
+    border: "1px solid rgba(15,23,42,0.08)",
+    boxShadow: "0 8px 18px rgba(15,23,42,0.04)",
   },
   listMeta: {
-    color: "#cbd5e1",
+    color: "rgba(15,23,42,0.72)",
     lineHeight: 1.6,
     marginTop: 8,
     wordBreak: "break-word",
+    fontWeight: 700,
   },
   feedbackBox: {
     borderRadius: 16,
     padding: 14,
     marginTop: 18,
     lineHeight: 1.6,
-    fontWeight: 700,
+    fontWeight: 800,
   },
   feedbackSuccess: {
-    background: "rgba(16,185,129,0.12)",
-    border: "1px solid rgba(16,185,129,0.35)",
-    color: "#bbf7d0",
+    background: "rgba(34,197,94,0.10)",
+    border: "1px solid rgba(34,197,94,0.20)",
+    color: "#166534",
   },
   feedbackError: {
-    background: "rgba(239,68,68,0.12)",
-    border: "1px solid rgba(239,68,68,0.35)",
-    color: "#fecaca",
+    background: "rgba(239,68,68,0.10)",
+    border: "1px solid rgba(239,68,68,0.20)",
+    color: "#b91c1c",
   },
   feedbackInfo: {
-    background: "rgba(59,130,246,0.12)",
-    border: "1px solid rgba(59,130,246,0.35)",
-    color: "#bfdbfe",
+    background: "rgba(37,99,235,0.10)",
+    border: "1px solid rgba(37,99,235,0.20)",
+    color: "#1d4ed8",
   },
   mutedText: {
-    color: "#94a3b8",
+    color: "rgba(15,23,42,0.72)",
     lineHeight: 1.7,
+    fontWeight: 700,
   },
 };

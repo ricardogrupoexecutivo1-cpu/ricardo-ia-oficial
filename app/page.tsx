@@ -28,7 +28,6 @@ const mainAccessLinks = [
   { href: "/mineracao", label: "Mineração" },
   { href: "/financeiro", label: "Financeiro" },
   { href: "/app-builder", label: "App Builder" },
-  { href: "/guardiao", label: "Guardião" },
   { href: "/chat", label: "Chat Aurora" },
   { href: SEARCH_COMPANIES_HREF, label: "Buscar empresas" },
   { href: "/planos", label: "Planos" },
@@ -58,6 +57,26 @@ const copyByLang = {
     quickTitle: "Entradas principais da plataforma",
     quickText:
       "Acesse rapidamente os módulos principais da Aurora no topo da home e também no centro visual da plataforma.",
+    accessBadge: "Comece agora",
+    accessTitle: "Entre na Aurora do jeito mais fácil",
+    accessText:
+      "Crie seu acesso rapidamente e continue navegando. O cadastro geral segue como entrada oficial da plataforma e pode ser completado no momento certo, sem travar sua experiência.",
+    accessPrimary: "Criar cadastro geral",
+    accessSecondary: "Buscar empresas",
+    accessThird: "Abrir chat Aurora",
+    accessPrimaryText:
+      "Cadastro principal da Aurora para empresas, profissionais, parceiros e operações reais.",
+    accessSecondaryText:
+      "Veja páginas públicas, oportunidades e perfis já publicados na plataforma.",
+    accessThirdText:
+      "Use a Aurora IA para ideias, textos, campanhas, imagens e direcionamento comercial.",
+    accessNote:
+      "Ao entrar com Google, Apple ou e-mail, a Aurora pode salvar seu acesso com segurança e lembrar depois que falta completar o cadastro geral.",
+    reminderTitle: "Acesso rápido, cadastro completo depois",
+    reminderText:
+      "A pessoa pode entrar agora, ficar salva na plataforma e receber um lembrete leve para concluir o cadastro geral mais tarde, sem bloqueio e sem perder o acesso.",
+    reminderPrimary: "Fazer cadastro geral",
+    reminderSecondary: "Explorar empresas",
     footerTitle: "Entrada forte • descoberta rápida • navegação comercial",
     footerText:
       "A Aurora está em constante atualização. Pode haver momentos de instabilidade durante melhorias, mas a estrutura principal da home foi organizada para facilitar acesso, entendimento e conversão.",
@@ -75,6 +94,26 @@ const copyByLang = {
     quickTitle: "Main platform entries",
     quickText:
       "Access Aurora's main modules quickly from the top navigation and also from the platform visual core.",
+    accessBadge: "Start now",
+    accessTitle: "Enter Aurora the easiest way",
+    accessText:
+      "Create your access quickly and keep browsing. General registration remains the official platform entry and can be completed at the right moment without blocking the experience.",
+    accessPrimary: "Create general registration",
+    accessSecondary: "Search companies",
+    accessThird: "Open Aurora chat",
+    accessPrimaryText:
+      "Aurora's main registration for companies, professionals, partners and real operations.",
+    accessSecondaryText:
+      "See public pages, opportunities and profiles already published on the platform.",
+    accessThirdText:
+      "Use Aurora IA for ideas, copy, campaigns, images and commercial direction.",
+    accessNote:
+      "When entering with Google, Apple or email, Aurora can safely save the access and later remind the user to complete the general registration.",
+    reminderTitle: "Quick access, full registration later",
+    reminderText:
+      "The person can enter now, remain saved on the platform and receive a light reminder to finish the general registration later, with no blocking and no lost access.",
+    reminderPrimary: "Complete registration",
+    reminderSecondary: "Explore companies",
     footerTitle: "Strong entry • quick discovery • commercial navigation",
     footerText:
       "Aurora is constantly evolving. There may be moments of instability during improvements, but the home structure was organized to improve access, understanding and conversion.",
@@ -92,6 +131,26 @@ const copyByLang = {
     quickTitle: "Entradas principales de la plataforma",
     quickText:
       "Accede rápidamente a los módulos principales de Aurora desde la navegación superior y también desde el núcleo visual de la plataforma.",
+    accessBadge: "Empieza ahora",
+    accessTitle: "Entra en Aurora de la forma más fácil",
+    accessText:
+      "Crea tu acceso rápidamente y sigue navegando. El registro general sigue siendo la entrada oficial de la plataforma y puede completarse en el momento adecuado sin bloquear la experiencia.",
+    accessPrimary: "Crear registro general",
+    accessSecondary: "Buscar empresas",
+    accessThird: "Abrir chat Aurora",
+    accessPrimaryText:
+      "Registro principal de Aurora para empresas, profesionales, socios y operaciones reales.",
+    accessSecondaryText:
+      "Ve páginas públicas, oportunidades y perfiles ya publicados en la plataforma.",
+    accessThirdText:
+      "Usa Aurora IA para ideas, textos, campañas, imágenes y dirección comercial.",
+    accessNote:
+      "Al entrar con Google, Apple o correo, Aurora puede guardar el acceso con seguridad y recordar después que falta completar el registro general.",
+    reminderTitle: "Acceso rápido, registro completo después",
+    reminderText:
+      "La persona puede entrar ahora, quedar guardada en la plataforma y recibir un recordatorio ligero para terminar el registro general más tarde, sin bloqueo y sin perder acceso.",
+    reminderPrimary: "Hacer registro general",
+    reminderSecondary: "Explorar empresas",
     footerTitle: "Entrada fuerte • descubrimiento rápido • navegación comercial",
     footerText:
       "Aurora está en constante actualización. Puede haber momentos de inestabilidad durante mejoras, pero la estructura principal fue organizada para facilitar acceso, comprensión y conversión.",
@@ -109,6 +168,20 @@ const copyByLang = {
     ctaThird: string;
     quickTitle: string;
     quickText: string;
+    accessBadge: string;
+    accessTitle: string;
+    accessText: string;
+    accessPrimary: string;
+    accessSecondary: string;
+    accessThird: string;
+    accessPrimaryText: string;
+    accessSecondaryText: string;
+    accessThirdText: string;
+    accessNote: string;
+    reminderTitle: string;
+    reminderText: string;
+    reminderPrimary: string;
+    reminderSecondary: string;
     footerTitle: string;
     footerText: string;
     footerPrimary: string;
@@ -405,6 +478,53 @@ export default function HomePage() {
                     {item.label}
                   </Link>
                 ))}
+              </div>
+            </section>
+
+            <section style={easyAccessPanelStyle}>
+              <div style={easyAccessIntroStyle}>
+                <div style={easyAccessBadgeStyle}>{t.accessBadge}</div>
+
+                <h2 style={easyAccessTitleStyle}>{t.accessTitle}</h2>
+
+                <p style={easyAccessTextStyle}>{t.accessText}</p>
+              </div>
+
+              <div style={easyAccessCardsWrapStyle}>
+                <Link href={GENERAL_SIGNUP_HREF} style={easyAccessPrimaryCardStyle}>
+                  <div style={easyCardSmallLabelStyle}>Entrada oficial</div>
+                  <div style={easyCardTitleStyle}>{t.accessPrimary}</div>
+                  <div style={easyCardTextStyle}>{t.accessPrimaryText}</div>
+                </Link>
+
+                <Link href={SEARCH_COMPANIES_HREF} style={easyAccessSecondaryCardStyle}>
+                  <div style={easyCardSmallLabelStyle}>Explorar mercado</div>
+                  <div style={easyCardTitleStyle}>{t.accessSecondary}</div>
+                  <div style={easyCardTextStyle}>{t.accessSecondaryText}</div>
+                </Link>
+
+                <Link href="/chat" style={easyAccessSecondaryCardStyle}>
+                  <div style={easyCardSmallLabelStyle}>Apoio estratégico</div>
+                  <div style={easyCardTitleStyle}>{t.accessThird}</div>
+                  <div style={easyCardTextStyle}>{t.accessThirdText}</div>
+                </Link>
+              </div>
+
+              <div style={easyAccessNoteStyle}>{t.accessNote}</div>
+            </section>
+
+            <section style={reminderPanelStyle}>
+              <div style={reminderBadgeStyle}>Escala com acesso salvo</div>
+              <h3 style={reminderTitleStyle}>{t.reminderTitle}</h3>
+              <p style={reminderTextStyle}>{t.reminderText}</p>
+
+              <div style={reminderActionsStyle}>
+                <Link href={GENERAL_SIGNUP_HREF} style={primaryBigButtonStyle}>
+                  {t.reminderPrimary}
+                </Link>
+                <Link href={SEARCH_COMPANIES_HREF} style={secondaryBigButtonStyle}>
+                  {t.reminderSecondary}
+                </Link>
               </div>
             </section>
 
@@ -858,6 +978,167 @@ const secondaryBigButtonStyle: React.CSSProperties = {
   alignItems: "center",
   boxShadow: "0 10px 22px rgba(15,23,42,0.05)",
   fontSize: 14,
+};
+
+const easyAccessPanelStyle: React.CSSProperties = {
+  display: "grid",
+  gap: 14,
+  border: "1px solid rgba(15,23,42,0.08)",
+  background:
+    "linear-gradient(180deg, rgba(255,255,255,0.84), rgba(248,250,252,0.90))",
+  borderRadius: 24,
+  padding: "18px",
+  boxShadow: "0 16px 40px rgba(15,23,42,0.06)",
+};
+
+const easyAccessIntroStyle: React.CSSProperties = {
+  display: "grid",
+  gap: 8,
+  textAlign: "center",
+  justifyItems: "center",
+};
+
+const easyAccessBadgeStyle: React.CSSProperties = {
+  display: "inline-flex",
+  alignItems: "center",
+  justifyContent: "center",
+  width: "fit-content",
+  padding: "7px 11px",
+  borderRadius: 999,
+  background: "rgba(16,185,129,0.08)",
+  border: "1px solid rgba(16,185,129,0.16)",
+  color: "#15803d",
+  fontSize: 12,
+  fontWeight: 900,
+  textTransform: "uppercase",
+  letterSpacing: "0.06em",
+};
+
+const easyAccessTitleStyle: React.CSSProperties = {
+  margin: 0,
+  fontSize: "clamp(22px, 3.4vw, 30px)",
+  lineHeight: 1.05,
+  color: "#0f172a",
+  fontWeight: 900,
+};
+
+const easyAccessTextStyle: React.CSSProperties = {
+  margin: 0,
+  maxWidth: 860,
+  color: "rgba(15,23,42,0.68)",
+  fontSize: 15,
+  lineHeight: 1.7,
+  fontWeight: 700,
+};
+
+const easyAccessCardsWrapStyle: React.CSSProperties = {
+  display: "grid",
+  gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+  gap: 12,
+};
+
+const easyAccessPrimaryCardStyle: React.CSSProperties = {
+  textDecoration: "none",
+  display: "grid",
+  gap: 8,
+  padding: "18px",
+  borderRadius: 22,
+  background: "linear-gradient(135deg, #2563eb, #3b82f6)",
+  color: "#ffffff",
+  border: "1px solid rgba(37,99,235,0.16)",
+  boxShadow: "0 16px 34px rgba(37,99,235,0.18)",
+};
+
+const easyAccessSecondaryCardStyle: React.CSSProperties = {
+  textDecoration: "none",
+  display: "grid",
+  gap: 8,
+  padding: "18px",
+  borderRadius: 22,
+  background: "rgba(255,255,255,0.84)",
+  color: "#0f172a",
+  border: "1px solid rgba(15,23,42,0.08)",
+  boxShadow: "0 12px 28px rgba(15,23,42,0.05)",
+};
+
+const easyCardSmallLabelStyle: React.CSSProperties = {
+  fontSize: 11,
+  fontWeight: 900,
+  letterSpacing: "0.08em",
+  textTransform: "uppercase",
+  opacity: 0.88,
+};
+
+const easyCardTitleStyle: React.CSSProperties = {
+  fontSize: 20,
+  fontWeight: 900,
+  lineHeight: 1.08,
+};
+
+const easyCardTextStyle: React.CSSProperties = {
+  fontSize: 14,
+  lineHeight: 1.65,
+  fontWeight: 700,
+  opacity: 0.92,
+};
+
+const easyAccessNoteStyle: React.CSSProperties = {
+  textAlign: "center",
+  color: "rgba(15,23,42,0.58)",
+  fontSize: 13,
+  lineHeight: 1.65,
+  fontWeight: 700,
+};
+
+const reminderPanelStyle: React.CSSProperties = {
+  display: "grid",
+  gap: 10,
+  border: "1px solid rgba(37,99,235,0.10)",
+  background:
+    "linear-gradient(135deg, rgba(37,99,235,0.06), rgba(255,255,255,0.82), rgba(16,185,129,0.06))",
+  borderRadius: 24,
+  padding: "18px",
+  boxShadow: "0 14px 34px rgba(15,23,42,0.05)",
+  textAlign: "center",
+};
+
+const reminderBadgeStyle: React.CSSProperties = {
+  width: "fit-content",
+  margin: "0 auto",
+  padding: "6px 10px",
+  borderRadius: 999,
+  background: "rgba(37,99,235,0.08)",
+  border: "1px solid rgba(37,99,235,0.16)",
+  color: "#2563eb",
+  fontSize: 12,
+  fontWeight: 900,
+  textTransform: "uppercase",
+  letterSpacing: "0.06em",
+};
+
+const reminderTitleStyle: React.CSSProperties = {
+  margin: 0,
+  fontSize: "clamp(20px, 3vw, 28px)",
+  fontWeight: 900,
+  color: "#0f172a",
+  lineHeight: 1.08,
+};
+
+const reminderTextStyle: React.CSSProperties = {
+  margin: 0,
+  color: "rgba(15,23,42,0.68)",
+  lineHeight: 1.7,
+  fontSize: 15,
+  fontWeight: 700,
+  maxWidth: 900,
+  marginInline: "auto",
+};
+
+const reminderActionsStyle: React.CSSProperties = {
+  display: "flex",
+  gap: 10,
+  flexWrap: "wrap",
+  justifyContent: "center",
 };
 
 const tutorialHomeStyle: React.CSSProperties = {

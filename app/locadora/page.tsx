@@ -1,71 +1,60 @@
 import Link from "next/link";
 
-const stats = [
-  { label: "Módulo ativo", value: "Locadora comercial" },
-  { label: "Fluxo inicial", value: "Captação + cadastro" },
-  { label: "Foco", value: "Venda, locação e proposta" },
+const primaryActions = [
+  { href: "/locadora/buscar", label: "Buscar veículos" },
+  { href: "/locadora/cadastrar", label: "Cadastrar locadora" },
+  { href: "/locadora/propostas", label: "Ver propostas" },
+  { href: "/locadora/financeiro", label: "Financeiro" },
 ];
 
-const solutions = [
+const operationActions = [
   {
-    title: "Cadastro de veículos",
-    description:
-      "Organize carros, utilitários, diária, status, placa, observações e disponibilidade em um fluxo real.",
-    href: "/cadastro-veiculos",
-    cta: "Abrir cadastro de veículos",
-    icon: "🚗",
+    href: "/locadora/importar",
+    title: "Importar veículos",
+    text: "Suba sua base com mais velocidade e coloque o estoque em operação com menos esforço.",
   },
   {
-    title: "Clientes cadastrados",
-    description:
-      "Visualize a base de clientes e avance para atendimento, negociação, proposta e fechamento comercial.",
-    href: "/locadora/clientes",
-    cta: "Ver clientes cadastrados",
-    icon: "👤",
+    href: "/locadora/cadastros/clientes",
+    title: "Clientes",
+    text: "Organize pessoas, contatos e histórico comercial para melhorar resposta e conversão.",
   },
   {
-    title: "Central de cadastros",
-    description:
-      "Concentre veículos, clientes, bancos, parceiros e estrutura operacional da locadora em um só lugar.",
-    href: "/locadora/cadastros",
-    cta: "Abrir central de cadastros",
-    icon: "🧩",
+    href: "/locadora/cadastros/motoristas",
+    title: "Motoristas",
+    text: "Cadastre condutores com mais clareza operacional e prepare fluxos reais de locação.",
   },
   {
-    title: "Painel da locadora",
-    description:
-      "Área administrativa para acompanhar operação, cadastro, organização do funil e próximos ajustes da plataforma.",
-    href: "/locadora/admin",
-    cta: "Entrar no painel",
-    icon: "📊",
+    href: "/locadora/propostas",
+    title: "Propostas",
+    text: "Centralize negociações, acompanhe status e avance com mais controle comercial.",
+  },
+  {
+    href: "/locadora/financeiro",
+    title: "Financeiro",
+    text: "Acompanhe faturamento, operação e leitura financeira da locadora em uma área privada.",
+  },
+  {
+    href: "/chat",
+    title: "Chat Aurora",
+    text: "Use a Aurora para criar textos, campanhas, respostas e ideias comerciais para sua locadora.",
   },
 ];
 
-const audiences = [
-  "Locadoras de veículos",
-  "Seminovos e revenda",
-  "Parceiros comerciais",
-  "Bancos e financiadoras",
-  "Motoristas e condutores",
-  "Empresas com frota",
-];
-
-const steps = [
+const highlightStats = [
   {
-    title: "1. Atrair o cliente",
-    text: "Use a página comercial, WhatsApp, anúncios e divulgação para trazer interessados para dentro da Aurora.",
+    value: "Busca real",
+    label: "Vitrine operacional",
+    text: "Mostre veículos e oportunidades com navegação clara e mais cara de plataforma profissional.",
   },
   {
-    title: "2. Cadastrar o veículo",
-    text: "Registre frota, diária, observações, disponibilidade e dados essenciais para atendimento real.",
+    value: "Propostas",
+    label: "Fluxo comercial",
+    text: "Organize atendimento, negociação e avanço comercial sem espalhar a operação.",
   },
   {
-    title: "3. Atender e propor",
-    text: "Conecte cliente, veículo, parceiro ou banco e avance para proposta comercial e fechamento.",
-  },
-  {
-    title: "4. Escalar a operação",
-    text: "Expanda para seminovos, transporte, parceiros e módulos extras sem perder o padrão da plataforma.",
+    value: "Financeiro",
+    label: "Leitura privada",
+    text: "A base financeira evolui com a operação e ajuda a proteger a gestão empresarial.",
   },
 ];
 
@@ -75,394 +64,408 @@ export default function LocadoraPage() {
       style={{
         minHeight: "100vh",
         background:
-          "radial-gradient(circle at top, rgba(34,197,94,0.16), transparent 24%), linear-gradient(180deg, #020617 0%, #020b14 38%, #000000 100%)",
-        color: "#ffffff",
+          "radial-gradient(circle at top, rgba(59,130,246,0.10), transparent 18%), radial-gradient(circle at right, rgba(16,185,129,0.10), transparent 24%), linear-gradient(180deg, #eef6ff 0%, #f7fbff 36%, #edf7f3 100%)",
+        color: "#0f172a",
+        overflow: "hidden",
       }}
     >
       <section
         style={{
-          maxWidth: 1220,
+          maxWidth: 1320,
           margin: "0 auto",
-          padding: "24px 16px 72px",
+          padding: "18px 16px 72px",
+          display: "grid",
+          gap: 18,
         }}
       >
         <header
           style={{
-            borderRadius: 28,
-            overflow: "hidden",
-            border: "1px solid rgba(74, 222, 128, 0.16)",
-            background:
-              "linear-gradient(180deg, rgba(7, 18, 30, 0.98) 0%, rgba(3, 12, 23, 0.98) 100%)",
-            boxShadow: "0 24px 80px rgba(0,0,0,0.38)",
+            display: "grid",
+            gap: 12,
+            border: "1px solid rgba(15,23,42,0.08)",
+            background: "rgba(255,255,255,0.78)",
+            backdropFilter: "blur(14px)",
+            borderRadius: 24,
+            padding: "14px",
+            boxShadow: "0 18px 42px rgba(15,23,42,0.07)",
+            position: "relative",
+            zIndex: 2,
           }}
         >
           <div
             style={{
-              padding: "22px 18px 24px",
-              borderBottom: "1px solid rgba(148,163,184,0.10)",
               display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              gap: 12,
               flexWrap: "wrap",
-              gap: 10,
             }}
           >
-            <Link href="/" style={topLink}>
-              Voltar à Home
-            </Link>
+            <div style={{ display: "grid", gap: 4 }}>
+              <div
+                style={{
+                  fontSize: 11,
+                  fontWeight: 900,
+                  letterSpacing: "0.08em",
+                  textTransform: "uppercase",
+                  color: "#2563eb",
+                }}
+              >
+                ricardoiaoficial.com
+              </div>
+              <div
+                style={{
+                  fontSize: 18,
+                  fontWeight: 900,
+                  lineHeight: 1.2,
+                  color: "#0f172a",
+                }}
+              >
+                Aurora Locadora • operação, veículos e negócios
+              </div>
+            </div>
 
-            <Link href="/guardiao" style={topLink}>
-              Ir para o Guardião
-            </Link>
-
-            <Link href="/app-builder" style={topLink}>
-              Voltar ao App Builder
-            </Link>
+            <div
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+                minHeight: 36,
+                padding: "0 12px",
+                borderRadius: 999,
+                background: "rgba(37,99,235,0.08)",
+                border: "1px solid rgba(37,99,235,0.16)",
+                color: "#2563eb",
+                fontSize: 12,
+                fontWeight: 900,
+                textTransform: "uppercase",
+                letterSpacing: "0.06em",
+              }}
+            >
+              Sistema em evolução
+            </div>
           </div>
+
+          <nav
+            style={{
+              display: "flex",
+              gap: 8,
+              flexWrap: "wrap",
+            }}
+          >
+            <Link href="/" style={topLinkStyle}>
+              Home
+            </Link>
+            <Link href="/guardiao" style={topLinkStyle}>
+              Guardião
+            </Link>
+            <Link href="/cadastro-geral" style={topLinkStyle}>
+              Cadastro geral
+            </Link>
+            <Link href="/chat" style={topLinkStyle}>
+              Chat Aurora
+            </Link>
+            <Link href="/financeiro" style={topLinkStyle}>
+              Financeiro global
+            </Link>
+          </nav>
+        </header>
+
+        <section
+          style={{
+            position: "relative",
+            overflow: "hidden",
+            borderRadius: 32,
+            border: "1px solid rgba(15,23,42,0.08)",
+            background:
+              "linear-gradient(180deg, rgba(255,255,255,0.88), rgba(255,255,255,0.74))",
+            boxShadow: "0 22px 70px rgba(15,23,42,0.09)",
+            padding: "28px 20px 22px",
+            display: "grid",
+            gap: 22,
+          }}
+        >
+          <div style={heroGlowBlue} />
+          <div style={heroGlowGreen} />
+          <div style={heroGridStyle} />
 
           <div
             style={{
-              padding: "22px 18px 28px",
+              position: "relative",
+              zIndex: 1,
               display: "grid",
-              gridTemplateColumns: "1.15fr 0.85fr",
-              gap: 18,
+              gap: 16,
+              justifyItems: "start",
             }}
           >
-            <div>
-              <div style={pillGreen}>
-                <span>🚗</span>
-                <span>Aurora Locadora • operação comercial ativa</span>
-              </div>
+            <div
+              style={{
+                display: "inline-flex",
+                width: "fit-content",
+                alignItems: "center",
+                gap: 8,
+                padding: "8px 12px",
+                borderRadius: 999,
+                background: "rgba(37,99,235,0.08)",
+                border: "1px solid rgba(37,99,235,0.16)",
+                color: "#2563eb",
+                fontSize: 12,
+                fontWeight: 900,
+                boxShadow: "0 0 16px rgba(37,99,235,0.06)",
+              }}
+            >
+              Aurora Locadora
+            </div>
 
+            <div style={{ display: "grid", gap: 12, maxWidth: 900 }}>
               <h1
                 style={{
-                  margin: "16px 0 12px",
-                  fontSize: "clamp(34px, 6vw, 64px)",
-                  lineHeight: 1.02,
-                  fontWeight: 900,
-                  letterSpacing: "-0.04em",
-                  color: "#f8fffb",
+                  margin: 0,
+                  fontSize: "clamp(34px, 6vw, 68px)",
+                  lineHeight: 0.95,
+                  letterSpacing: "-0.05em",
+                  color: "#0f172a",
                 }}
               >
-                Estrutura comercial para locadoras, frota, clientes e propostas
+                Plataforma para locadoras venderem, alugarem e operarem melhor
               </h1>
 
               <p
                 style={{
                   margin: 0,
-                  maxWidth: 760,
-                  fontSize: "clamp(15px, 3.2vw, 20px)",
+                  color: "rgba(15,23,42,0.74)",
+                  fontSize: 18,
                   lineHeight: 1.7,
-                  color: "rgba(226,232,240,0.84)",
+                  fontWeight: 700,
+                  maxWidth: 940,
                 }}
               >
-                A Aurora Locadora foi organizada para captação comercial, cadastro
-                de veículos, atendimento, clientes, parceiros, bancos e expansão
-                do funil de venda e locação. Estamos em constante atualização e
-                pode haver momentos de instabilidade.
+                Estruture sua locadora com vitrine, cadastros, propostas,
+                financeiro e apoio inteligente da Aurora em uma experiência mais
+                clara, forte e preparada para crescer. Sistema em constante
+                atualização e pode haver momentos de instabilidade durante
+                melhorias.
               </p>
-
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "repeat(auto-fit, minmax(210px, 1fr))",
-                  gap: 12,
-                  marginTop: 20,
-                }}
-              >
-                <Link href="/cadastro-veiculos" style={primaryCta}>
-                  Cadastro de Veículos
-                </Link>
-
-                <Link href="/locadora/cadastros" style={primaryCtaSoft}>
-                  Central de Cadastros
-                </Link>
-
-                <Link href="/locadora/clientes" style={darkCta}>
-                  Clientes
-                </Link>
-
-                <a
-                  href="https://wa.me/5531997490074"
-                  target="_blank"
-                  rel="noreferrer"
-                  style={whatsCta}
-                >
-                  WhatsApp Comercial
-                </a>
-              </div>
             </div>
 
-            <aside
+            <div
               style={{
-                borderRadius: 24,
-                padding: 18,
-                background: "rgba(255,255,255,0.03)",
-                border: "1px solid rgba(148,163,184,0.12)",
-                alignSelf: "stretch",
+                display: "flex",
+                gap: 10,
+                flexWrap: "wrap",
               }}
             >
-              <div style={pillBlue}>
-                <span>📈</span>
-                <span>Status comercial</span>
-              </div>
-
-              <h2
-                style={{
-                  margin: "14px 0 10px",
-                  fontSize: 26,
-                  lineHeight: 1.15,
-                  color: "#f8fffb",
-                }}
-              >
-                Página pronta para gerar entrada, organização e fechamento
-              </h2>
-
-              <p
-                style={{
-                  margin: 0,
-                  color: "rgba(226,232,240,0.78)",
-                  lineHeight: 1.7,
-                  fontSize: 14,
-                }}
-              >
-                Aqui o objetivo é reduzir desorganização, acelerar atendimento e
-                deixar visível o caminho entre veículo, cliente, proposta,
-                locação, venda e expansão operacional.
-              </p>
-
-              <div
-                style={{
-                  display: "grid",
-                  gap: 10,
-                  marginTop: 16,
-                }}
-              >
-                {stats.map((item) => (
-                  <div key={item.label} style={statBox}>
-                    <span style={{ color: "#93c5fd", fontSize: 12, fontWeight: 800 }}>
-                      {item.label}
-                    </span>
-                    <strong style={{ color: "#f8fffb", fontSize: 16 }}>
-                      {item.value}
-                    </strong>
-                  </div>
-                ))}
-              </div>
-
-              <div
-                style={{
-                  marginTop: 16,
-                  display: "grid",
-                  gap: 10,
-                }}
-              >
-                <Link href="/locadora/admin" style={darkCtaBlock}>
-                  Abrir painel da locadora
+              {primaryActions.map((item, index) => (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  style={index === 0 ? primaryButtonStyle : secondaryButtonStyle}
+                >
+                  {item.label}
                 </Link>
-
-                <Link href="/locadora/seminovos" style={darkCtaBlock}>
-                  Ir para seminovos
-                </Link>
-
-                <Link href="/locadora/transporte" style={darkCtaBlock}>
-                  Ir para transporte
-                </Link>
-              </div>
-            </aside>
+              ))}
+            </div>
           </div>
-        </header>
 
-        <section style={{ marginTop: 18 }}>
           <div
             style={{
+              position: "relative",
+              zIndex: 1,
               display: "grid",
-              gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))",
-              gap: 14,
+              gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+              gap: 12,
             }}
           >
-            {solutions.map((item) => (
-              <Link key={item.title} href={item.href} style={cardLink}>
-                <article style={card}>
-                  <div style={iconBox}>{item.icon}</div>
-
-                  <h3
-                    style={{
-                      margin: "0 0 10px",
-                      fontSize: 22,
-                      lineHeight: 1.2,
-                      color: "#f8fffb",
-                    }}
-                  >
-                    {item.title}
-                  </h3>
-
-                  <p
-                    style={{
-                      margin: 0,
-                      color: "rgba(226,232,240,0.74)",
-                      lineHeight: 1.65,
-                      fontSize: 14,
-                    }}
-                  >
-                    {item.description}
-                  </p>
-
-                  <span style={cardAction}>{item.cta}</span>
-                </article>
-              </Link>
+            {highlightStats.map((item) => (
+              <div key={item.label} style={statCardStyle}>
+                <div
+                  style={{
+                    fontSize: 24,
+                    fontWeight: 900,
+                    color: "#0f172a",
+                    lineHeight: 1,
+                  }}
+                >
+                  {item.value}
+                </div>
+                <div
+                  style={{
+                    fontSize: 13,
+                    fontWeight: 900,
+                    textTransform: "uppercase",
+                    letterSpacing: "0.05em",
+                    color: "#2563eb",
+                  }}
+                >
+                  {item.label}
+                </div>
+                <div
+                  style={{
+                    color: "rgba(15,23,42,0.68)",
+                    lineHeight: 1.7,
+                    fontSize: 14,
+                  }}
+                >
+                  {item.text}
+                </div>
+              </div>
             ))}
           </div>
         </section>
 
         <section
           style={{
-            marginTop: 18,
             display: "grid",
-            gridTemplateColumns: "1fr 1fr",
-            gap: 16,
+            gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
+            gap: 18,
           }}
         >
-          <div style={panel}>
-            <div style={pillGreen}>
-              <span>🎯</span>
-              <span>Para quem é</span>
+          <div style={panelStyle}>
+            <div style={sectionBadgeStyle}>Entrada comercial</div>
+
+            <h2
+              style={{
+                margin: 0,
+                fontSize: "clamp(26px, 4vw, 42px)",
+                lineHeight: 1.02,
+                color: "#0f172a",
+                letterSpacing: "-0.04em",
+              }}
+            >
+              Faça sua locadora aparecer com mais clareza e credibilidade
+            </h2>
+
+            <p style={sectionTextStyle}>
+              A Aurora foi preparada para receber locadoras, organizar veículos,
+              apresentar oportunidades, conectar atendimento e deixar a operação
+              com mais cara de negócio real. A entrada precisa ser simples para
+              o cliente e forte para a empresa.
+            </p>
+
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+                gap: 12,
+              }}
+            >
+              <div style={infoCardStyle}>
+                <div style={infoTitleStyle}>Vitrine profissional</div>
+                <div style={infoTextStyle}>
+                  Exiba estoque, categorias e oportunidades em uma navegação
+                  mais limpa e fácil de entender.
+                </div>
+              </div>
+
+              <div style={infoCardStyle}>
+                <div style={infoTitleStyle}>Captação organizada</div>
+                <div style={infoTextStyle}>
+                  Cadastre clientes, acompanhe propostas e estruture o fluxo
+                  comercial em um único ambiente.
+                </div>
+              </div>
+
+              <div style={infoCardStyle}>
+                <div style={infoTitleStyle}>Operação mais forte</div>
+                <div style={infoTextStyle}>
+                  Una busca, cadastro, importação e gestão para reduzir ruído e
+                  ganhar velocidade no dia a dia.
+                </div>
+              </div>
+
+              <div style={infoCardStyle}>
+                <div style={infoTitleStyle}>Base para expansão</div>
+                <div style={infoTextStyle}>
+                  A estrutura foi pensada para crescer com propostas, parceiros,
+                  atendimento e financeiro sem perder clareza.
+                </div>
+              </div>
             </div>
+          </div>
+
+          <div style={panelStyle}>
+            <div style={sectionBadgeStyle}>Acesso rápido</div>
 
             <h3
               style={{
-                margin: "14px 0 10px",
-                fontSize: 28,
-                lineHeight: 1.15,
-                color: "#f8fffb",
+                margin: 0,
+                fontSize: 24,
+                lineHeight: 1.08,
+                color: "#0f172a",
               }}
             >
-              Público comercial que pode operar dentro da Aurora Locadora
+              Operação da locadora
             </h3>
 
             <div
               style={{
                 display: "grid",
-                gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
                 gap: 10,
               }}
             >
-              {audiences.map((item) => (
-                <div key={item} style={chipBox}>
-                  {item}
-                </div>
+              {operationActions.map((item) => (
+                <Link key={item.href} href={item.href} style={quickCardLinkStyle}>
+                  <div style={quickCardTitleStyle}>{item.title}</div>
+                  <div style={quickCardTextStyle}>{item.text}</div>
+                </Link>
               ))}
             </div>
-          </div>
-
-          <div style={panel}>
-            <div style={pillBlue}>
-              <span>🧠</span>
-              <span>Direção do módulo</span>
-            </div>
-
-            <h3
-              style={{
-                margin: "14px 0 10px",
-                fontSize: 28,
-                lineHeight: 1.15,
-                color: "#f8fffb",
-              }}
-            >
-              Estrutura pensada para vender, locar e escalar
-            </h3>
-
-            <p
-              style={{
-                margin: 0,
-                color: "rgba(226,232,240,0.78)",
-                lineHeight: 1.75,
-                fontSize: 15,
-              }}
-            >
-              A Aurora Locadora não deve ser só uma página bonita. Ela precisa
-              funcionar como base comercial real, com entrada de veículos,
-              clientes, parceiros, proposta, comunicação e futura integração com
-              bancos, seguros e oportunidades de fechamento dentro da própria
-              plataforma.
-            </p>
           </div>
         </section>
 
-        <section style={{ marginTop: 18 }}>
-          <div style={panel}>
-            <div style={pillGreen}>
-              <span>⚙️</span>
-              <span>Fluxo recomendado</span>
-            </div>
+        <section
+          style={{
+            borderRadius: 28,
+            border: "1px solid rgba(15,23,42,0.08)",
+            background:
+              "linear-gradient(135deg, rgba(37,99,235,0.06), rgba(16,185,129,0.06))",
+            boxShadow: "0 18px 44px rgba(15,23,42,0.07)",
+            padding: "22px 18px",
+            display: "grid",
+            gap: 12,
+            textAlign: "center",
+          }}
+        >
+          <div
+            style={{
+              fontSize: "clamp(22px, 4vw, 30px)",
+              fontWeight: 900,
+              lineHeight: 1.08,
+              color: "#0f172a",
+            }}
+          >
+            Locadora pronta para crescer com mais organização e presença
+          </div>
 
-            <h3
-              style={{
-                margin: "14px 0 16px",
-                fontSize: 30,
-                lineHeight: 1.12,
-                color: "#f8fffb",
-              }}
-            >
-              Caminho comercial para operação da locadora
-            </h3>
+          <div
+            style={{
+              maxWidth: 920,
+              margin: "0 auto",
+              color: "rgba(15,23,42,0.68)",
+              lineHeight: 1.7,
+              fontSize: 15,
+            }}
+          >
+            A plataforma está em constante atualização e pode passar por momentos
+            de instabilidade durante melhorias. Mesmo assim, esta área já foi
+            estruturada para melhorar descoberta, operação e apresentação da
+            locadora dentro do ecossistema Aurora.
+          </div>
 
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-                gap: 12,
-              }}
-            >
-              {steps.map((step) => (
-                <div key={step.title} style={stepCard}>
-                  <strong
-                    style={{
-                      display: "block",
-                      marginBottom: 10,
-                      fontSize: 17,
-                      color: "#f8fffb",
-                    }}
-                  >
-                    {step.title}
-                  </strong>
-
-                  <span
-                    style={{
-                      color: "rgba(226,232,240,0.76)",
-                      lineHeight: 1.65,
-                      fontSize: 14,
-                    }}
-                  >
-                    {step.text}
-                  </span>
-                </div>
-              ))}
-            </div>
-
-            <div
-              style={{
-                marginTop: 18,
-                display: "grid",
-                gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-                gap: 12,
-              }}
-            >
-              <Link href="/cadastro-veiculos" style={primaryCta}>
-                Começar pelo cadastro de veículos
-              </Link>
-
-              <Link href="/locadora/cadastros" style={primaryCtaSoft}>
-                Organizar central de cadastros
-              </Link>
-
-              <a
-                href="https://wa.me/5531997490074"
-                target="_blank"
-                rel="noreferrer"
-                style={whatsCta}
-              >
-                Falar no WhatsApp agora
-              </a>
-            </div>
+          <div
+            style={{
+              display: "flex",
+              gap: 10,
+              flexWrap: "wrap",
+              justifyContent: "center",
+            }}
+          >
+            <Link href="/locadora/cadastrar" style={primaryButtonStyle}>
+              Cadastrar locadora
+            </Link>
+            <Link href="/locadora/buscar" style={secondaryButtonStyle}>
+              Explorar veículos
+            </Link>
           </div>
         </section>
       </section>
@@ -470,187 +473,172 @@ export default function LocadoraPage() {
   );
 }
 
-const topLink = {
-  display: "inline-flex",
-  alignItems: "center",
-  justifyContent: "center",
-  minHeight: 42,
-  padding: "0 14px",
-  borderRadius: 12,
+const heroGlowBlue: React.CSSProperties = {
+  position: "absolute",
+  top: -140,
+  right: -100,
+  width: 420,
+  height: 420,
+  borderRadius: 999,
+  background:
+    "radial-gradient(circle, rgba(59,130,246,0.12) 0%, rgba(59,130,246,0.04) 44%, transparent 72%)",
+  filter: "blur(24px)",
+  pointerEvents: "none",
+};
+
+const heroGlowGreen: React.CSSProperties = {
+  position: "absolute",
+  bottom: -120,
+  left: -90,
+  width: 380,
+  height: 380,
+  borderRadius: 999,
+  background:
+    "radial-gradient(circle, rgba(16,185,129,0.10) 0%, rgba(16,185,129,0.03) 45%, transparent 72%)",
+  filter: "blur(22px)",
+  pointerEvents: "none",
+};
+
+const heroGridStyle: React.CSSProperties = {
+  position: "absolute",
+  inset: 0,
+  backgroundImage:
+    "linear-gradient(rgba(15,23,42,0.022) 1px, transparent 1px), linear-gradient(90deg, rgba(15,23,42,0.022) 1px, transparent 1px)",
+  backgroundSize: "42px 42px",
+  opacity: 0.24,
+  pointerEvents: "none",
+};
+
+const topLinkStyle: React.CSSProperties = {
   textDecoration: "none",
-  fontWeight: 700,
-  fontSize: 14,
-  color: "#dbeafe",
-  background: "rgba(255,255,255,0.03)",
-  border: "1px solid rgba(148,163,184,0.14)",
-};
-
-const pillGreen = {
-  display: "inline-flex",
-  alignItems: "center",
-  gap: 8,
-  padding: "8px 12px",
+  color: "#0f172a",
+  border: "1px solid rgba(15,23,42,0.08)",
+  background: "rgba(255,255,255,0.68)",
   borderRadius: 999,
-  background: "rgba(34,197,94,0.12)",
-  border: "1px solid rgba(74,222,128,0.22)",
-  color: "#bbf7d0",
-  fontSize: 13,
+  padding: "10px 14px",
   fontWeight: 800,
-};
-
-const pillBlue = {
-  display: "inline-flex",
-  alignItems: "center",
-  gap: 8,
-  padding: "8px 12px",
-  borderRadius: 999,
-  background: "rgba(59,130,246,0.12)",
-  border: "1px solid rgba(96,165,250,0.22)",
-  color: "#dbeafe",
   fontSize: 13,
-  fontWeight: 800,
-};
-
-const primaryCta = {
   display: "inline-flex",
   alignItems: "center",
   justifyContent: "center",
-  minHeight: 52,
-  padding: "0 18px",
+  boxShadow: "0 8px 16px rgba(15,23,42,0.04)",
+};
+
+const primaryButtonStyle: React.CSSProperties = {
+  textDecoration: "none",
+  color: "#ffffff",
+  background: "linear-gradient(135deg, #2563eb, #3b82f6)",
+  border: "1px solid rgba(37,99,235,0.16)",
   borderRadius: 16,
-  textDecoration: "none",
+  padding: "13px 16px",
   fontWeight: 900,
-  fontSize: 15,
-  color: "#04130a",
-  background: "linear-gradient(135deg, #22c55e, #4ade80)",
-};
-
-const primaryCtaSoft = {
+  fontSize: 14,
   display: "inline-flex",
   alignItems: "center",
   justifyContent: "center",
-  minHeight: 52,
-  padding: "0 18px",
+  boxShadow: "0 14px 30px rgba(37,99,235,0.16)",
+};
+
+const secondaryButtonStyle: React.CSSProperties = {
+  textDecoration: "none",
+  color: "#0f172a",
+  background: "rgba(255,255,255,0.78)",
+  border: "1px solid rgba(15,23,42,0.08)",
   borderRadius: 16,
-  textDecoration: "none",
-  fontWeight: 800,
-  fontSize: 15,
-  color: "#f0fdf4",
-  background: "rgba(34,197,94,0.14)",
-  border: "1px solid rgba(74,222,128,0.22)",
-};
-
-const darkCta = {
-  display: "inline-flex",
-  alignItems: "center",
-  justifyContent: "center",
-  minHeight: 52,
-  padding: "0 18px",
-  borderRadius: 16,
-  textDecoration: "none",
-  fontWeight: 800,
-  fontSize: 15,
-  color: "#e5e7eb",
-  background: "rgba(15,23,42,0.72)",
-  border: "1px solid rgba(148,163,184,0.20)",
-};
-
-const darkCtaBlock = {
-  display: "inline-flex",
-  alignItems: "center",
-  justifyContent: "center",
-  minHeight: 48,
-  padding: "0 16px",
-  borderRadius: 14,
-  textDecoration: "none",
+  padding: "13px 16px",
   fontWeight: 800,
   fontSize: 14,
-  color: "#e5e7eb",
-  background: "rgba(15,23,42,0.72)",
-  border: "1px solid rgba(148,163,184,0.20)",
-};
-
-const whatsCta = {
   display: "inline-flex",
   alignItems: "center",
   justifyContent: "center",
-  minHeight: 52,
-  padding: "0 18px",
-  borderRadius: 16,
-  textDecoration: "none",
-  fontWeight: 900,
-  fontSize: 15,
-  color: "#04110a",
-  background: "#25D366",
+  boxShadow: "0 10px 22px rgba(15,23,42,0.05)",
 };
 
-const statBox = {
+const statCardStyle: React.CSSProperties = {
+  borderRadius: 24,
+  padding: "18px 16px",
+  border: "1px solid rgba(15,23,42,0.08)",
+  background: "rgba(255,255,255,0.76)",
   display: "grid",
-  gap: 6,
-  padding: 14,
-  borderRadius: 16,
-  background: "rgba(255,255,255,0.03)",
-  border: "1px solid rgba(148,163,184,0.10)",
+  gap: 8,
+  boxShadow: "0 14px 30px rgba(15,23,42,0.05)",
 };
 
-const cardLink = {
-  display: "block",
-  textDecoration: "none",
-  color: "inherit",
+const panelStyle: React.CSSProperties = {
+  borderRadius: 28,
+  border: "1px solid rgba(15,23,42,0.08)",
+  background: "rgba(255,255,255,0.80)",
+  boxShadow: "0 18px 42px rgba(15,23,42,0.06)",
+  padding: "22px 18px",
+  display: "grid",
+  gap: 14,
 };
 
-const card = {
-  height: "100%",
-  padding: 20,
-  borderRadius: 24,
-  background:
-    "linear-gradient(180deg, rgba(8,18,32,0.98) 0%, rgba(6,13,24,0.98) 100%)",
-  border: "1px solid rgba(148,163,184,0.12)",
-  boxShadow: "0 16px 40px rgba(0,0,0,0.20)",
-};
-
-const iconBox = {
-  width: 52,
-  height: 52,
+const sectionBadgeStyle: React.CSSProperties = {
   display: "inline-flex",
+  width: "fit-content",
+  minHeight: 34,
   alignItems: "center",
   justifyContent: "center",
-  borderRadius: 16,
-  background: "rgba(34,197,94,0.12)",
-  border: "1px solid rgba(74,222,128,0.18)",
-  fontSize: 26,
-  marginBottom: 14,
+  padding: "0 12px",
+  borderRadius: 999,
+  background: "rgba(37,99,235,0.08)",
+  border: "1px solid rgba(37,99,235,0.16)",
+  color: "#2563eb",
+  fontSize: 12,
+  fontWeight: 900,
 };
 
-const cardAction = {
-  display: "inline-flex",
-  marginTop: 16,
-  color: "#86efac",
-  fontWeight: 800,
+const sectionTextStyle: React.CSSProperties = {
+  margin: 0,
+  color: "rgba(15,23,42,0.70)",
+  lineHeight: 1.75,
+  fontSize: 15,
+};
+
+const infoCardStyle: React.CSSProperties = {
+  borderRadius: 22,
+  border: "1px solid rgba(15,23,42,0.08)",
+  background: "rgba(255,255,255,0.86)",
+  padding: "16px 14px",
+  display: "grid",
+  gap: 8,
+  boxShadow: "0 10px 24px rgba(15,23,42,0.04)",
+};
+
+const infoTitleStyle: React.CSSProperties = {
+  color: "#0f172a",
+  fontSize: 16,
+  fontWeight: 900,
+  lineHeight: 1.1,
+};
+
+const infoTextStyle: React.CSSProperties = {
+  color: "rgba(15,23,42,0.68)",
+  lineHeight: 1.7,
   fontSize: 14,
 };
 
-const panel = {
-  borderRadius: 24,
-  padding: 20,
-  border: "1px solid rgba(148,163,184,0.12)",
-  background:
-    "linear-gradient(180deg, rgba(8,18,32,0.98) 0%, rgba(6,13,24,0.98) 100%)",
+const quickCardLinkStyle: React.CSSProperties = {
+  textDecoration: "none",
+  borderRadius: 22,
+  border: "1px solid rgba(15,23,42,0.08)",
+  background: "rgba(255,255,255,0.86)",
+  padding: "16px 14px",
+  display: "grid",
+  gap: 8,
+  boxShadow: "0 10px 24px rgba(15,23,42,0.04)",
 };
 
-const chipBox = {
-  padding: "12px 14px",
-  borderRadius: 14,
-  background: "rgba(255,255,255,0.03)",
-  border: "1px solid rgba(148,163,184,0.10)",
-  color: "#f8fffb",
-  fontWeight: 700,
+const quickCardTitleStyle: React.CSSProperties = {
+  color: "#0f172a",
+  fontSize: 16,
+  fontWeight: 900,
+  lineHeight: 1.1,
+};
+
+const quickCardTextStyle: React.CSSProperties = {
+  color: "rgba(15,23,42,0.68)",
+  lineHeight: 1.7,
   fontSize: 14,
-};
-
-const stepCard = {
-  padding: 18,
-  borderRadius: 18,
-  background: "rgba(255,255,255,0.03)",
-  border: "1px solid rgba(148,163,184,0.10)",
 };

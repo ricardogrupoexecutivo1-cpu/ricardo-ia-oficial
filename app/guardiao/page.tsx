@@ -787,7 +787,14 @@ export default function GuardiaoPage() {
                   <InfoItem label="Atendimento" value={cadastro.atendimento_tipo || "-"} />
                   <InfoItem label="Cidade / estado" value={getLocationLabel(cadastro)} />
                   <InfoItem label="Origem" value={cadastro.origem || "-"} />
-                  <InfoItem label="Tipo" value={cadastro.cadastro_tipo || "-"} />
+                  <InfoItem
+                    label="Tipo"
+                    value={
+                      cadastro.cadastro_completo
+                        ? "completo"
+                        : cadastro.cadastro_tipo || "basico"
+                    }
+                  />
                   <InfoItem
                     label="Cadastro completo"
                     value={cadastro.cadastro_completo ? "SIM" : "NÃO"}

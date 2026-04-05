@@ -1,5 +1,1 @@
-import { redirect } from "next/navigation";
-
-export default function CadastroPage() {
-  redirect("/cadastro-geral");
-}
+export { default } from "../cadastro-geral/page";

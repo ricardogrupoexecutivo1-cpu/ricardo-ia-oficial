@@ -2,211 +2,263 @@ import Link from "next/link";
 
 export default function NotFoundPage() {
   return (
-    <main
-      style={{
-        minHeight: "100vh",
-        background:
-          "radial-gradient(circle at top, rgba(59,130,246,0.14), transparent 28%), #050816",
-        color: "#e5eef8",
-        padding: "32px 16px 80px",
-        display: "flex",
-        alignItems: "center",
-      }}
-    >
-      <div style={{ maxWidth: 1100, margin: "0 auto", width: "100%" }}>
-        <section
-          style={{
-            border: "1px solid rgba(148,163,184,0.18)",
-            background: "rgba(15,23,42,0.72)",
-            backdropFilter: "blur(10px)",
-            borderRadius: 24,
-            padding: 32,
-            boxShadow: "0 20px 80px rgba(0,0,0,0.35)",
-            textAlign: "center",
-          }}
-        >
-          <div
-            style={{
-              display: "inline-flex",
-              padding: "8px 12px",
-              borderRadius: 999,
-              background: "rgba(239,68,68,0.14)",
-              border: "1px solid rgba(239,68,68,0.25)",
-              color: "#fca5a5",
-              fontSize: 13,
-              fontWeight: 700,
-              letterSpacing: 0.3,
-              marginBottom: 16,
-            }}
-          >
-            Página não encontrada
-          </div>
+    <main style={pageStyle}>
+      <section style={containerStyle}>
+        {/* HERO */}
+        <div style={heroStyle}>
+          <div style={badgeStyle}>⚠️ Rota não encontrada</div>
 
-          <h1
-            style={{
-              fontSize: 42,
-              lineHeight: 1.05,
-              margin: 0,
-            }}
-          >
-            404 — esta página não foi encontrada
+          <h1 style={titleStyle}>
+            Você chegou em uma área que está em atualização
           </h1>
 
-          <p
-            style={{
-              color: "#94a3b8",
-              marginTop: 16,
-              maxWidth: 760,
-              marginLeft: "auto",
-              marginRight: "auto",
-              fontSize: 16,
-              lineHeight: 1.7,
-            }}
-          >
-            A rota acessada não existe ou está em atualização. Estamos em
-            constante atualização e pode haver momentos de instabilidade.
-            Enquanto isso, você pode seguir para as áreas principais da Aurora
-            abaixo.
+          <p style={descriptionStyle}>
+            A Aurora está evoluindo constantemente. Algumas rotas podem ser
+            ajustadas durante melhorias. Mas você pode continuar agora mesmo
+            pelos caminhos principais abaixo.
           </p>
 
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-              gap: 16,
-              marginTop: 28,
-            }}
-          >
-            {[
-              {
-                title: "Home",
-                description: "Voltar para a página principal da Aurora.",
-                href: "/",
-                color: "#93c5fd",
-                border: "rgba(147,197,253,0.25)",
-              },
-              {
-                title: "Chat",
-                description: "Abrir a área principal de uso da Aurora IA.",
-                href: "/chat",
-                color: "#86efac",
-                border: "rgba(134,239,172,0.25)",
-              },
-              {
-                title: "Explorar",
-                description: "Ver páginas públicas, imagens e conteúdos da plataforma.",
-                href: "/explorar",
-                color: "#facc15",
-                border: "rgba(250,204,21,0.25)",
-              },
-              {
-                title: "Planos",
-                description: "Ir para a área comercial e de monetização.",
-                href: "/planos",
-                color: "#c4b5fd",
-                border: "rgba(196,181,253,0.25)",
-              },
-              {
-                title: "AGRO",
-                description: "Abrir a área AGRO ativada para eliminar 404.",
-                href: "/agro",
-                color: "#86efac",
-                border: "rgba(134,239,172,0.25)",
-              },
-              {
-                title: "Imóveis",
-                description: "Abrir a área de imóveis ativada para eliminar 404.",
-                href: "/imoveis",
-                color: "#93c5fd",
-                border: "rgba(147,197,253,0.25)",
-              },
-              {
-                title: "Imobiliárias",
-                description: "Abrir a área de imobiliárias da plataforma.",
-                href: "/imobiliarias",
-                color: "#c7d2fe",
-                border: "rgba(199,210,254,0.25)",
-              },
-              {
-                title: "App Builder",
-                description: "Voltar ao construtor de apps e módulos da Aurora.",
-                href: "/app-builder",
-                color: "#f9a8d4",
-                border: "rgba(249,168,212,0.25)",
-              },
-            ].map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                style={{
-                  display: "block",
-                  textDecoration: "none",
-                  borderRadius: 20,
-                  padding: 18,
-                  background: "rgba(2,6,23,0.45)",
-                  border: `1px solid ${item.border}`,
-                  textAlign: "left",
-                }}
-              >
-                <div
-                  style={{
-                    fontWeight: 800,
-                    fontSize: 18,
-                    color: item.color,
-                  }}
-                >
-                  {item.title}
-                </div>
+          <div style={actionsStyle}>
+            <Link href="/" style={primaryButtonStyle}>
+              Ir para a Home
+            </Link>
 
-                <p
-                  style={{
-                    color: "#cbd5e1",
-                    marginTop: 10,
-                    marginBottom: 0,
-                    lineHeight: 1.6,
-                  }}
-                >
-                  {item.description}
-                </p>
-              </Link>
-            ))}
+            <Link href="/chat" style={secondaryButtonStyle}>
+              Abrir Chat da Aurora
+            </Link>
           </div>
+        </div>
 
-          <div
-            style={{
-              marginTop: 28,
-              borderRadius: 18,
-              padding: 18,
-              background: "rgba(2,6,23,0.45)",
-              border: "1px solid rgba(148,163,184,0.14)",
-            }}
-          >
-            <div
-              style={{
-                fontSize: 12,
-                color: "#94a3b8",
-                textTransform: "uppercase",
-                letterSpacing: 0.4,
-              }}
-            >
-              Próximo passo recomendado
-            </div>
+        {/* CAMINHOS PRINCIPAIS */}
+        <section style={sectionStyle}>
+          <h2 style={sectionTitleStyle}>Escolha seu caminho na Aurora</h2>
 
-            <p
-              style={{
-                marginTop: 10,
-                marginBottom: 0,
-                color: "#e2e8f0",
-                lineHeight: 1.7,
-              }}
-            >
-              Continue a varredura nas rotas mais acessadas do Analytics e,
-              quando alguma rota inexistente aparecer, criamos ou redirecionamos
-              imediatamente para proteger SEO, retenção e experiência do usuário.
-            </p>
+          <div style={gridStyle}>
+            <Card
+              title="Locadora"
+              text="Cadastre veículos, motoristas, clientes e feche negócios."
+              href="/locadora"
+            />
+
+            <Card
+              title="AGRO"
+              text="Conecte compradores, fornecedores e oportunidades."
+              href="/agro"
+            />
+
+            <Card
+              title="Imóveis"
+              text="Cadastre imóveis e gere negócios imobiliários."
+              href="/imoveis"
+            />
+
+            <Card
+              title="Explorar"
+              text="Veja conteúdos, imagens e empresas na plataforma."
+              href="/explorar"
+            />
+
+            <Card
+              title="Planos"
+              text="Conheça os planos e monetização da Aurora."
+              href="/planos"
+            />
+
+            <Card
+              title="App Builder"
+              text="Crie sistemas, módulos e aplicações com IA."
+              href="/app-builder"
+            />
           </div>
         </section>
-      </div>
+
+        {/* CTA FINAL */}
+        <section style={ctaBoxStyle}>
+          <h3 style={ctaTitleStyle}>Comece agora dentro da Aurora</h3>
+
+          <p style={ctaTextStyle}>
+            A melhor forma de aproveitar a plataforma é entrando por uma área
+            principal e seguindo o fluxo. O sistema está em constante evolução.
+          </p>
+
+          <Link href="/" style={ctaButtonStyle}>
+            Criar cadastro e começar
+          </Link>
+        </section>
+      </section>
     </main>
   );
 }
+
+/* COMPONENTE CARD */
+function Card({
+  title,
+  text,
+  href,
+}: {
+  title: string;
+  text: string;
+  href: string;
+}) {
+  return (
+    <Link href={href} style={cardLinkStyle}>
+      <article style={cardStyle}>
+        <h3 style={cardTitleStyle}>{title}</h3>
+        <p style={cardTextStyle}>{text}</p>
+        <span style={cardActionStyle}>Acessar</span>
+      </article>
+    </Link>
+  );
+}
+
+/* ESTILOS */
+
+const pageStyle = {
+  minHeight: "100vh",
+  background:
+    "linear-gradient(180deg, #eef6ff 0%, #f8fbff 40%, #eef9f2 100%)",
+  color: "#0f172a",
+};
+
+const containerStyle = {
+  maxWidth: 1100,
+  margin: "0 auto",
+  padding: 20,
+  display: "grid",
+  gap: 24,
+};
+
+const heroStyle = {
+  background: "#ffffff",
+  borderRadius: 24,
+  padding: 24,
+  border: "1px solid #e5e7eb",
+  boxShadow: "0 20px 60px rgba(0,0,0,0.05)",
+  textAlign: "center" as const,
+};
+
+const badgeStyle = {
+  display: "inline-block",
+  padding: "6px 12px",
+  borderRadius: 999,
+  background: "#fff7ed",
+  border: "1px solid #fed7aa",
+  color: "#c2410c",
+  fontWeight: 700,
+  fontSize: 12,
+};
+
+const titleStyle = {
+  fontSize: 32,
+  fontWeight: 900,
+  marginTop: 12,
+};
+
+const descriptionStyle = {
+  marginTop: 12,
+  color: "#475569",
+  maxWidth: 700,
+  marginLeft: "auto",
+  marginRight: "auto",
+};
+
+const actionsStyle = {
+  marginTop: 20,
+  display: "flex",
+  gap: 10,
+  justifyContent: "center",
+  flexWrap: "wrap" as const,
+};
+
+const primaryButtonStyle = {
+  background: "#2563eb",
+  color: "#fff",
+  padding: "12px 16px",
+  borderRadius: 12,
+  textDecoration: "none",
+  fontWeight: 700,
+};
+
+const secondaryButtonStyle = {
+  background: "#fff",
+  border: "1px solid #e5e7eb",
+  padding: "12px 16px",
+  borderRadius: 12,
+  textDecoration: "none",
+};
+
+const sectionStyle = {
+  background: "#ffffff",
+  borderRadius: 24,
+  padding: 24,
+  border: "1px solid #e5e7eb",
+};
+
+const sectionTitleStyle = {
+  fontSize: 20,
+  fontWeight: 800,
+};
+
+const gridStyle = {
+  display: "grid",
+  gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+  gap: 16,
+  marginTop: 16,
+};
+
+const cardLinkStyle = {
+  textDecoration: "none",
+  color: "inherit",
+};
+
+const cardStyle = {
+  background: "#f8fafc",
+  padding: 16,
+  borderRadius: 16,
+  border: "1px solid #e5e7eb",
+};
+
+const cardTitleStyle = {
+  fontWeight: 800,
+};
+
+const cardTextStyle = {
+  color: "#64748b",
+  marginTop: 8,
+};
+
+const cardActionStyle = {
+  marginTop: 10,
+  display: "inline-block",
+  color: "#2563eb",
+  fontWeight: 700,
+};
+
+const ctaBoxStyle = {
+  background: "#0f172a",
+  color: "#fff",
+  borderRadius: 24,
+  padding: 24,
+  textAlign: "center" as const,
+};
+
+const ctaTitleStyle = {
+  fontSize: 20,
+  fontWeight: 900,
+};
+
+const ctaTextStyle = {
+  marginTop: 10,
+  color: "#cbd5e1",
+};
+
+const ctaButtonStyle = {
+  marginTop: 16,
+  display: "inline-block",
+  background: "#22c55e",
+  color: "#04110a",
+  padding: "12px 16px",
+  borderRadius: 12,
+  fontWeight: 800,
+  textDecoration: "none",
+};
