@@ -1,43 +1,63 @@
-import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
+type TableName =
+  | "cadastros_gerais"
+  | "vw_cadastro_principal_por_email";
+
 type PrefillResponse = {
-  ok: boolean;
+  ok: true;
   found: boolean;
-  sourceTable: string;
+  source: TableName | null;
   data: {
+    id: string | null;
     fullName: string;
     companyName: string;
     whatsapp: string;
+    email: string;
     city: string;
     state: string;
+    publicName: string;
+    publicDescription: string;
     segment: string;
-    slug: string;
-    status: string;
-    email: string;
     coverageType: string;
     registrationType: string;
-    registrationComplete: string;
-    sourceOrigin: string;
-    completionDeadline: string;
+    registrationComplete: boolean;
+    status: string;
+    origin: string;
   } | null;
-  error?: string;
 };
 
-function getAdminClient() {
-  const supabaseUrl =
-    process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || "";
+type ErrorResponse = {
+  ok: false;
+  found: false;
+  error: string;
+};
 
-  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
+type GenericRow = Record<string, unknown>;
 
-  if (!supabaseUrl || !serviceRoleKey) {
-    return null;
+function getEnv(name: string) {
+  const value = process.env[name];
+  return typeof value === "string" && value.trim() ? value.trim() : "";
+}
+
+function getSupabaseServer() {
+  const url =
+    getEnv("SUPABASE_URL") || getEnv("NEXT_PUBLIC_SUPABASE_URL");
+  const anonKey =
+    getEnv("SUPABASE_SERVICE_ROLE_KEY") ||
+    getEnv("NEXT_PUBLIC_SUPABASE_ANON_KEY") ||
+    getEnv("SUPABASE_ANON_KEY");
+
+  if (!url || !anonKey) {
+    throw new Error(
+      "Supabase não configurado. Verifique SUPABASE_URL/NEXT_PUBLIC_SUPABASE_URL e SUPABASE_SERVICE_ROLE_KEY/NEXT_PUBLIC_SUPABASE_ANON_KEY."
+    );
   }
 
-  return createClient(supabaseUrl, serviceRoleKey, {
+  return createClient(url, anonKey, {
     auth: {
       persistSession: false,
       autoRefreshToken: false,
@@ -45,150 +65,205 @@ function getAdminClient() {
   });
 }
 
-function getStringValue(row: Record<string, unknown>, keys: string[]) {
+function normalizeEmail(value: unknown) {
+  return String(value ?? "").trim().toLowerCase();
+}
+
+function getStringValue(
+  row: GenericRow | null | undefined,
+  keys: string[]
+): string {
+  if (!row) return "";
+
   for (const key of keys) {
     const value = row[key];
 
     if (typeof value === "string" && value.trim()) {
       return value.trim();
     }
-
-    if (typeof value === "number") {
-      return String(value);
-    }
-
-    if (typeof value === "boolean") {
-      return value ? "true" : "false";
-    }
   }
 
   return "";
 }
 
-function normalizeRow(row: Record<string, unknown>, sourceTable: string) {
+function getBooleanValue(
+  row: GenericRow | null | undefined,
+  keys: string[]
+): boolean {
+  if (!row) return false;
+
+  for (const key of keys) {
+    const value = row[key];
+
+    if (typeof value === "boolean") {
+      return value;
+    }
+
+    if (typeof value === "string") {
+      const normalized = value.trim().toLowerCase();
+
+      if (normalized === "true" || normalized === "sim" || normalized === "1") {
+        return true;
+      }
+
+      if (
+        normalized === "false" ||
+        normalized === "nao" ||
+        normalized === "não" ||
+        normalized === "0"
+      ) {
+        return false;
+      }
+    }
+
+    if (typeof value === "number") {
+      return value === 1;
+    }
+  }
+
+  return false;
+}
+
+function mapRowToPrefill(row: GenericRow, source: TableName): PrefillResponse["data"] {
   return {
-    sourceTable,
-    data: {
-      fullName: getStringValue(row, [
-        "nome_responsavel",
-        "full_name",
-        "nome_completo",
-        "name",
-        "nome",
-        "display_name",
-      ]),
-      companyName: getStringValue(row, [
-        "nome_empresa",
-        "company_name",
-        "empresa",
-        "company",
-        "business_name",
-        "marca",
-      ]),
-      whatsapp: getStringValue(row, [
-        "whatsapp",
-        "phone",
-        "telefone",
-        "telefone_principal",
-        "celular",
-      ]),
-      city: getStringValue(row, [
-        "cidade_base",
-        "cidade_publica",
-        "city",
-        "cidade",
-      ]),
-      state: getStringValue(row, [
-        "estado_base",
-        "estado_publico",
-        "state",
-        "estado",
-        "uf",
-      ]),
-      segment: getStringValue(row, [
-        "segment",
-        "segmento",
-        "industry",
-        "setor",
-        "coverage_type",
-        "cadastro_tipo",
-      ]),
-      slug: getStringValue(row, [
-        "slug",
-        "public_slug",
-      ]),
-      status: getStringValue(row, [
-        "status",
-        "cadastro_status",
-        "profile_status",
-        "situacao",
-      ]),
-      email: getStringValue(row, ["email"]),
-      coverageType: getStringValue(row, ["coverage_type"]),
-      registrationType: getStringValue(row, ["cadastro_tipo"]),
-      registrationComplete: getStringValue(row, ["cadastro_completo"]),
-      sourceOrigin: getStringValue(row, ["origem"]),
-      completionDeadline: getStringValue(row, ["prazo_conclusao"]),
-    },
+    id: getStringValue(row, ["id"]),
+    fullName: getStringValue(row, [
+      "nome_responsavel",
+      "nome",
+      "full_name",
+      "name",
+    ]),
+    companyName: getStringValue(row, [
+      "nome_empresa",
+      "empresa",
+      "company_name",
+      "company",
+    ]),
+    whatsapp: getStringValue(row, ["whatsapp", "telefone", "phone"]),
+    email: getStringValue(row, ["email"]),
+    city: getStringValue(row, [
+      "cidade_base",
+      "cidade_publica",
+      "cidade",
+      "city",
+    ]),
+    state: getStringValue(row, [
+      "estado_base",
+      "estado_publico",
+      "estado",
+      "state",
+    ]),
+    publicName: getStringValue(row, [
+      "nome_publico",
+      "public_name",
+    ]),
+    publicDescription: getStringValue(row, [
+      "descricao_publica_curta",
+      "descricao_publica",
+      "public_description",
+    ]),
+    segment: getStringValue(row, [
+      "segmento",
+      "segment",
+      "main_segment",
+    ]),
+    coverageType: getStringValue(row, [
+      "coverage_type",
+      "cobertura",
+    ]),
+    registrationType: getStringValue(row, [
+      "cadastro_tipo",
+      "registration_type",
+    ]),
+    registrationComplete: getBooleanValue(row, [
+      "cadastro_completo",
+      "registration_complete",
+    ]),
+    status: getStringValue(row, ["status"]),
+    origin: getStringValue(row, ["origem", "source"]) || source,
   };
 }
 
 async function tryFindByEmail(
-  supabase: ReturnType<typeof createClient>,
-  table: string,
+  supabase: ReturnType<typeof getSupabaseServer>,
+  table: TableName,
   email: string
-) {
-  try {
-    const { data, error } = await supabase
-      .from(table)
-      .select("*")
-      .eq("email", email)
-      .limit(1);
+): Promise<GenericRow | null> {
+  if (!email) return null;
 
-    if (error || !data || !data.length) {
-      return null;
-    }
+  const normalizedEmail = normalizeEmail(email);
 
-    const row = data[0] as Record<string, unknown>;
-    return normalizeRow(row, table);
-  } catch {
-    return null;
+  if (!normalizedEmail) return null;
+
+  const baseSelect =
+    table === "vw_cadastro_principal_por_email"
+      ? "*"
+      : [
+          "id",
+          "nome_responsavel",
+          "nome_empresa",
+          "whatsapp",
+          "email",
+          "cidade_base",
+          "estado_base",
+          "cidade_publica",
+          "estado_publico",
+          "nome_publico",
+          "descricao_publica",
+          "descricao_publica_curta",
+          "coverage_type",
+          "status",
+          "origem",
+          "cadastro_tipo",
+          "cadastro_completo",
+          "updated_at",
+          "created_at",
+        ].join(", ");
+
+  const query = supabase
+    .from(table)
+    .select(baseSelect)
+    .eq("email", normalizedEmail)
+    .limit(1);
+
+  const orderedQuery =
+    table === "cadastros_gerais"
+      ? query
+          .order("cadastro_completo", { ascending: false })
+          .order("updated_at", { ascending: false, nullsFirst: false })
+          .order("created_at", { ascending: false, nullsFirst: false })
+      : query;
+
+  const { data, error } = await orderedQuery.maybeSingle();
+
+  if (error) {
+    throw new Error(`Erro ao buscar em ${table}: ${error.message}`);
   }
+
+  return (data as GenericRow | null) ?? null;
 }
 
-export async function GET(request: NextRequest) {
+export async function GET(request: Request) {
   try {
-    const email = request.nextUrl.searchParams.get("email")?.trim().toLowerCase() || "";
+    const { searchParams } = new URL(request.url);
+    const email = normalizeEmail(searchParams.get("email"));
 
     if (!email) {
-      const response: PrefillResponse = {
-        ok: false,
-        found: false,
-        sourceTable: "",
-        data: null,
-        error: "E-mail não informado.",
-      };
-
-      return NextResponse.json(response, { status: 400 });
+      return Response.json<ErrorResponse>(
+        {
+          ok: false,
+          found: false,
+          error: "Informe um e-mail válido.",
+        },
+        { status: 400 }
+      );
     }
 
-    const supabase = getAdminClient();
+    const supabase = getSupabaseServer();
 
-    if (!supabase) {
-      const response: PrefillResponse = {
-        ok: false,
-        found: false,
-        sourceTable: "",
-        data: null,
-        error: "SUPABASE_URL ou SUPABASE_SERVICE_ROLE_KEY não configurados.",
-      };
-
-      return NextResponse.json(response, { status: 500 });
-    }
-
-    const tablesInOrder = [
+    const tablesInOrder: TableName[] = [
+      "vw_cadastro_principal_por_email",
       "cadastros_gerais",
-      "profiles",
     ];
 
     for (const table of tablesInOrder) {
@@ -198,31 +273,45 @@ export async function GET(request: NextRequest) {
         const response: PrefillResponse = {
           ok: true,
           found: true,
-          sourceTable: found.sourceTable,
-          data: found.data,
+          source: table,
+          data: mapRowToPrefill(found, table),
         };
 
-        return NextResponse.json(response, { status: 200 });
+        return Response.json(response, {
+          status: 200,
+          headers: {
+            "Cache-Control": "no-store, max-age=0",
+          },
+        });
       }
     }
 
-    const response: PrefillResponse = {
+    const emptyResponse: PrefillResponse = {
       ok: true,
       found: false,
-      sourceTable: "",
+      source: null,
       data: null,
     };
 
-    return NextResponse.json(response, { status: 200 });
-  } catch (error: any) {
-    const response: PrefillResponse = {
-      ok: false,
-      found: false,
-      sourceTable: "",
-      data: null,
-      error: error?.message || "Erro interno ao buscar pré-cadastro.",
-    };
+    return Response.json(emptyResponse, {
+      status: 200,
+      headers: {
+        "Cache-Control": "no-store, max-age=0",
+      },
+    });
+  } catch (error) {
+    const message =
+      error instanceof Error
+        ? error.message
+        : "Falha ao carregar prefill por e-mail.";
 
-    return NextResponse.json(response, { status: 500 });
+    return Response.json<ErrorResponse>(
+      {
+        ok: false,
+        found: false,
+        error: message,
+      },
+      { status: 500 }
+    );
   }
 }
