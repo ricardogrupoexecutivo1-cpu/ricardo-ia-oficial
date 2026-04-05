@@ -21,10 +21,8 @@ const REDIRECTS: Record<string, string> = {
   "/locadora/parceiros": "/locadora/cadastros/parceiros",
   "/locadora/bancos": "/bancos",
 
-  "/cadastro": "/",
-  "/cadastrar": "/",
-  "/cadastros": "/",
-  "/registro": "/",
+  "/banco": "/bancos",
+  "/banco/": "/bancos",
 
   "/explore": "/explorar",
   "/plans": "/planos",
@@ -67,6 +65,23 @@ function shouldIgnorePath(pathname: string) {
   );
 }
 
+function safeRedirect(
+  request: NextRequest,
+  targetPath: string,
+  currentNormalizedPath: string
+) {
+  const normalizedTarget = normalizePath(targetPath);
+
+  if (!normalizedTarget || normalizedTarget === currentNormalizedPath) {
+    return NextResponse.next();
+  }
+
+  const url = request.nextUrl.clone();
+  url.pathname = normalizedTarget;
+
+  return NextResponse.redirect(url, 308);
+}
+
 export function proxy(request: NextRequest) {
   const { nextUrl } = request;
   const pathname = nextUrl.pathname;
@@ -78,64 +93,68 @@ export function proxy(request: NextRequest) {
   const normalizedPath = normalizePath(pathname);
 
   const directRedirect = REDIRECTS[normalizedPath];
-  if (directRedirect && directRedirect !== normalizedPath) {
-    const url = nextUrl.clone();
-    url.pathname = directRedirect;
-    return NextResponse.redirect(url, 308);
+  if (directRedirect) {
+    return safeRedirect(request, directRedirect, normalizedPath);
   }
 
   if (normalizedPath.startsWith("/locadoras")) {
-    const url = nextUrl.clone();
-    url.pathname = normalizedPath.replace("/locadoras", "/locadora");
-    return NextResponse.redirect(url, 308);
+    return safeRedirect(
+      request,
+      normalizedPath.replace("/locadoras", "/locadora"),
+      normalizedPath
+    );
   }
 
   if (normalizedPath.startsWith("/imobiliária")) {
-    const url = nextUrl.clone();
-    url.pathname = normalizedPath.replace("/imobiliária", "/imobiliarias");
-    return NextResponse.redirect(url, 308);
+    return safeRedirect(
+      request,
+      normalizedPath.replace("/imobiliária", "/imobiliarias"),
+      normalizedPath
+    );
   }
 
   if (normalizedPath.startsWith("/veiculos")) {
-    const url = nextUrl.clone();
-    url.pathname = "/locadora/cadastros/veiculos";
-    return NextResponse.redirect(url, 308);
+    return safeRedirect(
+      request,
+      "/locadora/cadastros/veiculos",
+      normalizedPath
+    );
   }
 
   if (normalizedPath.startsWith("/clientes")) {
-    const url = nextUrl.clone();
-    url.pathname = "/locadora/cadastros/clientes";
-    return NextResponse.redirect(url, 308);
+    return safeRedirect(
+      request,
+      "/locadora/cadastros/clientes",
+      normalizedPath
+    );
   }
 
   if (normalizedPath.startsWith("/motoristas")) {
-    const url = nextUrl.clone();
-    url.pathname = "/locadora/cadastros/motoristas";
-    return NextResponse.redirect(url, 308);
+    return safeRedirect(
+      request,
+      "/locadora/cadastros/motoristas",
+      normalizedPath
+    );
   }
 
   if (normalizedPath.startsWith("/condutores")) {
-    const url = nextUrl.clone();
-    url.pathname = "/locadora/cadastros/motoristas";
-    return NextResponse.redirect(url, 308);
+    return safeRedirect(
+      request,
+      "/locadora/cadastros/motoristas",
+      normalizedPath
+    );
   }
 
   if (normalizedPath.startsWith("/parceiros")) {
-    const url = nextUrl.clone();
-    url.pathname = "/locadora/cadastros/parceiros";
-    return NextResponse.redirect(url, 308);
-  }
-
-  if (normalizedPath.startsWith("/banco")) {
-    const url = nextUrl.clone();
-    url.pathname = "/bancos";
-    return NextResponse.redirect(url, 308);
+    return safeRedirect(
+      request,
+      "/locadora/cadastros/parceiros",
+      normalizedPath
+    );
   }
 
   if (normalizedPath.startsWith("/agricultura")) {
-    const url = nextUrl.clone();
-    url.pathname = "/agro";
-    return NextResponse.redirect(url, 308);
+    return safeRedirect(request, "/agro", normalizedPath);
   }
 
   return NextResponse.next();
