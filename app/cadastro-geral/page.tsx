@@ -654,7 +654,7 @@ export default function CadastroGeralPage() {
       return null;
     }
 
-    return data[0]?.id as string | null;
+    return data[0]?.id ? String(data[0].id) : null;
   }
 
   async function deleteExistingRelatedRows(
@@ -814,8 +814,9 @@ export default function CadastroGeralPage() {
           throwStageError("cadastros_gerais update", cadastroUpdateError);
         }
 
-        cadastroId =
-          (cadastroAtualizado?.id as string | undefined) || existingCadastroId;
+        cadastroId = cadastroAtualizado?.id
+          ? String(cadastroAtualizado.id)
+          : existingCadastroId;
 
         await deleteExistingRelatedRows(supabase, cadastroId);
 
@@ -839,7 +840,7 @@ export default function CadastroGeralPage() {
           throwStageError("cadastros_gerais insert", cadastroInsertError);
         }
 
-        cadastroId = cadastroCriado?.id as string | undefined;
+        cadastroId = cadastroCriado?.id ? String(cadastroCriado.id) : null;
 
         if (!cadastroId) {
           throw new Error("cadastros_gerais: id não retornado após inserção.");

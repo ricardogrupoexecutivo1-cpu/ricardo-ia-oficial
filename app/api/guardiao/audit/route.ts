@@ -216,7 +216,7 @@ export async function POST(request: Request) {
       throw new Error(`Erro ao ler cadastros_gerais: ${baseError.message}`);
     }
 
-    const cadastrosBase = (baseData || []) as BaseCadastroRow[];
+    const cadastrosBase = ((baseData ?? []) as unknown) as BaseCadastroRow[];
 
     const filtrados = cadastrosBase.filter((row) => modeMatch(row, term, mode));
     const ids = filtrados.map((row) => row.id);
@@ -283,11 +283,11 @@ export async function POST(request: Request) {
         );
       }
 
-      perfis = (perfisRes.data || []) as RelatedSimpleRow[];
-      segmentos = (segmentosRes.data || []) as RelatedSimpleRow[];
-      produtosServicos = (produtosRes.data || []) as RelatedSimpleRow[];
-      segmentosAtendidos = (atendidosRes.data || []) as RelatedSimpleRow[];
-      areasCobertura = (coberturaRes.data || []) as AreaCoberturaRow[];
+      perfis = ((perfisRes.data ?? []) as unknown) as RelatedSimpleRow[];
+      segmentos = ((segmentosRes.data ?? []) as unknown) as RelatedSimpleRow[];
+      produtosServicos = ((produtosRes.data ?? []) as unknown) as RelatedSimpleRow[];
+      segmentosAtendidos = ((atendidosRes.data ?? []) as unknown) as RelatedSimpleRow[];
+      areasCobertura = ((coberturaRes.data ?? []) as unknown) as AreaCoberturaRow[];
     }
 
     const perfisMap = groupByCadastroId(perfis);

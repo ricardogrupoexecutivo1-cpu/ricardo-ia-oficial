@@ -249,14 +249,13 @@ export async function GET(request: Request) {
     const email = normalizeEmail(searchParams.get("email"));
 
     if (!email) {
-      return Response.json<ErrorResponse>(
-        {
-          ok: false,
-          found: false,
-          error: "Informe um e-mail válido.",
-        },
-        { status: 400 }
-      );
+      const errorResponse: ErrorResponse = {
+        ok: false,
+        found: false,
+        error: "Informe um e-mail válido.",
+      };
+
+      return Response.json(errorResponse, { status: 400 });
     }
 
     const supabase = getSupabaseServer();
@@ -305,13 +304,12 @@ export async function GET(request: Request) {
         ? error.message
         : "Falha ao carregar prefill por e-mail.";
 
-    return Response.json<ErrorResponse>(
-      {
-        ok: false,
-        found: false,
-        error: message,
-      },
-      { status: 500 }
-    );
+    const errorResponse: ErrorResponse = {
+      ok: false,
+      found: false,
+      error: message,
+    };
+
+    return Response.json(errorResponse, { status: 500 });
   }
 }

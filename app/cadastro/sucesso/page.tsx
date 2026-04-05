@@ -53,15 +53,21 @@ function CadastroSucessoContent() {
 
             <div style={styles.infoCard}>
               <div style={styles.infoLabel}>ID do cadastro</div>
-              <div style={styles.infoValue} style={{ wordBreak: "break-word" }}>
+              <div
+                style={{
+                  ...styles.infoValue,
+                  wordBreak: "break-word",
+                }}
+              >
                 {id || "-"}
               </div>
             </div>
           </div>
 
           <div style={styles.alert}>
-            Sistema em constante atualização. Pode haver momentos de instabilidade
-            durante melhorias. Seu cadastro foi salvo para continuidade segura.
+            Sistema em constante atualização. Pode haver momentos de
+            instabilidade durante melhorias. Seu cadastro foi salvo para
+            continuidade segura.
           </div>
 
           <div style={styles.actions}>
@@ -78,7 +84,11 @@ function CadastroSucessoContent() {
             </Link>
 
             <Link
-              href={email ? `/completar-cadastro?source=email&email=${encodeURIComponent(email)}` : "/cadastro-geral"}
+              href={
+                email
+                  ? `/completar-cadastro?source=email&email=${encodeURIComponent(email)}`
+                  : "/cadastro-geral"
+              }
               style={styles.secondaryButton}
             >
               Continuar cadastro
@@ -92,7 +102,19 @@ function CadastroSucessoContent() {
 
 export default function CadastroSucessoPage() {
   return (
-    <Suspense fallback={<main style={styles.main}><div style={styles.container}><section style={styles.card}><div style={styles.title}>Carregando confirmação do cadastro...</div></section></div></main>}>
+    <Suspense
+      fallback={
+        <main style={styles.main}>
+          <div style={styles.container}>
+            <section style={styles.card}>
+              <div style={styles.title}>
+                Carregando confirmação do cadastro...
+              </div>
+            </section>
+          </div>
+        </main>
+      }
+    >
       <CadastroSucessoContent />
     </Suspense>
   );
