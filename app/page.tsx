@@ -71,7 +71,7 @@ const copyByLang = {
     accessThirdText:
       "Use a Aurora IA para ideias, textos, campanhas, imagens e direcionamento comercial.",
     accessNote:
-      "Ao entrar com Google, Apple ou e-mail, a Aurora pode salvar seu acesso com segurança e lembrar depois que falta completar o cadastro geral.",
+      "Crie seu acesso com segurança e continue navegando. Novas opções de entrada e autenticação estão sendo liberadas gradualmente na Aurora.",
     reminderTitle: "Acesso rápido, cadastro completo depois",
     reminderText:
       "A pessoa pode entrar agora, ficar salva na plataforma e receber um lembrete leve para concluir o cadastro geral mais tarde, sem bloqueio e sem perder o acesso.",
@@ -108,7 +108,7 @@ const copyByLang = {
     accessThirdText:
       "Use Aurora IA for ideas, copy, campaigns, images and commercial direction.",
     accessNote:
-      "When entering with Google, Apple or email, Aurora can safely save the access and later remind the user to complete the general registration.",
+      "Create your access securely and keep browsing. New sign-in and authentication options are being released gradually in Aurora.",
     reminderTitle: "Quick access, full registration later",
     reminderText:
       "The person can enter now, remain saved on the platform and receive a light reminder to finish the general registration later, with no blocking and no lost access.",
@@ -145,7 +145,7 @@ const copyByLang = {
     accessThirdText:
       "Usa Aurora IA para ideas, textos, campañas, imágenes y dirección comercial.",
     accessNote:
-      "Al entrar con Google, Apple o correo, Aurora puede guardar el acceso con seguridad y recordar después que falta completar el registro general.",
+      "Crea tu acceso con seguridad y sigue navegando. Nuevas opciones de entrada y autenticación se están liberando gradualmente en Aurora.",
     reminderTitle: "Acceso rápido, registro completo después",
     reminderText:
       "La persona puede entrar ahora, quedar guardada en la plataforma y recibir un recordatorio ligero para terminar el registro general más tarde, sin bloqueo y sin perder acceso.",
@@ -423,7 +423,10 @@ export default function HomePage() {
                   {t.ctaPrimary}
                 </Link>
 
-                <Link href={SEARCH_COMPANIES_HREF} style={secondaryBigButtonStyle}>
+                <Link
+                  href={SEARCH_COMPANIES_HREF}
+                  style={secondaryBigButtonStyle}
+                >
                   {t.ctaSecondary}
                 </Link>
 
@@ -474,7 +477,11 @@ export default function HomePage() {
                 }}
               >
                 {heroQuickLinks.map((item) => (
-                  <Link key={item.href} href={item.href} style={heroMiniLinkStyle}>
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    style={heroMiniLinkStyle}
+                  >
                     {item.label}
                   </Link>
                 ))}
@@ -491,13 +498,19 @@ export default function HomePage() {
               </div>
 
               <div style={easyAccessCardsWrapStyle}>
-                <Link href={GENERAL_SIGNUP_HREF} style={easyAccessPrimaryCardStyle}>
+                <Link
+                  href={GENERAL_SIGNUP_HREF}
+                  style={easyAccessPrimaryCardStyle}
+                >
                   <div style={easyCardSmallLabelStyle}>Entrada oficial</div>
                   <div style={easyCardTitleStyle}>{t.accessPrimary}</div>
                   <div style={easyCardTextStyle}>{t.accessPrimaryText}</div>
                 </Link>
 
-                <Link href={SEARCH_COMPANIES_HREF} style={easyAccessSecondaryCardStyle}>
+                <Link
+                  href={SEARCH_COMPANIES_HREF}
+                  style={easyAccessSecondaryCardStyle}
+                >
                   <div style={easyCardSmallLabelStyle}>Explorar mercado</div>
                   <div style={easyCardTitleStyle}>{t.accessSecondary}</div>
                   <div style={easyCardTextStyle}>{t.accessSecondaryText}</div>
@@ -522,7 +535,10 @@ export default function HomePage() {
                 <Link href={GENERAL_SIGNUP_HREF} style={primaryBigButtonStyle}>
                   {t.reminderPrimary}
                 </Link>
-                <Link href={SEARCH_COMPANIES_HREF} style={secondaryBigButtonStyle}>
+                <Link
+                  href={SEARCH_COMPANIES_HREF}
+                  style={secondaryBigButtonStyle}
+                >
                   {t.reminderSecondary}
                 </Link>
               </div>
