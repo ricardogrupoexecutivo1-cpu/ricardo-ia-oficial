@@ -29,7 +29,6 @@ const mainAccessLinks = [
   { href: "/financeiro", label: "Financeiro" },
   { href: "/app-builder", label: "App Builder" },
   { href: "/chat", label: "Chat Aurora" },
-  { href: SEARCH_COMPANIES_HREF, label: "Buscar empresas" },
   { href: "/planos", label: "Planos" },
   { href: GENERAL_SIGNUP_HREF, label: "Cadastro" },
 ];
@@ -41,7 +40,6 @@ const heroQuickLinks = [
   { href: "/agro", label: "AGRO" },
   { href: "/mineracao", label: "Mineração" },
   { href: "/financeiro", label: "Financeiro" },
-  { href: SEARCH_COMPANIES_HREF, label: "Buscar empresas" },
   { href: "/app-builder", label: "App Builder" },
 ];
 
