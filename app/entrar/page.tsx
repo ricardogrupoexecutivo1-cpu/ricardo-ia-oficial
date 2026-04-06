@@ -1,8 +1,137 @@
 "use client";
 
 import Link from "next/link";
+import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import { useMemo, useState } from "react";
+
+type AuthMode = "idle" | "loading_google" | "loading_apple" | "loading_email";
 
 export default function EntrarPage() {
+  const [email, setEmail] = useState("");
+  const [mode, setMode] = useState<AuthMode>("idle");
+  const [message, setMessage] = useState("");
+  const [error, setError] = useState("");
+
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
+  const authReady = Boolean(supabaseUrl && supabaseAnonKey);
+
+  const supabase = useMemo<SupabaseClient | null>(() => {
+    if (!authReady) return null;
+
+    return createClient(supabaseUrl, supabaseAnonKey, {
+      auth: {
+        persistSession: true,
+        autoRefreshToken: true,
+        detectSessionInUrl: true,
+      },
+    });
+  }, [authReady, supabaseUrl, supabaseAnonKey]);
+
+  async function handleOAuthLogin(provider: "google" | "apple") {
+    setError("");
+    setMessage("");
+
+    if (!supabase) {
+      setError(
+        "Auth da Aurora ainda não está pronto neste ambiente. Verifique NEXT_PUBLIC_SUPABASE_URL e NEXT_PUBLIC_SUPABASE_ANON_KEY."
+      );
+      return;
+    }
+
+    try {
+      setMode(provider === "google" ? "loading_google" : "loading_apple");
+
+      const redirectTo =
+        typeof window !== "undefined"
+          ? `${window.location.origin}/entrar`
+          : undefined;
+
+      const { error: authError } = await supabase.auth.signInWithOAuth({
+        provider,
+        options: {
+          redirectTo,
+        },
+      });
+
+      if (authError) {
+        throw authError;
+      }
+
+      setMessage(
+        provider === "google"
+          ? "Redirecionando para entrada com Google..."
+          : "Redirecionando para entrada com Apple..."
+      );
+    } catch (err: any) {
+      setError(
+        err?.message ||
+          "Não foi possível iniciar a autenticação agora. Tente novamente."
+      );
+      setMode("idle");
+    }
+  }
+
+  async function handleEmailLogin() {
+    setError("");
+    setMessage("");
+
+    if (!supabase) {
+      setError(
+        "Auth da Aurora ainda não está pronto neste ambiente. Verifique NEXT_PUBLIC_SUPABASE_URL e NEXT_PUBLIC_SUPABASE_ANON_KEY."
+      );
+      return;
+    }
+
+    const normalizedEmail = email.trim().toLowerCase();
+
+    if (!normalizedEmail) {
+      setError("Digite seu e-mail para continuar.");
+      return;
+    }
+
+    const isValidEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail);
+
+    if (!isValidEmail) {
+      setError("Digite um e-mail válido.");
+      return;
+    }
+
+    try {
+      setMode("loading_email");
+
+      const redirectTo =
+        typeof window !== "undefined"
+          ? `${window.location.origin}/entrar`
+          : undefined;
+
+      const { error: authError } = await supabase.auth.signInWithOtp({
+        email: normalizedEmail,
+        options: {
+          emailRedirectTo: redirectTo,
+        },
+      });
+
+      if (authError) {
+        throw authError;
+      }
+
+      setMessage(
+        "Enviamos um link mágico para seu e-mail. Abra sua caixa de entrada para continuar."
+      );
+      setEmail("");
+      setMode("idle");
+    } catch (err: any) {
+      setError(
+        err?.message ||
+          "Não foi possível enviar o link de acesso por e-mail agora."
+      );
+      setMode("idle");
+    }
+  }
+
+  const isLoading = mode !== "idle";
+
   return (
     <main
       style={{
@@ -126,7 +255,7 @@ export default function EntrarPage() {
                   maxWidth: 820,
                 }}
               >
-                Entre na Aurora com uma base forte para login real e expansão
+                Entre na Aurora com Google, Apple ou e-mail
               </h1>
 
               <p
@@ -139,11 +268,9 @@ export default function EntrarPage() {
                   fontWeight: 600,
                 }}
               >
-                Esta área foi criada para receber entrada por Google, Apple e
-                e-mail em um fluxo oficial da Aurora. Nesta primeira etapa,
-                deixamos a interface pronta, organizada e alinhada com a
-                identidade da plataforma para ativar a autenticação real no
-                próximo passo.
+                Esta área concentra a entrada oficial da Aurora para manter
+                continuidade de acesso, reduzir atrito e preparar evolução de
+                cadastro, plano e recursos da plataforma.
               </p>
 
               <div
@@ -161,10 +288,26 @@ export default function EntrarPage() {
                 }}
               >
                 Sistema em constante atualização. Pode haver momentos de
-                instabilidade durante melhorias. Os botões abaixo já representam
-                a entrada oficial da Aurora e serão ligados ao fluxo real de
-                autenticação na próxima etapa.
+                instabilidade durante melhorias. Se algum provedor ainda não
+                estiver ativo no Supabase, a Aurora mostrará o erro real sem
+                quebrar a interface.
               </div>
+
+              {!authReady ? (
+                <div style={warningBoxStyle}>
+                  Ambiente sem auth público configurado. Para ativar esta tela,
+                  confirme no projeto as variáveis
+                  {" "}
+                  <strong>NEXT_PUBLIC_SUPABASE_URL</strong>
+                  {" "}
+                  e
+                  {" "}
+                  <strong>NEXT_PUBLIC_SUPABASE_ANON_KEY</strong>.
+                </div>
+              ) : null}
+
+              {message ? <div style={successBoxStyle}>{message}</div> : null}
+              {error ? <div style={errorBoxStyle}>{error}</div> : null}
             </div>
 
             <aside style={loginPanelStyle}>
@@ -172,28 +315,71 @@ export default function EntrarPage() {
                 <div style={panelBadgeStyle}>Acesso rápido</div>
                 <h2 style={panelTitleStyle}>Escolha como entrar</h2>
                 <p style={panelTextStyle}>
-                  A Aurora está preparada para concentrar entrada, continuidade
-                  de acesso e lembrete de cadastro em um único ponto.
+                  Google e Apple entram por OAuth. E-mail usa link mágico para
+                  acesso seguro sem senha.
                 </p>
               </div>
 
               <div style={buttonsWrapStyle}>
-                <button type="button" style={oauthButtonStyle}>
+                <button
+                  type="button"
+                  style={oauthButtonStyle}
+                  onClick={() => handleOAuthLogin("google")}
+                  disabled={isLoading}
+                >
                   <span style={iconCircleStyle}>G</span>
                   <span>Entrar com Google</span>
-                  <span style={comingSoonStyle}>em ativação</span>
+                  <span style={liveTagStyle}>
+                    {mode === "loading_google" ? "abrindo..." : "ativo"}
+                  </span>
                 </button>
 
-                <button type="button" style={oauthButtonStyle}>
+                <button
+                  type="button"
+                  style={oauthButtonStyle}
+                  onClick={() => handleOAuthLogin("apple")}
+                  disabled={isLoading}
+                >
                   <span style={iconCircleStyle}></span>
                   <span>Entrar com Apple</span>
-                  <span style={comingSoonStyle}>em ativação</span>
+                  <span style={liveTagStyle}>
+                    {mode === "loading_apple" ? "abrindo..." : "ativo"}
+                  </span>
                 </button>
+              </div>
 
-                <button type="button" style={oauthButtonStyle}>
-                  <span style={iconCircleStyle}>@</span>
-                  <span>Entrar com e-mail</span>
-                  <span style={comingSoonStyle}>em ativação</span>
+              <div style={dividerStyle}>
+                <span style={dividerLineStyle} />
+                <span style={dividerTextStyle}>Ou entre por e-mail</span>
+                <span style={dividerLineStyle} />
+              </div>
+
+              <div style={emailBoxStyle}>
+                <label htmlFor="aurora-login-email" style={inputLabelStyle}>
+                  Seu e-mail
+                </label>
+
+                <input
+                  id="aurora-login-email"
+                  type="email"
+                  inputMode="email"
+                  autoComplete="email"
+                  placeholder="voce@empresa.com"
+                  value={email}
+                  onChange={(event) => setEmail(event.target.value)}
+                  style={inputStyle}
+                  disabled={isLoading}
+                />
+
+                <button
+                  type="button"
+                  style={primaryBlockButtonStyle}
+                  onClick={handleEmailLogin}
+                  disabled={isLoading}
+                >
+                  {mode === "loading_email"
+                    ? "Enviando link..."
+                    : "Entrar com e-mail"}
                 </button>
               </div>
 
@@ -204,7 +390,7 @@ export default function EntrarPage() {
               </div>
 
               <div style={actionsGridStyle}>
-                <Link href="/cadastro-geral" style={primaryButtonStyle}>
+                <Link href="/cadastro-geral" style={secondaryButtonStyle}>
                   Criar cadastro geral
                 </Link>
 
@@ -326,7 +512,7 @@ const oauthButtonStyle: React.CSSProperties = {
   alignItems: "center",
   gap: 12,
   boxShadow: "0 10px 22px rgba(15,23,42,0.05)",
-  cursor: "default",
+  cursor: "pointer",
 };
 
 const iconCircleStyle: React.CSSProperties = {
@@ -343,14 +529,14 @@ const iconCircleStyle: React.CSSProperties = {
   fontWeight: 900,
 };
 
-const comingSoonStyle: React.CSSProperties = {
+const liveTagStyle: React.CSSProperties = {
   fontSize: 11,
   fontWeight: 900,
   letterSpacing: "0.06em",
   textTransform: "uppercase",
-  color: "#2563eb",
-  background: "rgba(37,99,235,0.08)",
-  border: "1px solid rgba(37,99,235,0.14)",
+  color: "#15803d",
+  background: "rgba(16,185,129,0.08)",
+  border: "1px solid rgba(16,185,129,0.14)",
   borderRadius: 999,
   padding: "6px 8px",
 };
@@ -373,6 +559,31 @@ const dividerTextStyle: React.CSSProperties = {
   color: "rgba(15,23,42,0.52)",
   textTransform: "uppercase",
   letterSpacing: "0.06em",
+};
+
+const emailBoxStyle: React.CSSProperties = {
+  display: "grid",
+  gap: 10,
+};
+
+const inputLabelStyle: React.CSSProperties = {
+  fontSize: 12,
+  fontWeight: 900,
+  color: "#2563eb",
+  textTransform: "uppercase",
+  letterSpacing: "0.06em",
+};
+
+const inputStyle: React.CSSProperties = {
+  minHeight: 52,
+  borderRadius: 14,
+  border: "1px solid rgba(15,23,42,0.10)",
+  background: "#ffffff",
+  padding: "0 14px",
+  fontSize: 15,
+  color: "#0f172a",
+  outline: "none",
+  boxShadow: "0 8px 18px rgba(15,23,42,0.04)",
 };
 
 const actionsGridStyle: React.CSSProperties = {
@@ -419,6 +630,42 @@ const featureTextStyle: React.CSSProperties = {
   color: "rgba(15,23,42,0.72)",
 };
 
+const warningBoxStyle: React.CSSProperties = {
+  borderRadius: 16,
+  padding: "14px 16px",
+  background: "rgba(245,158,11,0.10)",
+  border: "1px solid rgba(245,158,11,0.18)",
+  color: "#92400e",
+  fontSize: 14,
+  lineHeight: 1.7,
+  fontWeight: 700,
+  maxWidth: 860,
+};
+
+const successBoxStyle: React.CSSProperties = {
+  borderRadius: 16,
+  padding: "14px 16px",
+  background: "rgba(16,185,129,0.10)",
+  border: "1px solid rgba(16,185,129,0.18)",
+  color: "#047857",
+  fontSize: 14,
+  lineHeight: 1.7,
+  fontWeight: 700,
+  maxWidth: 860,
+};
+
+const errorBoxStyle: React.CSSProperties = {
+  borderRadius: 16,
+  padding: "14px 16px",
+  background: "rgba(239,68,68,0.10)",
+  border: "1px solid rgba(239,68,68,0.18)",
+  color: "#b91c1c",
+  fontSize: 14,
+  lineHeight: 1.7,
+  fontWeight: 700,
+  maxWidth: 860,
+};
+
 const primaryButtonStyle: React.CSSProperties = {
   textDecoration: "none",
   color: "#ffffff",
@@ -432,6 +679,22 @@ const primaryButtonStyle: React.CSSProperties = {
   alignItems: "center",
   boxShadow: "0 14px 30px rgba(37,99,235,0.16)",
   fontSize: 14,
+};
+
+const primaryBlockButtonStyle: React.CSSProperties = {
+  textDecoration: "none",
+  color: "#ffffff",
+  background: "linear-gradient(135deg, #2563eb, #3b82f6)",
+  border: "1px solid rgba(37,99,235,0.16)",
+  borderRadius: 14,
+  padding: "13px 16px",
+  fontWeight: 900,
+  display: "inline-flex",
+  justifyContent: "center",
+  alignItems: "center",
+  boxShadow: "0 14px 30px rgba(37,99,235,0.16)",
+  fontSize: 14,
+  cursor: "pointer",
 };
 
 const secondaryButtonStyle: React.CSSProperties = {
