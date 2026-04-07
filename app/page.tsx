@@ -5,7 +5,6 @@ import { useMemo, useState } from "react";
 import HomePatrocinadoresHighlight from "@/components/home/home-patrocinadores-highlight";
 
 const GENERAL_SIGNUP_HREF = "/cadastro-geral";
-const SEARCH_COMPANIES_HREF = "/cadastros";
 
 type Lang = "pt" | "en" | "es";
 
@@ -50,7 +49,6 @@ const copyByLang = {
     subtitle:
       "Locadoras, imóveis, bancos, agro, mineração, fornecedores, empresas e operação empresarial em uma entrada premium, clara e forte.",
     ctaPrimary: "Cadastro geral grátis",
-    ctaSecondary: "Buscar empresas",
     ctaThird: "Abrir Aurora IA",
     quickTitle: "Entradas principais da plataforma",
     quickText:
@@ -60,12 +58,9 @@ const copyByLang = {
     accessText:
       "Crie seu acesso rapidamente e continue navegando. O cadastro geral segue como entrada oficial da plataforma e pode ser completado no momento certo, sem travar sua experiência.",
     accessPrimary: "Criar cadastro geral",
-    accessSecondary: "Buscar empresas",
     accessThird: "Abrir chat Aurora",
     accessPrimaryText:
       "Cadastro principal da Aurora para empresas, profissionais, parceiros e operações reais.",
-    accessSecondaryText:
-      "Veja páginas públicas, oportunidades e perfis já publicados na plataforma.",
     accessThirdText:
       "Use a Aurora IA para ideias, textos, campanhas, imagens e direcionamento comercial.",
     accessNote:
@@ -74,12 +69,10 @@ const copyByLang = {
     reminderText:
       "A pessoa pode entrar agora, ficar salva na plataforma e receber um lembrete leve para concluir o cadastro geral mais tarde, sem bloqueio e sem perder o acesso.",
     reminderPrimary: "Fazer cadastro geral",
-    reminderSecondary: "Explorar empresas",
     footerTitle: "Entrada forte • descoberta rápida • navegação comercial",
     footerText:
       "A Aurora está em constante atualização. Pode haver momentos de instabilidade durante melhorias, mas a estrutura principal da home foi organizada para facilitar acesso, entendimento e conversão.",
     footerPrimary: "Cadastrar agora",
-    footerSecondary: "Explorar empresas",
   },
   en: {
     badge: "Business ecosystem with AI",
@@ -87,7 +80,6 @@ const copyByLang = {
     subtitle:
       "Rentals, real estate, banks, agribusiness, mining, suppliers, companies and business operations in a premium, clear and strong entry point.",
     ctaPrimary: "Free general registration",
-    ctaSecondary: "Search companies",
     ctaThird: "Open Aurora IA",
     quickTitle: "Main platform entries",
     quickText:
@@ -97,12 +89,9 @@ const copyByLang = {
     accessText:
       "Create your access quickly and keep browsing. General registration remains the official platform entry and can be completed at the right moment without blocking the experience.",
     accessPrimary: "Create general registration",
-    accessSecondary: "Search companies",
     accessThird: "Open Aurora chat",
     accessPrimaryText:
       "Aurora's main registration for companies, professionals, partners and real operations.",
-    accessSecondaryText:
-      "See public pages, opportunities and profiles already published on the platform.",
     accessThirdText:
       "Use Aurora IA for ideas, copy, campaigns, images and commercial direction.",
     accessNote:
@@ -111,12 +100,10 @@ const copyByLang = {
     reminderText:
       "The person can enter now, remain saved on the platform and receive a light reminder to finish the general registration later, with no blocking and no lost access.",
     reminderPrimary: "Complete registration",
-    reminderSecondary: "Explore companies",
     footerTitle: "Strong entry • quick discovery • commercial navigation",
     footerText:
       "Aurora is constantly evolving. There may be moments of instability during improvements, but the home structure was organized to improve access, understanding and conversion.",
     footerPrimary: "Register now",
-    footerSecondary: "Explore companies",
   },
   es: {
     badge: "Ecosistema empresarial con IA",
@@ -124,7 +111,6 @@ const copyByLang = {
     subtitle:
       "Locadoras, inmuebles, bancos, agro, minería, proveedores, empresas y operación empresarial en una entrada premium, clara y fuerte.",
     ctaPrimary: "Registro general gratis",
-    ctaSecondary: "Buscar empresas",
     ctaThird: "Abrir Aurora IA",
     quickTitle: "Entradas principales de la plataforma",
     quickText:
@@ -134,12 +120,9 @@ const copyByLang = {
     accessText:
       "Crea tu acceso rápidamente y sigue navegando. El registro general sigue siendo la entrada oficial de la plataforma y puede completarse en el momento adecuado sin bloquear la experiencia.",
     accessPrimary: "Crear registro general",
-    accessSecondary: "Buscar empresas",
     accessThird: "Abrir chat Aurora",
     accessPrimaryText:
       "Registro principal de Aurora para empresas, profesionales, socios y operaciones reales.",
-    accessSecondaryText:
-      "Ve páginas públicas, oportunidades y perfiles ya publicados en la plataforma.",
     accessThirdText:
       "Usa Aurora IA para ideas, textos, campañas, imágenes y dirección comercial.",
     accessNote:
@@ -148,12 +131,10 @@ const copyByLang = {
     reminderText:
       "La persona puede entrar ahora, quedar guardada en la plataforma y recibir un recordatorio ligero para terminar el registro general más tarde, sin bloqueo y sin perder acceso.",
     reminderPrimary: "Hacer registro general",
-    reminderSecondary: "Explorar empresas",
     footerTitle: "Entrada fuerte • descubrimiento rápido • navegación comercial",
     footerText:
       "Aurora está en constante actualización. Puede haber momentos de inestabilidad durante mejoras, pero la estructura principal fue organizada para facilitar acceso, comprensión y conversión.",
     footerPrimary: "Registrar ahora",
-    footerSecondary: "Explorar empresas",
   },
 } satisfies Record<
   Lang,
@@ -162,7 +143,6 @@ const copyByLang = {
     title: string;
     subtitle: string;
     ctaPrimary: string;
-    ctaSecondary: string;
     ctaThird: string;
     quickTitle: string;
     quickText: string;
@@ -170,20 +150,16 @@ const copyByLang = {
     accessTitle: string;
     accessText: string;
     accessPrimary: string;
-    accessSecondary: string;
     accessThird: string;
     accessPrimaryText: string;
-    accessSecondaryText: string;
     accessThirdText: string;
     accessNote: string;
     reminderTitle: string;
     reminderText: string;
     reminderPrimary: string;
-    reminderSecondary: string;
     footerTitle: string;
     footerText: string;
     footerPrimary: string;
-    footerSecondary: string;
   }
 >;
 
@@ -421,13 +397,6 @@ export default function HomePage() {
                   {t.ctaPrimary}
                 </Link>
 
-                <Link
-                  href={SEARCH_COMPANIES_HREF}
-                  style={secondaryBigButtonStyle}
-                >
-                  {t.ctaSecondary}
-                </Link>
-
                 <Link href="/chat" style={secondaryBigButtonStyle}>
                   {t.ctaThird}
                 </Link>
@@ -505,15 +474,6 @@ export default function HomePage() {
                   <div style={easyCardTextStyle}>{t.accessPrimaryText}</div>
                 </Link>
 
-                <Link
-                  href={SEARCH_COMPANIES_HREF}
-                  style={easyAccessSecondaryCardStyle}
-                >
-                  <div style={easyCardSmallLabelStyle}>Explorar mercado</div>
-                  <div style={easyCardTitleStyle}>{t.accessSecondary}</div>
-                  <div style={easyCardTextStyle}>{t.accessSecondaryText}</div>
-                </Link>
-
                 <Link href="/chat" style={easyAccessSecondaryCardStyle}>
                   <div style={easyCardSmallLabelStyle}>Apoio estratégico</div>
                   <div style={easyCardTitleStyle}>{t.accessThird}</div>
@@ -532,12 +492,6 @@ export default function HomePage() {
               <div style={reminderActionsStyle}>
                 <Link href={GENERAL_SIGNUP_HREF} style={primaryBigButtonStyle}>
                   {t.reminderPrimary}
-                </Link>
-                <Link
-                  href={SEARCH_COMPANIES_HREF}
-                  style={secondaryBigButtonStyle}
-                >
-                  {t.reminderSecondary}
                 </Link>
               </div>
             </section>
@@ -712,9 +666,6 @@ export default function HomePage() {
           >
             <Link href={GENERAL_SIGNUP_HREF} style={primaryBigButtonStyle}>
               {t.footerPrimary}
-            </Link>
-            <Link href={SEARCH_COMPANIES_HREF} style={secondaryBigButtonStyle}>
-              {t.footerSecondary}
             </Link>
           </div>
         </section>
