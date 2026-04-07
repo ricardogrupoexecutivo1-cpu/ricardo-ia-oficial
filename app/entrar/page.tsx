@@ -72,7 +72,7 @@ export default function EntrarPage() {
     }
 
     try {
-      setMode(provider === "loading_google" ? "loading_google" : provider === "google" ? "loading_google" : "loading_apple");
+      setMode(provider === "google" ? "loading_google" : "loading_apple");
 
       const redirectTo =
         typeof window !== "undefined"
