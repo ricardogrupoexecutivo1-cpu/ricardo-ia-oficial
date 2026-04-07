@@ -1,98 +1,89 @@
-"use client";
+export const dynamic = "force-dynamic";
 
-import { useEffect, useState } from "react";
-import { createClient } from "@supabase/supabase-js";
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL || "",
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ""
-);
-
-export default function DebugSupabase() {
-  const [status, setStatus] = useState("Iniciando...");
-  const [session, setSession] = useState<any>(null);
-  const [users, setUsers] = useState<any[]>([]);
-
-  async function testar() {
-    try {
-      setStatus("Testando conexão...");
-
-      // 1. sessão atual
-      const {
-        data: { session },
-        error: sessionError,
-      } = await supabase.auth.getSession();
-
-      if (sessionError) {
-        throw new Error("Erro sessão: " + sessionError.message);
-      }
-
-      setSession(session);
-
-      // 2. tentar listar cadastros (teste banco)
-      const { data, error } = await supabase
-        .from("cadastros_gerais")
-        .select("*")
-        .limit(5);
-
-      if (error) {
-        throw new Error("Erro banco: " + error.message);
-      }
-
-      setUsers(data || []);
-
-      setStatus("✅ Supabase OK");
-    } catch (err: any) {
-      setStatus("❌ " + err.message);
-    }
-  }
-
-  useEffect(() => {
-    testar();
-  }, []);
-
+export default function DebugSupabasePage() {
   return (
-    <div style={styles.page}>
-      <h1>🔍 Debug Supabase</h1>
+    <main
+      style={{
+        minHeight: "100vh",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        background: "#f8fbff",
+        padding: 24,
+      }}
+    >
+      <div
+        style={{
+          width: "100%",
+          maxWidth: 720,
+          background: "#ffffff",
+          border: "1px solid rgba(15,23,42,0.08)",
+          borderRadius: 24,
+          padding: 24,
+          boxShadow: "0 18px 42px rgba(15,23,42,0.08)",
+          textAlign: "center",
+        }}
+      >
+        <div
+          style={{
+            fontSize: 12,
+            fontWeight: 900,
+            letterSpacing: "0.08em",
+            textTransform: "uppercase",
+            color: "#2563eb",
+            marginBottom: 10,
+          }}
+        >
+          Aurora Debug
+        </div>
 
-      <div style={styles.box}>
-        <strong>Status:</strong> {status}
+        <h1
+          style={{
+            margin: 0,
+            fontSize: "clamp(26px, 4vw, 38px)",
+            lineHeight: 1.05,
+            color: "#0f172a",
+          }}
+        >
+          Debug Supabase temporariamente simplificado
+        </h1>
+
+        <p
+          style={{
+            margin: "14px 0 0",
+            color: "rgba(15,23,42,0.72)",
+            lineHeight: 1.7,
+            fontSize: 16,
+          }}
+        >
+          Esta página foi temporariamente neutralizada nesta branch de teste para
+          estabilizar o preview.
+        </p>
+
+        <div
+          style={{
+            marginTop: 22,
+            display: "flex",
+            gap: 12,
+            justifyContent: "center",
+            flexWrap: "wrap",
+          }}
+        >
+          <a
+            href="/"
+            style={{
+              padding: "12px 18px",
+              borderRadius: 12,
+              background: "#2563eb",
+              color: "#fff",
+              textDecoration: "none",
+              fontWeight: 900,
+            }}
+          >
+            Ir para Home
+          </a>
+        </div>
       </div>
-
-      <div style={styles.box}>
-        <strong>Sessão:</strong>
-        <pre>{JSON.stringify(session, null, 2)}</pre>
-      </div>
-
-      <div style={styles.box}>
-        <strong>Dados cadastros_gerais:</strong>
-        <pre>{JSON.stringify(users, null, 2)}</pre>
-      </div>
-
-      <button onClick={testar} style={styles.button}>
-        Re-testar
-      </button>
-    </div>
+    </main>
   );
 }
-
-const styles: any = {
-  page: {
-    padding: 30,
-    fontFamily: "Arial",
-  },
-  box: {
-    background: "#f4f4f4",
-    padding: 15,
-    marginTop: 15,
-    borderRadius: 8,
-  },
-  button: {
-    marginTop: 20,
-    padding: 10,
-    background: "#0f6fff",
-    color: "#fff",
-    border: "none",
-    borderRadius: 6,
-  },
-};
