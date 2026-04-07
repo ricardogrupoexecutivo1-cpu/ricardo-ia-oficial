@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import crypto from "node:crypto";
-import { env, hasOpenAi, hasServiceRole } from "../../../lib/env";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -20,26 +19,48 @@ function jsonNoStore(body: unknown, init?: ResponseInit) {
   return res;
 }
 
+function getEnv() {
+  const supabaseUrl =
+    process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || "";
+
+  const supabaseServiceRoleKey =
+    process.env.SUPABASE_SERVICE_ROLE_KEY || "";
+
+  const openAiApiKey = process.env.OPENAI_API_KEY || "";
+
+  const siteUrl =
+    process.env.NEXT_PUBLIC_SITE_URL ||
+    process.env.NEXT_PUBLIC_APP_URL ||
+    "http://localhost:3000";
+
+  const bucket =
+    process.env.SUPABASE_STORAGE_BUCKET ||
+    process.env.NEXT_PUBLIC_SUPABASE_STORAGE_BUCKET ||
+    "aurora-images";
+
+  return {
+    supabaseUrl,
+    supabaseServiceRoleKey,
+    openAiApiKey,
+    siteUrl,
+    bucket,
+  };
+}
+
 function getSupabaseAdmin() {
-  if (!hasServiceRole()) {
+  const { supabaseUrl, supabaseServiceRoleKey } = getEnv();
+
+  if (!supabaseUrl) {
+    throw new Error("SUPABASE_URL ou NEXT_PUBLIC_SUPABASE_URL não configurada.");
+  }
+
+  if (!supabaseServiceRoleKey) {
     throw new Error("SUPABASE_SERVICE_ROLE_KEY não configurada.");
   }
 
-  return createClient(env.supabaseUrl, env.supabaseServiceRoleKey as string, {
+  return createClient(supabaseUrl, supabaseServiceRoleKey, {
     auth: { persistSession: false },
   });
-}
-
-function getBucket() {
-  return (
-    process.env.SUPABASE_STORAGE_BUCKET ||
-    process.env.NEXT_PUBLIC_SUPABASE_STORAGE_BUCKET ||
-    "aurora-images"
-  );
-}
-
-function getSiteUrl() {
-  return env.siteUrl || "http://localhost:3000";
 }
 
 function sanitize(value: string) {
@@ -69,45 +90,49 @@ async function downloadImage(url: string) {
     throw new Error("Erro ao baixar imagem da OpenAI.");
   }
 
-  const buffer = Buffer.from(await res.arrayBuffer());
-  return buffer;
+  return Buffer.from(await res.arrayBuffer());
+}
+
+export async function GET() {
+  return jsonNoStore({
+    ok: true,
+    message: "API de imagem ativa.",
+  });
 }
 
 export async function POST(req: NextRequest) {
   try {
     const body = await readBody(req);
 
-    const prompt = body?.prompt?.trim();
-    const email = body?.email?.trim()?.toLowerCase() || "";
+    const prompt = String(body?.prompt || "").trim();
+    const email = String(body?.email || "").trim().toLowerCase();
 
     if (!prompt) {
       return jsonNoStore({ error: "Prompt não enviado." }, { status: 400 });
     }
 
-    if (!hasOpenAi()) {
+    const { openAiApiKey, bucket, siteUrl } = getEnv();
+
+    if (!openAiApiKey) {
       return jsonNoStore(
         { error: "OPENAI_API_KEY não configurada." },
         { status: 500 }
       );
     }
 
-    // 🔥 chamada OpenAI
-    const aiRes = await fetch(
-      "https://api.openai.com/v1/images/generations",
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${env.openAiApiKey}`,
-        },
-        body: JSON.stringify({
-          model: "gpt-image-1",
-          prompt,
-          size: "1024x1024",
-          quality: "high",
-        }),
-      }
-    );
+    const aiRes = await fetch("https://api.openai.com/v1/images/generations", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${openAiApiKey}`,
+      },
+      body: JSON.stringify({
+        model: "gpt-image-1",
+        prompt,
+        size: "1024x1024",
+        quality: "high",
+      }),
+    });
 
     const raw = await aiRes.text();
 
@@ -129,7 +154,6 @@ export async function POST(req: NextRequest) {
     }
 
     const item = data?.data?.[0];
-
     let buffer: Buffer | null = null;
 
     if (item?.b64_json) {
@@ -145,40 +169,28 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // 🔥 upload supabase
     const supabase = getSupabaseAdmin();
-    const bucket = getBucket();
 
     const fileName = `${sanitize(email || "anon")}/${Date.now()}-${sanitize(
       prompt
     )}-${crypto.randomUUID()}.png`;
 
-    const upload = await supabase.storage
-      .from(bucket)
-      .upload(fileName, buffer, {
-        contentType: "image/png",
-        upsert: false,
-      });
+    const upload = await supabase.storage.from(bucket).upload(fileName, buffer, {
+      contentType: "image/png",
+      upsert: false,
+    });
 
     if (upload.error) {
-      return jsonNoStore(
-        { error: upload.error.message },
-        { status: 500 }
-      );
+      return jsonNoStore({ error: upload.error.message }, { status: 500 });
     }
 
-    const publicUrl = supabase.storage
-      .from(bucket)
-      .getPublicUrl(fileName).data.publicUrl;
+    const publicUrl = supabase.storage.from(bucket).getPublicUrl(fileName).data
+      .publicUrl;
 
     if (!publicUrl) {
-      return jsonNoStore(
-        { error: "Erro ao gerar URL." },
-        { status: 500 }
-      );
+      return jsonNoStore({ error: "Erro ao gerar URL." }, { status: 500 });
     }
 
-    // 🔥 salvar no banco
     let imageId: string | null = null;
 
     try {
@@ -194,13 +206,11 @@ export async function POST(req: NextRequest) {
         .single();
 
       if (!result.error) {
-        imageId = result.data?.id;
+        imageId = result.data?.id || null;
       }
     } catch {}
 
-    const pageUrl = imageId
-      ? `${getSiteUrl()}/i/${imageId}`
-      : publicUrl;
+    const pageUrl = imageId ? `${siteUrl}/i/${imageId}` : publicUrl;
 
     return jsonNoStore({
       reply: "Imagem gerada com sucesso.",
