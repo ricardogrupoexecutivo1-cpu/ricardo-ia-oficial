@@ -1,9 +1,12 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  turbopack: {
+    root: process.cwd(),
+  },
+
   async redirects() {
     return [
-      // 🔥 FORÇAR TUDO PARA O CADASTRO GERAL (REGRA ÚNICA)
       {
         source: "/cadastro",
         destination: "/cadastro-geral",

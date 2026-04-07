@@ -44,19 +44,21 @@ const heroQuickLinks = [
 
 const copyByLang = {
   pt: {
-    badge: "Ecossistema empresarial com IA",
-    title: "Cadastre, pesquise e gere negócios reais",
+    badge: "Plataforma para gerar negócios reais com IA",
+    title: "Conecte empresas, clientes e oportunidades em um só lugar",
     subtitle:
-      "Locadoras, imóveis, bancos, agro, mineração, fornecedores, empresas e operação empresarial em uma entrada premium, clara e forte.",
-    ctaPrimary: "Cadastro geral grátis",
-    ctaThird: "Abrir Aurora IA",
+      "Abra o chat agora e comece a gerar oportunidades em minutos. Crie seu cadastro depois, sem perder o acesso.",
+    socialProof: "Mais de 150 avaliações 5 estrelas ⭐⭐⭐⭐⭐",
+    ctaPrimary: "Criar cadastro grátis",
+    ctaThird: "Abrir Chat da Aurora",
+    ctaSupport: "Sem cadastro obrigatório para começar",
     quickTitle: "Entradas principais da plataforma",
     quickText:
       "Acesse rapidamente os módulos principais da Aurora no topo da home e também no centro visual da plataforma.",
     accessBadge: "Comece agora",
     accessTitle: "Entre na Aurora do jeito mais fácil",
     accessText:
-      "Crie seu acesso rapidamente e continue navegando. O cadastro geral segue como entrada oficial da plataforma e pode ser completado no momento certo, sem travar sua experiência.",
+      "Entre em 3 passos: abra o chat, explore ou gere algo e complete seu cadastro quando quiser. Sem bloqueios e sem perder o acesso.",
     accessPrimary: "Criar cadastro geral",
     accessThird: "Abrir chat Aurora",
     accessPrimaryText:
@@ -64,30 +66,36 @@ const copyByLang = {
     accessThirdText:
       "Use a Aurora IA para ideias, textos, campanhas, imagens e direcionamento comercial.",
     accessNote:
-      "Crie seu acesso com segurança e continue navegando. Novas opções de entrada e autenticação estão sendo liberadas gradualmente na Aurora.",
+      "Crie seu acesso com segurança e continue navegando. Novas opções de entrada e autenticação estão sendo liberadas gradualmente na Aurora. O sistema está em constante evolução. Algumas funcionalidades podem estar em melhoria.",
     reminderTitle: "Acesso rápido, cadastro completo depois",
     reminderText:
       "A pessoa pode entrar agora, ficar salva na plataforma e receber um lembrete leve para concluir o cadastro geral mais tarde, sem bloqueio e sem perder o acesso.",
     reminderPrimary: "Fazer cadastro geral",
     footerTitle: "Entrada forte • descoberta rápida • navegação comercial",
     footerText:
-      "A Aurora está em constante atualização. Pode haver momentos de instabilidade durante melhorias, mas a estrutura principal da home foi organizada para facilitar acesso, entendimento e conversão.",
+      "A Aurora está em constante evolução. Algumas funcionalidades podem estar em melhoria, mas a estrutura principal da home foi organizada para facilitar acesso, entendimento e conversão.",
     footerPrimary: "Cadastrar agora",
+    tutorialBadge: "🚀 Como gerar resultado na Aurora",
+    tutorialTitle: "Não sabe por onde começar na Aurora?",
+    tutorialText:
+      "Siga o passo a passo oficial para entender a plataforma, evitar erros e aumentar suas chances de gerar negócios reais dentro da Aurora.",
   },
   en: {
-    badge: "Business ecosystem with AI",
-    title: "Register, search and generate real business",
+    badge: "Platform to generate real business with AI",
+    title: "Connect companies, clients and opportunities in one place",
     subtitle:
-      "Rentals, real estate, banks, agribusiness, mining, suppliers, companies and business operations in a premium, clear and strong entry point.",
-    ctaPrimary: "Free general registration",
-    ctaThird: "Open Aurora IA",
+      "Open the chat now and start generating opportunities in minutes. Create your account later without losing access.",
+    socialProof: "More than 150 five-star reviews ⭐⭐⭐⭐⭐",
+    ctaPrimary: "Create free account",
+    ctaThird: "Open Aurora Chat",
+    ctaSupport: "No mandatory signup to get started",
     quickTitle: "Main platform entries",
     quickText:
       "Access Aurora's main modules quickly from the top navigation and also from the platform visual core.",
     accessBadge: "Start now",
     accessTitle: "Enter Aurora the easiest way",
     accessText:
-      "Create your access quickly and keep browsing. General registration remains the official platform entry and can be completed at the right moment without blocking the experience.",
+      "Join in 3 steps: open the chat, explore or generate something, and complete your registration whenever you want. No blocking and no lost access.",
     accessPrimary: "Create general registration",
     accessThird: "Open Aurora chat",
     accessPrimaryText:
@@ -95,30 +103,36 @@ const copyByLang = {
     accessThirdText:
       "Use Aurora IA for ideas, copy, campaigns, images and commercial direction.",
     accessNote:
-      "Create your access securely and keep browsing. New sign-in and authentication options are being released gradually in Aurora.",
+      "Create your access securely and keep browsing. New sign-in and authentication options are being released gradually in Aurora. The system is constantly evolving. Some features may be under improvement.",
     reminderTitle: "Quick access, full registration later",
     reminderText:
       "The person can enter now, remain saved on the platform and receive a light reminder to finish the general registration later, with no blocking and no lost access.",
     reminderPrimary: "Complete registration",
     footerTitle: "Strong entry • quick discovery • commercial navigation",
     footerText:
-      "Aurora is constantly evolving. There may be moments of instability during improvements, but the home structure was organized to improve access, understanding and conversion.",
+      "Aurora is constantly evolving. Some features may be under improvement, but the home structure was organized to improve access, understanding and conversion.",
     footerPrimary: "Register now",
+    tutorialBadge: "🚀 How to get results in Aurora",
+    tutorialTitle: "Not sure where to start in Aurora?",
+    tutorialText:
+      "Follow the official step-by-step flow to understand the platform, avoid mistakes and improve your chances of generating real business inside Aurora.",
   },
   es: {
-    badge: "Ecosistema empresarial con IA",
-    title: "Registra, busca y genera negocios reales",
+    badge: "Plataforma para generar negocios reales con IA",
+    title: "Conecta empresas, clientes y oportunidades en un solo lugar",
     subtitle:
-      "Locadoras, inmuebles, bancos, agro, minería, proveedores, empresas y operación empresarial en una entrada premium, clara y fuerte.",
-    ctaPrimary: "Registro general gratis",
-    ctaThird: "Abrir Aurora IA",
+      "Abre el chat ahora y empieza a generar oportunidades en minutos. Crea tu registro después, sin perder el acceso.",
+    socialProof: "Más de 150 reseñas de 5 estrellas ⭐⭐⭐⭐⭐",
+    ctaPrimary: "Crear registro gratis",
+    ctaThird: "Abrir Chat Aurora",
+    ctaSupport: "Sin registro obligatorio para empezar",
     quickTitle: "Entradas principales de la plataforma",
     quickText:
       "Accede rápidamente a los módulos principales de Aurora desde la navegación superior y también desde el núcleo visual de la plataforma.",
     accessBadge: "Empieza ahora",
     accessTitle: "Entra en Aurora de la forma más fácil",
     accessText:
-      "Crea tu acceso rápidamente y sigue navegando. El registro general sigue siendo la entrada oficial de la plataforma y puede completarse en el momento adecuado sin bloquear la experiencia.",
+      "Entra en 3 pasos: abre el chat, explora o genera algo y completa tu registro cuando quieras. Sin bloqueos y sin perder acceso.",
     accessPrimary: "Crear registro general",
     accessThird: "Abrir chat Aurora",
     accessPrimaryText:
@@ -126,15 +140,19 @@ const copyByLang = {
     accessThirdText:
       "Usa Aurora IA para ideas, textos, campañas, imágenes y dirección comercial.",
     accessNote:
-      "Crea tu acceso con seguridad y sigue navegando. Nuevas opciones de entrada y autenticación se están liberando gradualmente en Aurora.",
+      "Crea tu acceso con seguridad y sigue navegando. Nuevas opciones de entrada y autenticación se están liberando gradualmente en Aurora. El sistema está en evolución constante. Algunas funcionalidades pueden estar en mejora.",
     reminderTitle: "Acceso rápido, registro completo después",
     reminderText:
       "La persona puede entrar ahora, quedar guardada en la plataforma y recibir un recordatorio ligero para terminar el registro general más tarde, sin bloqueo y sin perder acceso.",
     reminderPrimary: "Hacer registro general",
     footerTitle: "Entrada fuerte • descubrimiento rápido • navegación comercial",
     footerText:
-      "Aurora está en constante actualización. Puede haber momentos de inestabilidad durante mejoras, pero la estructura principal fue organizada para facilitar acceso, comprensión y conversión.",
+      "Aurora está en evolución constante. Algunas funcionalidades pueden estar en mejora, pero la estructura principal fue organizada para facilitar acceso, comprensión y conversión.",
     footerPrimary: "Registrar ahora",
+    tutorialBadge: "🚀 Cómo generar resultado en Aurora",
+    tutorialTitle: "¿No sabes por dónde empezar en Aurora?",
+    tutorialText:
+      "Sigue el paso a paso oficial para entender la plataforma, evitar errores y aumentar tus posibilidades de generar negocios reales dentro de Aurora.",
   },
 } satisfies Record<
   Lang,
@@ -142,8 +160,10 @@ const copyByLang = {
     badge: string;
     title: string;
     subtitle: string;
+    socialProof: string;
     ctaPrimary: string;
     ctaThird: string;
+    ctaSupport: string;
     quickTitle: string;
     quickText: string;
     accessBadge: string;
@@ -160,6 +180,9 @@ const copyByLang = {
     footerTitle: string;
     footerText: string;
     footerPrimary: string;
+    tutorialBadge: string;
+    tutorialTitle: string;
+    tutorialText: string;
   }
 >;
 
@@ -387,19 +410,49 @@ export default function HomePage() {
 
               <div
                 style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: 8,
+                  padding: "9px 14px",
+                  borderRadius: 999,
+                  background: "rgba(245,158,11,0.10)",
+                  border: "1px solid rgba(245,158,11,0.20)",
+                  color: "#92400e",
+                  fontWeight: 900,
+                  fontSize: 13,
+                  boxShadow: "0 8px 20px rgba(245,158,11,0.08)",
+                }}
+              >
+                {t.socialProof}
+              </div>
+
+              <div
+                style={{
                   display: "flex",
                   gap: 10,
                   flexWrap: "wrap",
                   justifyContent: "center",
                 }}
               >
-                <Link href={GENERAL_SIGNUP_HREF} style={primaryBigButtonStyle}>
-                  {t.ctaPrimary}
-                </Link>
-
-                <Link href="/chat" style={secondaryBigButtonStyle}>
+                <Link href="/chat" style={primaryBigButtonStyle}>
                   {t.ctaThird}
                 </Link>
+
+                <Link href={GENERAL_SIGNUP_HREF} style={secondaryBigButtonStyle}>
+                  {t.ctaPrimary}
+                </Link>
+              </div>
+
+              <div
+                style={{
+                  fontSize: 13,
+                  lineHeight: 1.5,
+                  color: "rgba(15,23,42,0.58)",
+                  fontWeight: 800,
+                }}
+              >
+                {t.ctaSupport}
               </div>
             </div>
 
@@ -595,17 +648,11 @@ export default function HomePage() {
 
         <section style={tutorialHomeStyle}>
           <div style={tutorialContentStyle}>
-            <div style={tutorialBadgeStyle}>Guia rápido</div>
+            <div style={tutorialBadgeStyle}>{t.tutorialBadge}</div>
 
-            <h2 style={tutorialTitleStyle}>
-              Não sabe por onde começar na Aurora?
-            </h2>
+            <h2 style={tutorialTitleStyle}>{t.tutorialTitle}</h2>
 
-            <p style={tutorialTextStyle}>
-              A Aurora possui várias áreas e possibilidades. Para evitar erros,
-              entender melhor a plataforma e aumentar suas chances de gerar
-              negócios, siga o passo a passo oficial.
-            </p>
+            <p style={tutorialTextStyle}>{t.tutorialText}</p>
 
             <div style={tutorialActionsStyle}>
               <Link href="/como-usar" style={tutorialPrimaryButton}>
@@ -664,7 +711,10 @@ export default function HomePage() {
               justifyContent: "center",
             }}
           >
-            <Link href={GENERAL_SIGNUP_HREF} style={primaryBigButtonStyle}>
+            <Link href="/chat" style={primaryBigButtonStyle}>
+              {t.ctaThird}
+            </Link>
+            <Link href={GENERAL_SIGNUP_HREF} style={secondaryBigButtonStyle}>
               {t.footerPrimary}
             </Link>
           </div>
@@ -1127,7 +1177,6 @@ const tutorialBadgeStyle: React.CSSProperties = {
   fontSize: 12,
   fontWeight: 900,
   color: "#16a34a",
-  textTransform: "uppercase",
   marginBottom: 6,
 };
 
