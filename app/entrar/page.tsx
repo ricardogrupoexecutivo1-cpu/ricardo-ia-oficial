@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 type AuthMode = "idle" | "loading_google" | "loading_apple" | "loading_email";
 
@@ -28,6 +28,38 @@ export default function EntrarPage() {
     });
   }, [authReady, supabaseUrl, supabaseAnonKey]);
 
+  useEffect(() => {
+    if (!supabase) return;
+
+    let mounted = true;
+
+    supabase.auth.getSession().then(({ data }) => {
+      if (!mounted) return;
+
+      if (data.session) {
+        window.location.href = "/";
+      }
+    });
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event, session) => {
+      if (
+        session &&
+        (event === "SIGNED_IN" ||
+          event === "TOKEN_REFRESHED" ||
+          event === "INITIAL_SESSION")
+      ) {
+        window.location.href = "/";
+      }
+    });
+
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
+  }, [supabase]);
+
   async function handleOAuthLogin(provider: "google" | "apple") {
     setError("");
     setMessage("");
@@ -40,7 +72,7 @@ export default function EntrarPage() {
     }
 
     try {
-      setMode(provider === "google" ? "loading_google" : "loading_apple");
+      setMode(provider === "loading_google" ? "loading_google" : provider === "google" ? "loading_google" : "loading_apple");
 
       const redirectTo =
         typeof window !== "undefined"
@@ -117,7 +149,7 @@ export default function EntrarPage() {
       }
 
       setMessage(
-        "Enviamos um link mágico para seu e-mail. Abra sua caixa de entrada para continuar."
+        "Enviamos um link mágico para seu e-mail. Depois de entrar, você será levado para a home oficial."
       );
       setEmail("");
       setMode("idle");
@@ -199,14 +231,11 @@ export default function EntrarPage() {
               gap: 8,
             }}
           >
-            <Link href="/" style={secondaryButtonStyle}>
-              Voltar à Home
+            <Link href="/entrada" style={secondaryButtonStyle}>
+              Voltar à entrada
             </Link>
-            <Link href="/chat" style={secondaryButtonStyle}>
-              Ir para o Chat
-            </Link>
-            <Link href="/cadastro-geral" style={primaryButtonStyle}>
-              Fazer cadastro geral
+            <Link href="/" style={primaryButtonStyle}>
+              Ir para a home oficial
             </Link>
           </div>
         </header>
@@ -269,8 +298,8 @@ export default function EntrarPage() {
                 }}
               >
                 Esta área concentra a entrada oficial da Aurora para manter
-                continuidade de acesso, reduzir atrito e preparar evolução de
-                cadastro, plano e recursos da plataforma.
+                continuidade de acesso, reduzir atrito e levar o usuário para a
+                home principal já publicada, sem alterar a estrutura atual.
               </p>
 
               <div
@@ -288,20 +317,15 @@ export default function EntrarPage() {
                 }}
               >
                 Sistema em constante atualização. Pode haver momentos de
-                instabilidade durante melhorias. Se algum provedor ainda não
-                estiver ativo no Supabase, a Aurora mostrará o erro real sem
-                quebrar a interface.
+                instabilidade durante melhorias. Após o login, o fluxo segue
+                para a home oficial da Aurora.
               </div>
 
               {!authReady ? (
                 <div style={warningBoxStyle}>
                   Ambiente sem auth público configurado. Para ativar esta tela,
-                  confirme no projeto as variáveis
-                  {" "}
-                  <strong>NEXT_PUBLIC_SUPABASE_URL</strong>
-                  {" "}
-                  e
-                  {" "}
+                  confirme no projeto as variáveis{" "}
+                  <strong>NEXT_PUBLIC_SUPABASE_URL</strong> e{" "}
                   <strong>NEXT_PUBLIC_SUPABASE_ANON_KEY</strong>.
                 </div>
               ) : null}
@@ -316,7 +340,8 @@ export default function EntrarPage() {
                 <h2 style={panelTitleStyle}>Escolha como entrar</h2>
                 <p style={panelTextStyle}>
                   Google e Apple entram por OAuth. E-mail usa link mágico para
-                  acesso seguro sem senha.
+                  acesso seguro sem senha. Depois do login, a pessoa segue para
+                  a home oficial.
                 </p>
               </div>
 
@@ -385,21 +410,21 @@ export default function EntrarPage() {
 
               <div style={dividerStyle}>
                 <span style={dividerLineStyle} />
-                <span style={dividerTextStyle}>Enquanto isso</span>
+                <span style={dividerTextStyle}>Fluxo oficial</span>
                 <span style={dividerLineStyle} />
               </div>
 
               <div style={actionsGridStyle}>
-                <Link href="/cadastro-geral" style={secondaryButtonStyle}>
-                  Criar cadastro geral
-                </Link>
-
-                <Link href="/chat" style={secondaryButtonStyle}>
-                  Abrir Chat Aurora
+                <Link href="/entrada" style={secondaryButtonStyle}>
+                  Voltar para a entrada
                 </Link>
 
                 <Link href="/" style={secondaryButtonStyle}>
-                  Voltar para a Home
+                  Ver home oficial
+                </Link>
+
+                <Link href="/cadastro-geral" style={secondaryButtonStyle}>
+                  Completar cadastro depois
                 </Link>
               </div>
             </aside>
@@ -429,7 +454,7 @@ export default function EntrarPage() {
               <div style={featureTitleStyle}>Base universal</div>
               <div style={featureTextStyle}>
                 Mantém a Aurora acessível para qualquer usuário, com fallback
-                forte para cadastro, plano e continuidade.
+                forte para cadastro inicial e continuidade.
               </div>
             </div>
           </div>
