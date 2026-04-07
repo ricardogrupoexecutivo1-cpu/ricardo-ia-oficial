@@ -1,72 +1,27 @@
-import { supabaseAdmin } from '../../../lib/supabaseAdmin'
+import { NextResponse } from "next/server";
 
-export const runtime = 'nodejs'
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 
-export async function POST(req: Request) {
-  try {
-    const body = await req.json().catch(() => ({} as any))
+export async function GET() {
+  return NextResponse.json(
+    {
+      ok: true,
+      initialized: false,
+      message:
+        "Init temporariamente indisponível durante estabilização da plataforma.",
+    },
+    { status: 200 }
+  );
+}
 
-    const displayName = typeof body?.displayName === 'string' ? body.displayName : 'Visitante'
-    const companyName = typeof body?.companyName === 'string' ? body.companyName : 'Empresa Demo'
-
-    const { data: user, error: userErr } = await supabaseAdmin
-      .from('app_users')
-      .insert({ display_name: displayName })
-      .select('id')
-      .single()
-
-    if (userErr || !user?.id) {
-      return new Response(JSON.stringify({ error: 'Falha ao criar app_user', details: userErr?.message }), {
-        status: 500,
-        headers: { 'Content-Type': 'application/json; charset=utf-8' },
-      })
-    }
-
-    const { data: company, error: companyErr } = await supabaseAdmin
-      .from('companies')
-      .insert({ name: companyName })
-      .select('id')
-      .single()
-
-    if (companyErr || !company?.id) {
-      return new Response(JSON.stringify({ error: 'Falha ao criar company', details: companyErr?.message }), {
-        status: 500,
-        headers: { 'Content-Type': 'application/json; charset=utf-8' },
-      })
-    }
-
-    const { data: conversation, error: convErr } = await supabaseAdmin
-      .from('conversations')
-      .insert({
-        company_id: company.id,
-        user_id: user.id,
-        title: 'Nova conversa',
-      })
-      .select('id')
-      .single()
-
-    if (convErr || !conversation?.id) {
-      return new Response(JSON.stringify({ error: 'Falha ao criar conversation', details: convErr?.message }), {
-        status: 500,
-        headers: { 'Content-Type': 'application/json; charset=utf-8' },
-      })
-    }
-
-    return new Response(
-      JSON.stringify({
-        userId: user.id,
-        companyId: company.id,
-        conversationId: conversation.id,
-      }),
-      {
-        status: 200,
-        headers: { 'Content-Type': 'application/json; charset=utf-8' },
-      }
-    )
-  } catch (err: any) {
-    return new Response(JSON.stringify({ error: 'Erro no /api/init', details: String(err?.message ?? err) }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json; charset=utf-8' },
-    })
-  }
+export async function POST() {
+  return NextResponse.json(
+    {
+      ok: false,
+      message:
+        "Rota init temporariamente desativada para estabilizar o deploy.",
+    },
+    { status: 503 }
+  );
 }
