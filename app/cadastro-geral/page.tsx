@@ -1,15 +1,8 @@
 "use client";
 
-import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { createClient, type SupabaseClient } from "@supabase/supabase-js";
-import {
-  useEffect,
-  useMemo,
-  useState,
-  type CSSProperties,
-  type FormEvent,
-} from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import type { Session } from "@supabase/supabase-js";
+import { supabase } from "@/lib/supabase";
 
 type CoverageType =
   | "brasil"
@@ -19,9 +12,8 @@ type CoverageType =
   | "multilocal";
 
 type AttendanceType = "todos" | "especificos";
-type FeedbackType = "success" | "error" | "info";
 
-type DraftPayload = {
+type FormState = {
   nomeResponsavel: string;
   nomeEmpresa: string;
   whatsapp: string;
@@ -51,55 +43,62 @@ type DraftPayload = {
   mostrarProdutosPublicos: boolean;
 };
 
-const DRAFT_KEY = "aurora-cadastro-geral-draft-v1";
+type AuthDebugState = {
+  storageKeys: string[];
+  storageTokenKey: string;
+  storageTokenPreview: string;
+  sessionFound: boolean;
+  sessionEmail: string;
+  sessionUserId: string;
+};
 
-const PERFIS_BASE = [
+type FetchJsonResult = {
+  ok: boolean;
+  status: number;
+  data: any;
+  rawText: string;
+};
+
+const STORAGE_KEY = "aurora_cadastro_geral_rascunho_v4";
+const REQUEST_TIMEOUT_MS = 25000;
+const LOAD_UI_FAILSAFE_MS = 12000;
+const SAVE_UI_FAILSAFE_MS = 12000;
+
+const PERFIS_SUGERIDOS = [
   "Empresa",
   "Profissional",
   "Fornecedor",
-  "Comprador",
   "Prestador de serviço",
+  "Comprador",
   "Parceiro",
-  "Autônomo",
-  "Representante comercial",
-  "Motorista / Condutor",
+  "Operação",
 ];
 
 const SEGMENTOS_SUGERIDOS = [
+  "Locadoras",
+  "Imóveis",
+  "Bancos",
   "AGRO",
   "Mineração",
-  "Imóveis",
-  "Imobiliárias",
-  "Locadora",
-  "Transportes",
-  "Motorista",
-  "Condutor",
-  "Motorista particular",
-  "Motorista executivo",
+  "Financeiro",
+  "Tecnologia",
+  "Transporte",
   "Indústria",
   "Comércio",
-  "Tecnologia",
   "Serviços",
-  "Financeiro",
-  "Marketing",
-  "Saúde",
-  "Educação",
-  "Turismo",
-  "Construção civil",
-  "Automotivo",
 ];
 
 const PRODUTOS_SUGERIDOS = [
   "Consultoria",
-  "Venda de produtos",
-  "Prestação de serviço",
   "Locação",
-  "Distribuição",
-  "Representação",
+  "Venda",
+  "Financiamento",
+  "Seguro",
+  "Transporte",
   "Manutenção",
-  "Atendimento técnico",
+  "Marketing",
   "Software",
-  "Aplicativo",
+  "Treinamento",
 ];
 
 const ESTADOS_BR = [
@@ -132,1435 +131,1201 @@ const ESTADOS_BR = [
   "TO",
 ];
 
-function getSupabaseBrowserClient(): SupabaseClient | null {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+const INITIAL_FORM: FormState = {
+  nomeResponsavel: "",
+  nomeEmpresa: "",
+  whatsapp: "",
+  email: "",
+  site: "",
+  instagram: "",
+  perfisSelecionados: [],
+  coverageType: "brasil",
+  estadoBase: "",
+  regiaoBase: "",
+  cidadeBase: "",
+  observacaoCobertura: "",
+  atendimentoTipo: "todos",
+  descricao: "",
+  segmentos: [],
+  produtos: [],
+  segmentosEspecificos: [],
+  nomePublico: "",
+  descricaoPublicaCurta: "",
+  cidadePublica: "",
+  estadoPublico: "",
+  mostrarNomePublico: true,
+  mostrarDescricaoPublica: true,
+  mostrarCidadePublica: true,
+  mostrarEstadoPublico: true,
+  mostrarSegmentosPublicos: true,
+  mostrarProdutosPublicos: true,
+};
 
-  if (!url || !anonKey) {
-    return null;
-  }
-
-  return createClient(url, anonKey);
+function normalizeText(value: string) {
+  return value.trim();
 }
 
-function sanitizeValue(value: string) {
-  return value
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .trim()
-    .replace(/\s+/g, " ")
-    .replace(/[^\p{L}\p{N}\s\-_/&.]/gu, "")
-    .trim();
-}
-
-function addUniqueValue(
-  rawValue: string,
-  currentList: string[],
-  setter: (next: string[]) => void
-) {
-  const value = sanitizeValue(rawValue);
-
-  if (!value) return;
-
-  const alreadyExists = currentList.some(
-    (item) => item.toLowerCase() === value.toLowerCase()
+function parseCsvInput(value: string) {
+  return Array.from(
+    new Set(
+      value
+        .split(",")
+        .map((item) => item.trim())
+        .filter(Boolean)
+    )
   );
-
-  if (alreadyExists) return;
-
-  setter([...currentList, value]);
 }
 
-function removeValue(
-  value: string,
-  currentList: string[],
-  setter: (next: string[]) => void
-) {
-  setter(currentList.filter((item) => item !== value));
+function toCsv(items: string[]) {
+  return items.join(", ");
 }
 
-function formatCoverageLabel(value: CoverageType) {
-  switch (value) {
-    case "brasil":
-      return "Brasil inteiro";
-    case "estadual":
-      return "Estadual";
-    case "regional":
-      return "Regional";
-    case "municipal":
-      return "Municipal";
-    case "multilocal":
-      return "Multilocal";
-    default:
-      return value;
+function pickString(obj: any, ...keys: string[]) {
+  for (const key of keys) {
+    const value = obj?.[key];
+    if (typeof value === "string") return value;
   }
+  return "";
 }
 
-function buildDraftPayload(data: DraftPayload): DraftPayload {
+function pickBoolean(obj: any, key: string, fallback: boolean) {
+  const value = obj?.[key];
+  return typeof value === "boolean" ? value : fallback;
+}
+
+function pickArray(obj: any, key: string) {
+  const value = obj?.[key];
+  if (!Array.isArray(value)) return [];
+  return value.filter((item) => typeof item === "string");
+}
+
+function normalizeCoverageType(value: string): CoverageType {
+  const raw = String(value || "")
+    .trim()
+    .toLowerCase();
+
+  if (
+    raw === "estadual" ||
+    raw === "regional" ||
+    raw === "municipal" ||
+    raw === "multilocal"
+  ) {
+    return raw;
+  }
+
+  return "brasil";
+}
+
+function normalizeAttendanceType(value: string): AttendanceType {
+  return value === "especificos" ? "especificos" : "todos";
+}
+
+function mapCadastroToForm(cadastro: any): FormState {
   return {
-    ...data,
-    perfisSelecionados: [...data.perfisSelecionados],
-    segmentos: [...data.segmentos],
-    produtos: [...data.produtos],
-    segmentosEspecificos: [...data.segmentosEspecificos],
+    nomeResponsavel: pickString(cadastro, "nomeResponsavel", "nome_responsavel"),
+    nomeEmpresa: pickString(cadastro, "nomeEmpresa", "nome_empresa"),
+    whatsapp: pickString(cadastro, "whatsapp"),
+    email: pickString(cadastro, "email"),
+    site: pickString(cadastro, "site"),
+    instagram: pickString(cadastro, "instagram"),
+    perfisSelecionados:
+      pickArray(cadastro, "perfisSelecionados").length > 0
+        ? pickArray(cadastro, "perfisSelecionados")
+        : [
+            ...(cadastro?.perfil_empresa ? ["Empresa"] : []),
+            ...(cadastro?.perfil_profissional ? ["Profissional"] : []),
+            ...(cadastro?.perfil_fornecedor ? ["Fornecedor"] : []),
+            ...(cadastro?.perfil_prestador ? ["Prestador de serviço"] : []),
+            ...(cadastro?.perfil_comprador ? ["Comprador"] : []),
+            ...(cadastro?.perfil_parceiro ? ["Parceiro"] : []),
+            ...(cadastro?.perfil_operacao ? ["Operação"] : []),
+          ],
+    coverageType: normalizeCoverageType(
+      pickString(cadastro, "coverageType", "coverage_type", "tipo_cobertura")
+    ),
+    estadoBase: pickString(cadastro, "estadoBase", "estado_base"),
+    regiaoBase: pickString(cadastro, "regiaoBase", "regiao_base"),
+    cidadeBase: pickString(cadastro, "cidadeBase", "cidade_base"),
+    observacaoCobertura: pickString(
+      cadastro,
+      "observacaoCobertura",
+      "observacao_cobertura"
+    ),
+    atendimentoTipo: normalizeAttendanceType(
+      pickString(
+        cadastro,
+        "atendimentoTipo",
+        "atendimento_tipo",
+        "tipo_atendimento"
+      )
+    ),
+    descricao: pickString(
+      cadastro,
+      "descricao",
+      "descricao_principal",
+      "descricao_publica_interna"
+    ),
+    segmentos:
+      pickArray(cadastro, "segmentos").length > 0
+        ? pickArray(cadastro, "segmentos")
+        : pickArray(cadastro, "segmentos_extras"),
+    produtos:
+      pickArray(cadastro, "produtos").length > 0
+        ? pickArray(cadastro, "produtos")
+        : pickArray(cadastro, "produtos_servicos"),
+    segmentosEspecificos:
+      pickArray(cadastro, "segmentosEspecificos").length > 0
+        ? pickArray(cadastro, "segmentosEspecificos")
+        : pickArray(cadastro, "segmentos_especificos"),
+    nomePublico: pickString(cadastro, "nomePublico", "nome_publico"),
+    descricaoPublicaCurta: pickString(
+      cadastro,
+      "descricaoPublicaCurta",
+      "descricao_publica_curta"
+    ),
+    cidadePublica: pickString(cadastro, "cidadePublica", "cidade_publica"),
+    estadoPublico: pickString(cadastro, "estadoPublico", "estado_publico"),
+    mostrarNomePublico: pickBoolean(cadastro, "mostrar_nome_publico", true),
+    mostrarDescricaoPublica: pickBoolean(
+      cadastro,
+      "mostrar_descricao_publica",
+      true
+    ),
+    mostrarCidadePublica: pickBoolean(cadastro, "mostrar_cidade_publica", true),
+    mostrarEstadoPublico: pickBoolean(cadastro, "mostrar_estado_publico", true),
+    mostrarSegmentosPublicos: pickBoolean(
+      cadastro,
+      "mostrar_segmentos_publicos",
+      true
+    ),
+    mostrarProdutosPublicos: pickBoolean(
+      cadastro,
+      "mostrar_produtos_publicos",
+      true
+    ),
   };
 }
 
-function serializeError(error: unknown) {
-  if (error instanceof Error) {
+function mergeWithInitial(partial?: Partial<FormState> | null): FormState {
+  return {
+    ...INITIAL_FORM,
+    ...(partial || {}),
+    perfisSelecionados: partial?.perfisSelecionados || [],
+    segmentos: partial?.segmentos || [],
+    produtos: partial?.produtos || [],
+    segmentosEspecificos: partial?.segmentosEspecificos || [],
+  };
+}
+
+function getAuthDebugFromStorage(session: Session | null): AuthDebugState {
+  if (typeof window === "undefined") {
     return {
-      name: error.name,
-      message: error.message,
-      stack: error.stack,
+      storageKeys: [],
+      storageTokenKey: "",
+      storageTokenPreview: "",
+      sessionFound: !!session,
+      sessionEmail: session?.user?.email || "",
+      sessionUserId: session?.user?.id || "",
     };
   }
 
-  if (typeof error === "object" && error !== null) {
-    const plainObject: Record<string, unknown> = {};
+  const allKeys = [
+    ...Object.keys(localStorage),
+    ...Object.keys(sessionStorage),
+  ];
 
-    for (const key of Object.getOwnPropertyNames(error)) {
-      try {
-        plainObject[key] = (error as Record<string, unknown>)[key];
-      } catch {
-        plainObject[key] = "[unreadable]";
-      }
-    }
+  const tokenKeys = allKeys.filter(
+    (key) =>
+      key.includes("supabase") ||
+      key.includes("sb-") ||
+      key.toLowerCase().includes("auth-token")
+  );
 
-    try {
-      return JSON.parse(JSON.stringify(plainObject));
-    } catch {
-      return plainObject;
-    }
+  let storageTokenKey = "";
+  let storageTokenPreview = "";
+
+  for (const key of tokenKeys) {
+    const raw =
+      localStorage.getItem(key) ||
+      sessionStorage.getItem(key) ||
+      "";
+
+    if (!raw) continue;
+
+    storageTokenKey = key;
+    storageTokenPreview = raw.length > 140 ? `${raw.slice(0, 140)}...` : raw;
+    break;
   }
 
   return {
-    value: String(error),
+    storageKeys: tokenKeys,
+    storageTokenKey,
+    storageTokenPreview,
+    sessionFound: !!session,
+    sessionEmail: session?.user?.email || "",
+    sessionUserId: session?.user?.id || "",
   };
 }
 
-function extractErrorMessage(error: unknown) {
-  if (error instanceof Error && error.message) {
-    return error.message;
-  }
-
-  if (typeof error === "string" && error.trim()) {
-    return error;
-  }
-
-  if (typeof error === "object" && error !== null) {
-    const maybe = error as Record<string, unknown>;
-
-    const candidates = [
-      maybe.message,
-      maybe.details,
-      maybe.hint,
-      maybe.error_description,
-      maybe.code,
-      maybe.error,
-    ];
-
-    for (const item of candidates) {
-      if (typeof item === "string" && item.trim()) {
-        return item;
-      }
-    }
-  }
-
-  return "Falha ao salvar o cadastro real.";
+function getTimeoutErrorMessage() {
+  return "A requisição demorou demais para responder. O cadastro pode até ter sido salvo no banco, mas a resposta da API não voltou a tempo. Confira no Guardião antes de tentar salvar novamente.";
 }
 
-function throwStageError(stage: string, error: unknown): never {
-  const message = extractErrorMessage(error);
-  throw new Error(`${stage}: ${message}`);
+async function fetchJsonWithTimeout(
+  input: RequestInfo | URL,
+  init?: RequestInit,
+  timeoutMs = REQUEST_TIMEOUT_MS
+): Promise<FetchJsonResult> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+
+  try {
+    const response = await fetch(input, {
+      ...init,
+      signal: controller.signal,
+    });
+
+    const rawText = await response.text();
+    let data: any = null;
+
+    if (rawText) {
+      try {
+        data = JSON.parse(rawText);
+      } catch {
+        data = { rawText };
+      }
+    }
+
+    return {
+      ok: response.ok,
+      status: response.status,
+      data,
+      rawText,
+    };
+  } catch (error: any) {
+    if (error?.name === "AbortError") {
+      throw new Error(getTimeoutErrorMessage());
+    }
+    throw error;
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
 export default function CadastroGeralPage() {
-  const router = useRouter();
-
-  const [nomeResponsavel, setNomeResponsavel] = useState("");
-  const [nomeEmpresa, setNomeEmpresa] = useState("");
-  const [whatsapp, setWhatsapp] = useState("");
-  const [email, setEmail] = useState("");
-  const [site, setSite] = useState("");
-  const [instagram, setInstagram] = useState("");
-
-  const [perfisSelecionados, setPerfisSelecionados] = useState<string[]>([]);
-  const [coverageType, setCoverageType] = useState<CoverageType>("brasil");
-  const [estadoBase, setEstadoBase] = useState("");
-  const [regiaoBase, setRegiaoBase] = useState("");
-  const [cidadeBase, setCidadeBase] = useState("");
-  const [observacaoCobertura, setObservacaoCobertura] = useState("");
-
-  const [atendimentoTipo, setAtendimentoTipo] =
-    useState<AttendanceType>("todos");
-  const [descricao, setDescricao] = useState("");
-
-  const [segmentoInput, setSegmentoInput] = useState("");
-  const [produtoInput, setProdutoInput] = useState("");
-  const [segmentoEspecificoInput, setSegmentoEspecificoInput] = useState("");
-
-  const [segmentos, setSegmentos] = useState<string[]>([]);
-  const [produtos, setProdutos] = useState<string[]>([]);
-  const [segmentosEspecificos, setSegmentosEspecificos] = useState<string[]>(
-    []
+  const [form, setForm] = useState<FormState>(INITIAL_FORM);
+  const [loading, setLoading] = useState(false);
+  const [loadingCadastro, setLoadingCadastro] = useState(true);
+  const [message, setMessage] = useState("");
+  const [messageType, setMessageType] = useState<"success" | "error" | "info">(
+    "info"
   );
-
-  const [nomePublico, setNomePublico] = useState("");
-  const [descricaoPublicaCurta, setDescricaoPublicaCurta] = useState("");
-  const [cidadePublica, setCidadePublica] = useState("");
-  const [estadoPublico, setEstadoPublico] = useState("");
-
-  const [mostrarNomePublico, setMostrarNomePublico] = useState(true);
-  const [mostrarDescricaoPublica, setMostrarDescricaoPublica] = useState(true);
-  const [mostrarCidadePublica, setMostrarCidadePublica] = useState(true);
-  const [mostrarEstadoPublico, setMostrarEstadoPublico] = useState(true);
-  const [mostrarSegmentosPublicos, setMostrarSegmentosPublicos] =
-    useState(true);
-  const [mostrarProdutosPublicos, setMostrarProdutosPublicos] = useState(true);
-
-  const [saving, setSaving] = useState(false);
-  const [feedback, setFeedback] = useState("");
-  const [feedbackType, setFeedbackType] = useState<FeedbackType>("info");
-  const [cadastroIdSalvo, setCadastroIdSalvo] = useState("");
+  const [sessionEmail, setSessionEmail] = useState("");
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [draftLoaded, setDraftLoaded] = useState(false);
+  const [authReady, setAuthReady] = useState(false);
+  const [lastAuthCheck, setLastAuthCheck] = useState("");
+  const [sessionUserId, setSessionUserId] = useState("");
+  const [authDebug, setAuthDebug] = useState<AuthDebugState>({
+    storageKeys: [],
+    storageTokenKey: "",
+    storageTokenPreview: "",
+    sessionFound: false,
+    sessionEmail: "",
+    sessionUserId: "",
+  });
+
+  const authChangeBooted = useRef(false);
+  const submitLockRef = useRef(false);
+  const loadLockRef = useRef(false);
+  const mountedRef = useRef(true);
+  const currentLoadIdRef = useRef(0);
+  const currentSaveIdRef = useRef(0);
+  const loadFailsafeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const saveFailsafeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const progresso = useMemo(() => {
     const checks = [
-      nomeResponsavel.trim() || nomeEmpresa.trim(),
-      whatsapp.trim() || email.trim(),
-      perfisSelecionados.length > 0,
-      coverageType,
-      segmentos.length > 0 || produtos.length > 0,
-      descricao.trim(),
+      !!form.nomeResponsavel,
+      !!form.nomeEmpresa,
+      !!form.whatsapp,
+      !!form.email,
+      !!form.cidadeBase,
+      !!form.estadoBase,
+      !!form.regiaoBase,
+      !!form.descricao,
+      !!form.nomePublico,
+      !!form.descricaoPublicaCurta,
+      !!form.cidadePublica,
+      !!form.estadoPublico,
     ];
 
-    const filled = checks.filter(Boolean).length;
-    return Math.round((filled / checks.length) * 100);
-  }, [
-    nomeResponsavel,
-    nomeEmpresa,
-    whatsapp,
-    email,
-    perfisSelecionados,
-    coverageType,
-    segmentos,
-    produtos,
-    descricao,
-  ]);
+    const total = checks.length;
+    const done = checks.filter(Boolean).length;
+    return Math.round((done / total) * 100);
+  }, [form]);
 
-  const draftPayload = useMemo<DraftPayload>(
-    () =>
-      buildDraftPayload({
-        nomeResponsavel,
-        nomeEmpresa,
-        whatsapp,
-        email,
-        site,
-        instagram,
-        perfisSelecionados,
-        coverageType,
-        estadoBase,
-        regiaoBase,
-        cidadeBase,
-        observacaoCobertura,
-        atendimentoTipo,
-        descricao,
-        segmentos,
-        produtos,
-        segmentosEspecificos,
-        nomePublico,
-        descricaoPublicaCurta,
-        cidadePublica,
-        estadoPublico,
-        mostrarNomePublico,
-        mostrarDescricaoPublica,
-        mostrarCidadePublica,
-        mostrarEstadoPublico,
-        mostrarSegmentosPublicos,
-        mostrarProdutosPublicos,
-      }),
-    [
-      nomeResponsavel,
-      nomeEmpresa,
-      whatsapp,
-      email,
-      site,
-      instagram,
-      perfisSelecionados,
-      coverageType,
-      estadoBase,
-      regiaoBase,
-      cidadeBase,
-      observacaoCobertura,
-      atendimentoTipo,
-      descricao,
-      segmentos,
-      produtos,
-      segmentosEspecificos,
-      nomePublico,
-      descricaoPublicaCurta,
-      cidadePublica,
-      estadoPublico,
-      mostrarNomePublico,
-      mostrarDescricaoPublica,
-      mostrarCidadePublica,
-      mostrarEstadoPublico,
-      mostrarSegmentosPublicos,
-      mostrarProdutosPublicos,
-    ]
-  );
+  function clearLoadFailsafe() {
+    if (loadFailsafeTimerRef.current) {
+      clearTimeout(loadFailsafeTimerRef.current);
+      loadFailsafeTimerRef.current = null;
+    }
+  }
 
-  useEffect(() => {
+  function clearSaveFailsafe() {
+    if (saveFailsafeTimerRef.current) {
+      clearTimeout(saveFailsafeTimerRef.current);
+      saveFailsafeTimerRef.current = null;
+    }
+  }
+
+  function startLoadFailsafe(loadId: number) {
+    clearLoadFailsafe();
+
+    loadFailsafeTimerRef.current = setTimeout(() => {
+      if (!mountedRef.current) return;
+      if (currentLoadIdRef.current !== loadId) return;
+
+      loadLockRef.current = false;
+      setLoadingCadastro(false);
+      setMessage(
+        "A recarga demorou demais e foi liberada na interface para não prender a tela. O sistema está em constante atualização e pode haver momentos de instabilidade."
+      );
+      setMessageType("error");
+    }, LOAD_UI_FAILSAFE_MS);
+  }
+
+  function startSaveFailsafe(saveId: number) {
+    clearSaveFailsafe();
+
+    saveFailsafeTimerRef.current = setTimeout(() => {
+      if (!mountedRef.current) return;
+      if (currentSaveIdRef.current !== saveId) return;
+
+      submitLockRef.current = false;
+      setLoading(false);
+      setMessage(
+        "O salvamento demorou demais e a interface foi liberada para não prender a tela. Confira no Guardião se o cadastro foi salvo antes de clicar novamente."
+      );
+      setMessageType("error");
+    }, SAVE_UI_FAILSAFE_MS);
+  }
+
+  function saveDraft(nextForm: FormState) {
     try {
-      const raw = localStorage.getItem(DRAFT_KEY);
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(nextForm));
+    } catch {}
+  }
 
-      if (!raw) {
-        setDraftLoaded(true);
+  function setField<K extends keyof FormState>(field: K, value: FormState[K]) {
+    setForm((prev) => {
+      const next = { ...prev, [field]: value };
+      saveDraft(next);
+      return next;
+    });
+  }
+
+  function replaceForm(nextForm: FormState) {
+    const merged = mergeWithInitial(nextForm);
+    setForm(merged);
+    saveDraft(merged);
+  }
+
+  function toggleInArray(
+    field: "perfisSelecionados" | "segmentos" | "produtos",
+    value: string
+  ) {
+    setForm((prev) => {
+      const exists = prev[field].includes(value);
+      const next = {
+        ...prev,
+        [field]: exists
+          ? prev[field].filter((item) => item !== value)
+          : [...prev[field], value],
+      };
+      saveDraft(next as FormState);
+      return next as FormState;
+    });
+  }
+
+  async function getAuthState() {
+    const {
+      data: { session },
+      error: sessionError,
+    } = await supabase.auth.getSession();
+
+    if (sessionError) {
+      throw new Error(`Falha ao obter sessão: ${sessionError.message}`);
+    }
+
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser();
+
+    if (userError) {
+      console.warn("Aviso ao obter usuário autenticado:", userError.message);
+    }
+
+    const accessToken = session?.access_token || null;
+    const email =
+      session?.user?.email?.trim().toLowerCase() ||
+      user?.email?.trim().toLowerCase() ||
+      "";
+    const userId = session?.user?.id || user?.id || "";
+
+    return {
+      accessToken,
+      email,
+      authenticated: !!accessToken,
+      userId,
+      session,
+    };
+  }
+
+  async function refreshAuthStatus(options?: { preserveMessage?: boolean }) {
+    try {
+      const auth = await getAuthState();
+
+      if (!mountedRef.current) return auth;
+
+      setSessionEmail(auth.email);
+      setIsAuthenticated(auth.authenticated);
+      setSessionUserId(auth.userId);
+      setLastAuthCheck(new Date().toLocaleString("pt-BR"));
+      setAuthReady(true);
+      setAuthDebug(getAuthDebugFromStorage(auth.session));
+
+      if (auth.email && !form.email) {
+        setForm((prev) => {
+          const next = { ...prev, email: auth.email };
+          saveDraft(next);
+          return next;
+        });
+      }
+
+      if (!options?.preserveMessage) {
+        if (auth.authenticated) {
+          setMessage(
+            "Sessão ativa detectada. O próximo salvar já tenta amarrar o cadastro ao user_id."
+          );
+          setMessageType("success");
+        } else {
+          setMessage(
+            "Sem sessão ativa no momento. Você ainda pode operar por fallback de e-mail."
+          );
+          setMessageType("info");
+        }
+      }
+
+      return auth;
+    } catch (error: any) {
+      if (!mountedRef.current) {
+        return {
+          accessToken: null,
+          email: "",
+          authenticated: false,
+          userId: "",
+          session: null,
+        };
+      }
+
+      setAuthReady(true);
+      setIsAuthenticated(false);
+      setSessionEmail("");
+      setSessionUserId("");
+      setLastAuthCheck(new Date().toLocaleString("pt-BR"));
+      setAuthDebug(getAuthDebugFromStorage(null));
+
+      if (!options?.preserveMessage) {
+        setMessage(error?.message || "Erro ao validar autenticação.");
+        setMessageType("error");
+      }
+
+      return {
+        accessToken: null,
+        email: "",
+        authenticated: false,
+        userId: "",
+        session: null,
+      };
+    }
+  }
+
+  async function loadCadastro(options?: {
+    preserveMessage?: boolean;
+    force?: boolean;
+  }) {
+    if (loadLockRef.current && !options?.force) {
+      return;
+    }
+
+    const loadId = Date.now();
+    currentLoadIdRef.current = loadId;
+    loadLockRef.current = true;
+
+    try {
+      if (mountedRef.current) {
+        setLoadingCadastro(true);
+      }
+
+      startLoadFailsafe(loadId);
+
+      if (!options?.preserveMessage && mountedRef.current) {
+        setMessage("Carregando cadastro real...");
+        setMessageType("info");
+      }
+
+      const auth = await refreshAuthStatus({ preserveMessage: true });
+      const emailHint = normalizeText(form.email || auth.email).toLowerCase();
+
+      if (!emailHint && !auth.accessToken) {
+        if (!options?.preserveMessage && mountedRef.current) {
+          setMessage(
+            "Sem sessão ativa no momento. Preencha os campos e salvaremos por fallback controlado via e-mail."
+          );
+          setMessageType("info");
+        }
         return;
       }
 
-      const parsed = JSON.parse(raw) as Partial<DraftPayload>;
-
-      setNomeResponsavel(parsed.nomeResponsavel || "");
-      setNomeEmpresa(parsed.nomeEmpresa || "");
-      setWhatsapp(parsed.whatsapp || "");
-      setEmail(parsed.email || "");
-      setSite(parsed.site || "");
-      setInstagram(parsed.instagram || "");
-      setPerfisSelecionados(parsed.perfisSelecionados || []);
-      setCoverageType(parsed.coverageType || "brasil");
-      setEstadoBase(parsed.estadoBase || "");
-      setRegiaoBase(parsed.regiaoBase || "");
-      setCidadeBase(parsed.cidadeBase || "");
-      setObservacaoCobertura(parsed.observacaoCobertura || "");
-      setAtendimentoTipo(parsed.atendimentoTipo || "todos");
-      setDescricao(parsed.descricao || "");
-      setSegmentos(parsed.segmentos || []);
-      setProdutos(parsed.produtos || []);
-      setSegmentosEspecificos(parsed.segmentosEspecificos || []);
-      setNomePublico(parsed.nomePublico || "");
-      setDescricaoPublicaCurta(parsed.descricaoPublicaCurta || "");
-      setCidadePublica(parsed.cidadePublica || "");
-      setEstadoPublico(parsed.estadoPublico || "");
-      setMostrarNomePublico(
-        parsed.mostrarNomePublico !== undefined
-          ? parsed.mostrarNomePublico
-          : true
-      );
-      setMostrarDescricaoPublica(
-        parsed.mostrarDescricaoPublica !== undefined
-          ? parsed.mostrarDescricaoPublica
-          : true
-      );
-      setMostrarCidadePublica(
-        parsed.mostrarCidadePublica !== undefined
-          ? parsed.mostrarCidadePublica
-          : true
-      );
-      setMostrarEstadoPublico(
-        parsed.mostrarEstadoPublico !== undefined
-          ? parsed.mostrarEstadoPublico
-          : true
-      );
-      setMostrarSegmentosPublicos(
-        parsed.mostrarSegmentosPublicos !== undefined
-          ? parsed.mostrarSegmentosPublicos
-          : true
-      );
-      setMostrarProdutosPublicos(
-        parsed.mostrarProdutosPublicos !== undefined
-          ? parsed.mostrarProdutosPublicos
-          : true
+      const result = await fetchJsonWithTimeout(
+        `/api/cadastro-geral${
+          emailHint ? `?email=${encodeURIComponent(emailHint)}` : ""
+        }`,
+        {
+          method: "GET",
+          headers: {
+            ...(auth.accessToken
+              ? { Authorization: `Bearer ${auth.accessToken}` }
+              : {}),
+            ...(emailHint ? { "x-cadastro-email-hint": emailHint } : {}),
+          },
+          cache: "no-store",
+        }
       );
 
-      setFeedbackType("info");
-      setFeedback(
-        "Rascunho offline recuperado com sucesso. Sistema em constante atualização e proteção ativa."
-      );
-    } catch {
-      setFeedbackType("error");
-      setFeedback("Não foi possível restaurar o rascunho local do cadastro.");
+      if (!result.ok) {
+        throw new Error(result.data?.error || "Erro ao carregar cadastro.");
+      }
+
+      const cadastro = result.data?.cadastro;
+
+      if (!cadastro) {
+        if (!options?.preserveMessage && mountedRef.current) {
+          setMessage(
+            auth.authenticated
+              ? "Nenhum cadastro anterior encontrado. Preencha e salve sua base real."
+              : "Sem sessão ativa no momento. Preencha os campos e salvaremos por fallback controlado via e-mail."
+          );
+          setMessageType("info");
+        }
+        return;
+      }
+
+      if (mountedRef.current && currentLoadIdRef.current === loadId) {
+        replaceForm(mapCadastroToForm(cadastro));
+      }
+
+      if (!options?.preserveMessage && mountedRef.current) {
+        setMessage(
+          auth.authenticated
+            ? "Cadastro carregado com sucesso em modo logado."
+            : "Cadastro localizado por fallback controlado."
+        );
+        setMessageType("success");
+      }
+    } catch (error: any) {
+      console.error("ERRO AO CARREGAR CADASTRO GERAL:", error);
+
+      if (mountedRef.current && currentLoadIdRef.current === loadId) {
+        setMessage(error?.message || "Erro inesperado ao carregar cadastro.");
+        setMessageType("error");
+      }
     } finally {
-      setDraftLoaded(true);
+      if (currentLoadIdRef.current === loadId) {
+        clearLoadFailsafe();
+        loadLockRef.current = false;
+
+        if (mountedRef.current) {
+          setLoadingCadastro(false);
+        }
+      }
     }
+  }
+
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+
+    if (submitLockRef.current || loading) {
+      return;
+    }
+
+    const saveId = Date.now();
+    currentSaveIdRef.current = saveId;
+    submitLockRef.current = true;
+
+    try {
+      if (mountedRef.current) {
+        setLoading(true);
+        setMessage("Salvando cadastro real...");
+        setMessageType("info");
+      }
+
+      startSaveFailsafe(saveId);
+
+      const auth = await refreshAuthStatus({ preserveMessage: true });
+      const finalEmail = normalizeText(form.email || auth.email).toLowerCase();
+
+      if (!auth.accessToken && !finalEmail) {
+        throw new Error(
+          "Sem login ativo e sem e-mail preenchido. Informe o e-mail ou faça login antes de salvar."
+        );
+      }
+
+      const payload = {
+        nomeResponsavel: normalizeText(form.nomeResponsavel),
+        nomeEmpresa: normalizeText(form.nomeEmpresa),
+        whatsapp: normalizeText(form.whatsapp),
+        email: finalEmail,
+        site: normalizeText(form.site),
+        instagram: normalizeText(form.instagram),
+        perfisSelecionados: form.perfisSelecionados,
+        coverageType: form.coverageType,
+        estadoBase: normalizeText(form.estadoBase),
+        regiaoBase: normalizeText(form.regiaoBase),
+        cidadeBase: normalizeText(form.cidadeBase),
+        observacaoCobertura: normalizeText(form.observacaoCobertura),
+        atendimentoTipo: form.atendimentoTipo,
+        descricao: normalizeText(form.descricao),
+        segmentos: form.segmentos,
+        produtos: form.produtos,
+        segmentosEspecificos: form.segmentosEspecificos,
+        nomePublico: normalizeText(form.nomePublico),
+        descricaoPublicaCurta: normalizeText(form.descricaoPublicaCurta),
+        cidadePublica: normalizeText(form.cidadePublica),
+        estadoPublico: normalizeText(form.estadoPublico),
+        mostrarNomePublico: form.mostrarNomePublico,
+        mostrarDescricaoPublica: form.mostrarDescricaoPublica,
+        mostrarCidadePublica: form.mostrarCidadePublica,
+        mostrarEstadoPublico: form.mostrarEstadoPublico,
+        mostrarSegmentosPublicos: form.mostrarSegmentosPublicos,
+        mostrarProdutosPublicos: form.mostrarProdutosPublicos,
+      };
+
+      const result = await fetchJsonWithTimeout("/api/cadastro-geral", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(auth.accessToken
+            ? { Authorization: `Bearer ${auth.accessToken}` }
+            : {}),
+          ...(finalEmail ? { "x-cadastro-email-hint": finalEmail } : {}),
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (!result.ok) {
+        throw new Error(result.data?.error || "Erro ao salvar cadastro geral.");
+      }
+
+      if (result.data?.cadastro && mountedRef.current) {
+        replaceForm(mapCadastroToForm(result.data.cadastro));
+      }
+
+      if (mountedRef.current && currentSaveIdRef.current === saveId) {
+        setMessage(
+          auth.authenticated
+            ? `Cadastro salvo com sucesso em modo logado. Modo: ${
+                result.data?.mode || "update"
+              }. Se este e-mail já existia, o vínculo com user_id foi tentado automaticamente.`
+            : `Cadastro salvo com sucesso por fallback de e-mail. Modo: ${
+                result.data?.mode || "update"
+              }.`
+        );
+        setMessageType("success");
+      }
+    } catch (error: any) {
+      console.error("ERRO REAL CADASTRO GERAL:", error);
+
+      const errorMessage =
+        error?.message || "Erro inesperado ao salvar cadastro.";
+
+      if (mountedRef.current && currentSaveIdRef.current === saveId) {
+        setMessage(errorMessage);
+        setMessageType("error");
+      }
+    } finally {
+      if (currentSaveIdRef.current === saveId) {
+        clearSaveFailsafe();
+        submitLockRef.current = false;
+
+        if (mountedRef.current) {
+          setLoading(false);
+        }
+      }
+    }
+  }
+
+  useEffect(() => {
+    mountedRef.current = true;
+
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        replaceForm(mergeWithInitial(parsed));
+      }
+    } catch {}
+
+    setDraftLoaded(true);
+
+    return () => {
+      mountedRef.current = false;
+      clearLoadFailsafe();
+      clearSaveFailsafe();
+    };
   }, []);
 
   useEffect(() => {
     if (!draftLoaded) return;
-
-    try {
-      const rawPrefill = localStorage.getItem("aurora_prefill_snapshot");
-      const lastEmail =
-        localStorage.getItem("aurora_last_login_email") ||
-        localStorage.getItem("aurora_signup_email") ||
-        "";
-
-      if (!rawPrefill && !lastEmail) return;
-
-      let parsed: any = null;
-
-      if (rawPrefill) {
-        try {
-          parsed = JSON.parse(rawPrefill);
-        } catch {}
-      }
-
-      if (parsed) {
-        setNomeResponsavel((prev) => prev || parsed.fullName || "");
-        setNomeEmpresa((prev) => prev || parsed.companyName || "");
-        setWhatsapp((prev) => prev || parsed.whatsapp || "");
-        setCidadeBase((prev) => prev || parsed.city || "");
-        setEstadoBase((prev) => prev || parsed.state || "");
-
-        setSegmentos((prev) => {
-          if (prev.length > 0) return prev;
-          if (parsed.segment) return [parsed.segment];
-          return prev;
-        });
-      }
-
-      if (lastEmail) {
-        setEmail((prev) => prev || lastEmail);
-      }
-
-      setFeedbackType("info");
-      setFeedback(
-        "Dados anteriores encontrados e aplicados automaticamente para acelerar seu cadastro."
-      );
-    } catch (err) {
-      console.warn("[prefill] erro ao aplicar prefill", err);
-    }
+    loadCadastro({ preserveMessage: true, force: true });
   }, [draftLoaded]);
 
   useEffect(() => {
-    if (!draftLoaded) return;
-
-    try {
-      localStorage.setItem(DRAFT_KEY, JSON.stringify(draftPayload));
-    } catch {}
-  }, [draftLoaded, draftPayload]);
-
-  function togglePerfil(perfil: string) {
-    const exists = perfisSelecionados.includes(perfil);
-
-    if (exists) {
-      setPerfisSelecionados(perfisSelecionados.filter((item) => item !== perfil));
-      return;
-    }
-
-    setPerfisSelecionados([...perfisSelecionados, perfil]);
-  }
-
-  function handleAddSegmento() {
-    addUniqueValue(segmentoInput, segmentos, setSegmentos);
-    setSegmentoInput("");
-  }
-
-  function handleAddProduto() {
-    addUniqueValue(produtoInput, produtos, setProdutos);
-    setProdutoInput("");
-  }
-
-  function handleAddSegmentoEspecifico() {
-    addUniqueValue(
-      segmentoEspecificoInput,
-      segmentosEspecificos,
-      setSegmentosEspecificos
-    );
-    setSegmentoEspecificoInput("");
-  }
-
-  function clearForm() {
-    setNomeResponsavel("");
-    setNomeEmpresa("");
-    setWhatsapp("");
-    setEmail("");
-    setSite("");
-    setInstagram("");
-    setPerfisSelecionados([]);
-    setCoverageType("brasil");
-    setEstadoBase("");
-    setRegiaoBase("");
-    setCidadeBase("");
-    setObservacaoCobertura("");
-    setAtendimentoTipo("todos");
-    setDescricao("");
-    setSegmentoInput("");
-    setProdutoInput("");
-    setSegmentoEspecificoInput("");
-    setSegmentos([]);
-    setProdutos([]);
-    setSegmentosEspecificos([]);
-    setNomePublico("");
-    setDescricaoPublicaCurta("");
-    setCidadePublica("");
-    setEstadoPublico("");
-    setMostrarNomePublico(true);
-    setMostrarDescricaoPublica(true);
-    setMostrarCidadePublica(true);
-    setMostrarEstadoPublico(true);
-    setMostrarSegmentosPublicos(true);
-    setMostrarProdutosPublicos(true);
-    setFeedback("");
-    setCadastroIdSalvo("");
-
-    try {
-      localStorage.removeItem(DRAFT_KEY);
-    } catch {}
-  }
-
-  async function insertVocabulary(
-    supabase: SupabaseClient,
-    tipo: "segmento" | "produto_servico" | "perfil" | "segmento_atendido",
-    termos: string[]
-  ) {
-    if (!termos.length) return;
-
-    const payload = termos.map((termo) => ({
-      tipo,
-      termo,
-      primeira_origem: "cadastro_geral",
-    }));
-
-    const { error } = await supabase
-      .from("cadastro_vocabulario")
-      .upsert(payload, { onConflict: "tipo,termo" });
-
-    if (error) {
-      throwStageError(`cadastro_vocabulario (${tipo})`, error);
-    }
-  }
-
-  async function findExistingCadastroIdByEmail(
-    supabase: SupabaseClient,
-    emailValue: string
-  ) {
-    const normalizedEmail = emailValue.trim().toLowerCase();
-
-    if (!normalizedEmail) return null;
-
-    const { data, error } = await supabase
-      .from("cadastros_gerais")
-      .select("id, updated_at, created_at, status, origem")
-      .eq("email", normalizedEmail)
-      .order("updated_at", { ascending: false })
-      .limit(1);
-
-    if (error) {
-      throwStageError("cadastros_gerais busca existente", error);
-    }
-
-    if (!data || data.length === 0) {
-      return null;
-    }
-
-    return data[0]?.id ? String(data[0].id) : null;
-  }
-
-  async function deleteExistingRelatedRows(
-    supabase: SupabaseClient,
-    cadastroId: string
-  ) {
-    const tables = [
-      "cadastro_perfis",
-      "cadastro_segmentos",
-      "cadastro_produtos_servicos",
-      "cadastro_segmentos_atendidos",
-      "cadastro_areas_cobertura",
-    ];
-
-    for (const table of tables) {
-      const { error } = await supabase
-        .from(table)
-        .delete()
-        .eq("cadastro_id", cadastroId);
-
-      if (error) {
-        throwStageError(`${table} limpeza`, error);
-      }
-    }
-  }
-
-  async function handleSubmit(e: FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-
-    if (saving) return;
-
-    setSaving(true);
-    setFeedback("");
-    setCadastroIdSalvo("");
-
-    try {
-      console.log("[cadastro-geral] submit:start");
-
-      const supabase = getSupabaseBrowserClient();
-
-      if (!supabase) {
-        throw new Error(
-          "Variáveis NEXT_PUBLIC_SUPABASE_URL e NEXT_PUBLIC_SUPABASE_ANON_KEY não configuradas."
-        );
-      }
-
-      let userId: string | null = null;
-
-      try {
-        console.log("[cadastro-geral] auth:getSession:start");
-
-        const {
-          data: { session },
-          error: sessionError,
-        } = await supabase.auth.getSession();
-
-        if (sessionError) {
-          console.warn(
-            "[cadastro-geral] auth:getSession:error",
-            serializeError(sessionError)
-          );
-        }
-
-        userId = session?.user?.id ?? null;
-
-        console.log("[cadastro-geral] auth:getSession:done", { userId });
-      } catch (sessionCatch) {
-        console.warn(
-          "[cadastro-geral] auth:getSession:catch",
-          serializeError(sessionCatch)
-        );
-        userId = null;
-      }
-
-      if (!nomeResponsavel.trim() && !nomeEmpresa.trim()) {
-        throw new Error(
-          "Preencha pelo menos o nome do responsável ou o nome da empresa."
-        );
-      }
-
-      try {
-        localStorage.setItem(DRAFT_KEY, JSON.stringify(draftPayload));
-      } catch (draftError) {
-        console.warn(
-          "[cadastro-geral] localStorage:draft:error",
-          serializeError(draftError)
-        );
-      }
-
-      const perfisLimpos = perfisSelecionados.map(sanitizeValue).filter(Boolean);
-      const segmentosLimpos = segmentos.map(sanitizeValue).filter(Boolean);
-      const produtosLimpos = produtos.map(sanitizeValue).filter(Boolean);
-      const segmentosEspecificosLimpos = segmentosEspecificos
-        .map(sanitizeValue)
-        .filter(Boolean);
-
-      const normalizedEmail = email.trim().toLowerCase() || null;
-      const nomeEmpresaFinal =
-        nomeEmpresa.trim() || nomeResponsavel.trim() || null;
-      const nomeResponsavelFinal =
-        nomeResponsavel.trim() || nomeEmpresa.trim() || null;
-
-      const cadastroPayload = {
-        user_id: userId,
-        nome_responsavel: nomeResponsavelFinal,
-        nome_empresa: nomeEmpresaFinal,
-        whatsapp: whatsapp.trim() || null,
-        email: normalizedEmail,
-        site: site.trim() || null,
-        instagram: instagram.trim() || null,
-        coverage_type: coverageType,
-        estado_base: estadoBase || null,
-        regiao_base: regiaoBase.trim() || null,
-        cidade_base: cidadeBase.trim() || null,
-        observacao_cobertura: observacaoCobertura.trim() || null,
-        atendimento_tipo: atendimentoTipo,
-        descricao_publica: descricao.trim() || null,
-        status: "rascunho",
-        is_public: false,
-        origem: "cadastro_geral",
-        cadastro_completo: true,
-        updated_at: new Date().toISOString(),
-        nome_publico: nomePublico.trim() || null,
-        descricao_publica_curta: descricaoPublicaCurta.trim() || null,
-        cidade_publica: cidadePublica.trim() || null,
-        estado_publico: estadoPublico || null,
-        mostrar_nome_publico: mostrarNomePublico,
-        mostrar_descricao_publica: mostrarDescricaoPublica,
-        mostrar_cidade_publica: mostrarCidadePublica,
-        mostrar_estado_publico: mostrarEstadoPublico,
-        mostrar_segmentos_publicos: mostrarSegmentosPublicos,
-        mostrar_produtos_publicos: mostrarProdutosPublicos,
-      };
-
-      let cadastroId: string | null = null;
-
-      const existingCadastroId = await findExistingCadastroIdByEmail(
-        supabase,
-        email.trim()
-      );
-
-      if (existingCadastroId) {
-        console.log("[cadastro-geral] cadastros_gerais:update:start", {
-          cadastroId: existingCadastroId,
-          cadastroPayload,
-        });
-
-        const { data: cadastroAtualizado, error: cadastroUpdateError } =
-          await supabase
-            .from("cadastros_gerais")
-            .update(cadastroPayload)
-            .eq("id", existingCadastroId)
-            .select("id")
-            .single();
-
-        if (cadastroUpdateError) {
-          throwStageError("cadastros_gerais update", cadastroUpdateError);
-        }
-
-        cadastroId = cadastroAtualizado?.id
-          ? String(cadastroAtualizado.id)
-          : existingCadastroId;
-
-        await deleteExistingRelatedRows(supabase, cadastroId);
-
-        console.log("[cadastro-geral] cadastros_gerais:update:done", {
-          cadastroId,
-        });
-      } else {
-        console.log(
-          "[cadastro-geral] cadastros_gerais:insert:start",
-          cadastroPayload
-        );
-
-        const { data: cadastroCriado, error: cadastroInsertError } =
-          await supabase
-            .from("cadastros_gerais")
-            .insert(cadastroPayload)
-            .select("id")
-            .single();
-
-        if (cadastroInsertError) {
-          throwStageError("cadastros_gerais insert", cadastroInsertError);
-        }
-
-        cadastroId = cadastroCriado?.id ? String(cadastroCriado.id) : null;
-
-        if (!cadastroId) {
-          throw new Error("cadastros_gerais: id não retornado após inserção.");
-        }
-
-        console.log("[cadastro-geral] cadastros_gerais:insert:done", {
-          cadastroId,
-        });
-      }
-
-      if (!cadastroId) {
-        throw new Error("Cadastro não identificado para salvar os vínculos.");
-      }
-
-      if (perfisLimpos.length > 0) {
-        console.log(
-          "[cadastro-geral] cadastro_perfis:insert:start",
-          perfisLimpos
-        );
-
-        const { error } = await supabase.from("cadastro_perfis").insert(
-          perfisLimpos.map((perfil) => ({
-            cadastro_id: cadastroId,
-            perfil,
-          }))
-        );
-
-        if (error) {
-          console.warn(
-            "[cadastro-geral] cadastro_perfis:warn",
-            serializeError(error)
-          );
-        } else {
-          console.log("[cadastro-geral] cadastro_perfis:insert:done");
-        }
-      }
-
-      if (segmentosLimpos.length > 0) {
-        console.log(
-          "[cadastro-geral] cadastro_segmentos:insert:start",
-          segmentosLimpos
-        );
-
-        const { error } = await supabase.from("cadastro_segmentos").insert(
-          segmentosLimpos.map((nome) => ({
-            cadastro_id: cadastroId,
-            nome,
-          }))
-        );
-
-        if (error) {
-          console.warn(
-            "[cadastro-geral] cadastro_segmentos:warn",
-            serializeError(error)
-          );
-        } else {
-          console.log("[cadastro-geral] cadastro_segmentos:insert:done");
-        }
-      }
-
-      if (produtosLimpos.length > 0) {
-        console.log(
-          "[cadastro-geral] cadastro_produtos_servicos:insert:start",
-          produtosLimpos
-        );
-
-        const { error } = await supabase
-          .from("cadastro_produtos_servicos")
-          .insert(
-            produtosLimpos.map((nome) => ({
-              cadastro_id: cadastroId,
-              nome,
-            }))
-          );
-
-        if (error) {
-          console.warn(
-            "[cadastro-geral] cadastro_produtos_servicos:warn",
-            serializeError(error)
-          );
-        } else {
-          console.log("[cadastro-geral] cadastro_produtos_servicos:insert:done");
-        }
-      }
-
-      if (
-        atendimentoTipo === "especificos" &&
-        segmentosEspecificosLimpos.length > 0
-      ) {
-        console.log(
-          "[cadastro-geral] cadastro_segmentos_atendidos:insert:start",
-          segmentosEspecificosLimpos
-        );
-
-        const { error } = await supabase
-          .from("cadastro_segmentos_atendidos")
-          .insert(
-            segmentosEspecificosLimpos.map((nome) => ({
-              cadastro_id: cadastroId,
-              nome,
-            }))
-          );
-
-        if (error) {
-          console.warn(
-            "[cadastro-geral] cadastro_segmentos_atendidos:warn",
-            serializeError(error)
-          );
-        } else {
-          console.log(
-            "[cadastro-geral] cadastro_segmentos_atendidos:insert:done"
-          );
-        }
-      }
-
-      console.log("[cadastro-geral] cadastro_areas_cobertura:insert:start");
-
-      const { error: coberturaError } = await supabase
-        .from("cadastro_areas_cobertura")
-        .insert({
-          cadastro_id: cadastroId,
-          coverage_type: coverageType,
-          pais: "Brasil",
-          estado: estadoBase || null,
-          regiao: regiaoBase.trim() || null,
-          cidade: cidadeBase.trim() || null,
-          observacao: observacaoCobertura.trim() || null,
-        });
-
-      if (coberturaError) {
-        console.warn(
-          "[cadastro-geral] cadastro_areas_cobertura:warn",
-          serializeError(coberturaError)
-        );
-      } else {
-        console.log("[cadastro-geral] cadastro_areas_cobertura:insert:done");
-      }
-
-      console.log("[cadastro-geral] cadastro_vocabulario:perfil:start");
-      await insertVocabulary(supabase, "perfil", perfisLimpos);
-
-      console.log("[cadastro-geral] cadastro_vocabulario:segmento:start");
-      await insertVocabulary(supabase, "segmento", segmentosLimpos);
-
-      console.log(
-        "[cadastro-geral] cadastro_vocabulario:produto_servico:start"
-      );
-      await insertVocabulary(supabase, "produto_servico", produtosLimpos);
-
-      if (atendimentoTipo === "especificos") {
-        console.log(
-          "[cadastro-geral] cadastro_vocabulario:segmento_atendido:start"
-        );
-        await insertVocabulary(
-          supabase,
-          "segmento_atendido",
-          segmentosEspecificosLimpos
-        );
-      }
-
-      try {
-        localStorage.setItem("aurora-cadastro-geral-email", email.trim() || "");
-        localStorage.removeItem(DRAFT_KEY);
-      } catch (storageError) {
-        console.warn(
-          "[cadastro-geral] localStorage:final:error",
-          serializeError(storageError)
-        );
-      }
-
-      setCadastroIdSalvo(cadastroId);
-      setFeedbackType("success");
-      setFeedback(
-        "Cadastro salvo com sucesso. A Aurora marcou o registro como completo e atualizou o rascunho existente quando encontrou o mesmo e-mail."
-      );
-
-      const emailSafe = encodeURIComponent(email.trim() || "");
-
-      clearForm();
-
-      console.log("[cadastro-geral] submit:success", { cadastroId });
-
-      router.push(
-        `/cadastro/sucesso?status=ok&email=${emailSafe}&id=${cadastroId}`
-      );
-    } catch (error: unknown) {
-      const serialized = serializeError(error);
-
-      console.error("[cadastro-geral] submit:error:raw", error);
-      console.error("[cadastro-geral] submit:error:serialized", serialized);
-
-      const message = extractErrorMessage(error);
-
-      setFeedbackType("error");
-      setFeedback(message);
-    } finally {
-      setSaving(false);
-    }
-  }
+    if (authChangeBooted.current) return;
+    authChangeBooted.current = true;
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(async () => {
+      if (submitLockRef.current || loadLockRef.current) return;
+      await refreshAuthStatus({ preserveMessage: true });
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, []);
 
   return (
-    <main style={styles.main}>
+    <main style={styles.page}>
       <div style={styles.container}>
-        <div style={styles.topNav}>
-          <NavLink href="/" label="Voltar à Home" color="#2563eb" />
-          <NavLink href="/guardiao" label="Ir para o Guardião" color="#0f766e" />
-          <NavLink
-            href="/app-builder"
-            label="Ir para App Builder"
-            color="#2563eb"
-          />
-          <NavLink
-            href="/aurora-responde"
-            label="Aurora Responde"
-            color="#0f766e"
-          />
-          <NavLink href="/mineracao" label="Mineração" color="#1d4ed8" />
-        </div>
+        <section style={styles.hero}>
+          <div style={styles.heroTop}>
+            <div>
+              <div style={styles.badge}>Cadastro geral definitivo</div>
+              <h1 style={styles.title}>Cadastro geral real da Aurora</h1>
+              <p style={styles.subtitle}>
+                Base principal de entrada da plataforma para empresas,
+                profissionais, fornecedores, compradores, parceiros e operações.
+                Sistema em constante atualização e pode haver momentos de
+                instabilidade.
+              </p>
+            </div>
 
-        <section style={styles.heroCard}>
-          <div style={styles.badge}>Cadastro geral definitivo</div>
-          <h1 style={styles.heroTitle}>Cadastro geral real da Aurora</h1>
-          <p style={styles.heroText}>
-            Esta é a base principal de entrada da plataforma para empresas,
-            profissionais, fornecedores, compradores, parceiros e operações em
-            nível Brasil, estadual, regional, municipal ou multilocal.
-          </p>
+            <div style={styles.heroActions}>
+              <a href="/" style={styles.linkButton}>
+                Voltar à Home
+              </a>
+              <a href="/guardiao" style={styles.linkButtonSecondary}>
+                Ir para o Guardião
+              </a>
+              <a href="/app-builder" style={styles.linkButtonSecondary}>
+                Ir para App Builder
+              </a>
+            </div>
+          </div>
 
-          <div style={styles.heroGrid}>
-            <MiniInfo
-              title="Objetivo"
-              value="Base definitiva"
-              text="Evitar retrabalho, perda de dados e mudanças estruturais com o sistema já em uso."
-            />
-            <MiniInfo
-              title="Estratégia"
-              value="Super editável"
-              text="Segmentos, produtos e serviços podem crescer junto com a plataforma."
-            />
-            <MiniInfo
-              title="Privacidade"
-              value="Por padrão"
-              text="Dados públicos e dados internos agora ficam separados para proteger pessoas e empresas."
-            />
-            <MiniInfo
-              title="Progresso"
-              value={`${progresso}%`}
-              text="Preencha os blocos principais e grave a base real no Supabase."
-            />
+          <div style={styles.progressWrap}>
+            <div style={styles.progressHeader}>
+              <span>Progresso do cadastro</span>
+              <strong>{progresso}%</strong>
+            </div>
+            <div style={styles.progressBar}>
+              <div
+                style={{ ...styles.progressFill, width: `${progresso}%` }}
+              />
+            </div>
+          </div>
+
+          <div style={styles.infoGrid}>
+            <div style={styles.infoCard}>
+              <div style={styles.infoLabel}>Objetivo</div>
+              <div style={styles.infoValue}>Base definitiva</div>
+            </div>
+            <div style={styles.infoCard}>
+              <div style={styles.infoLabel}>Estratégia</div>
+              <div style={styles.infoValue}>Multi-tenant real</div>
+            </div>
+            <div style={styles.infoCard}>
+              <div style={styles.infoLabel}>Privacidade</div>
+              <div style={styles.infoValue}>Camada pública segura</div>
+            </div>
+            <div style={styles.infoCard}>
+              <div style={styles.infoLabel}>Autenticação</div>
+              <div style={styles.infoValue}>
+                {isAuthenticated ? "Logado" : "Fallback por e-mail"}
+              </div>
+            </div>
+          </div>
+
+          <div style={styles.authBox}>
+            <div style={styles.authTitle}>Validação de autenticação</div>
+            <div style={styles.authLine}>
+              <strong>Status:</strong>{" "}
+              {authReady
+                ? isAuthenticated
+                  ? "Sessão ativa"
+                  : "Sem sessão ativa"
+                : "Verificando..."}
+            </div>
+            <div style={styles.authLine}>
+              <strong>E-mail da sessão:</strong>{" "}
+              {sessionEmail || "não encontrado"}
+            </div>
+            <div style={styles.authLine}>
+              <strong>User ID:</strong> {sessionUserId || "não encontrado"}
+            </div>
+            <div style={styles.authLine}>
+              <strong>Última checagem:</strong>{" "}
+              {lastAuthCheck || "ainda não validado"}
+            </div>
+            <div style={styles.authLine}>
+              <strong>Chave auth no localStorage:</strong>{" "}
+              {authDebug.storageTokenKey || "não encontrada"}
+            </div>
+            <div style={styles.authLine}>
+              <strong>Quantidade de chaves auth detectadas:</strong>{" "}
+              {authDebug.storageKeys.length}
+            </div>
+            <div style={styles.authPreview}>
+              <strong>Prévia do token/storage:</strong>
+              <div style={styles.codeBox}>
+                {authDebug.storageTokenPreview ||
+                  "nenhum token/localStorage de auth encontrado"}
+              </div>
+            </div>
+
+            <div style={styles.authActions}>
+              <button
+                type="button"
+                onClick={() => refreshAuthStatus()}
+                style={styles.secondaryButton}
+                disabled={loading || loadingCadastro}
+              >
+                Validar login agora
+              </button>
+
+              <button
+                type="button"
+                onClick={() => loadCadastro({ force: true })}
+                style={styles.secondaryButton}
+                disabled={loading || loadingCadastro}
+                title="Recarrega do banco e pode substituir alterações não salvas"
+              >
+                {loadingCadastro ? "Recarregando..." : "Recarregar do banco"}
+              </button>
+            </div>
           </div>
         </section>
 
-        {feedback ? (
-          <section
-            style={{
-              ...styles.feedbackBox,
-              ...(feedbackType === "success"
-                ? styles.feedbackSuccess
-                : feedbackType === "error"
-                ? styles.feedbackError
-                : styles.feedbackInfo),
-            }}
-          >
-            <strong style={{ display: "block", marginBottom: 6 }}>
-              {feedbackType === "success"
-                ? "Sucesso"
-                : feedbackType === "error"
-                ? "Falha"
-                : "Aviso"}
-            </strong>
-            <div>{feedback}</div>
-            {cadastroIdSalvo ? (
-              <div style={{ marginTop: 8, fontSize: 13 }}>
-                ID salvo: {cadastroIdSalvo}
-              </div>
-            ) : null}
-          </section>
-        ) : null}
+        <section
+          style={{
+            ...styles.messageBox,
+            ...(messageType === "success"
+              ? styles.messageSuccess
+              : messageType === "error"
+              ? styles.messageError
+              : styles.messageInfo),
+          }}
+        >
+          {message ||
+            "Sistema em constante atualização e pode haver momentos de instabilidade."}
+        </section>
 
-        <form onSubmit={handleSubmit} style={styles.formWrap}>
-          <SectionCard
-            title="1. Identificação principal"
-            text="Dados-base do cadastro para contato, confiança e operação."
-          >
+        <form onSubmit={handleSubmit} style={styles.form}>
+          <section style={styles.section}>
+            <h2 style={styles.sectionTitle}>1. Identificação principal</h2>
+
             <div style={styles.grid2}>
               <Field
                 label="Nome do responsável"
-                value={nomeResponsavel}
-                onChange={setNomeResponsavel}
+                value={form.nomeResponsavel}
+                onChange={(value) => setField("nomeResponsavel", value)}
                 placeholder="Ex.: Ricardo Leonardo Moreira"
               />
               <Field
                 label="Nome da empresa ou marca"
-                value={nomeEmpresa}
-                onChange={setNomeEmpresa}
+                value={form.nomeEmpresa}
+                onChange={(value) => setField("nomeEmpresa", value)}
                 placeholder="Ex.: Aurora IA"
               />
               <Field
                 label="WhatsApp"
-                value={whatsapp}
-                onChange={setWhatsapp}
+                value={form.whatsapp}
+                onChange={(value) => setField("whatsapp", value)}
                 placeholder="Ex.: (31) 99999-9999"
               />
               <Field
                 label="E-mail"
-                type="email"
-                value={email}
-                onChange={setEmail}
+                value={form.email}
+                onChange={(value) => setField("email", value)}
                 placeholder="Ex.: contato@empresa.com"
+                type="email"
               />
               <Field
                 label="Site"
-                value={site}
-                onChange={setSite}
+                value={form.site}
+                onChange={(value) => setField("site", value)}
                 placeholder="Ex.: https://ricardoiaoficial.com"
               />
               <Field
-                label="Instagram ou rede principal"
-                value={instagram}
-                onChange={setInstagram}
-                placeholder="Ex.: @ricardoiaoficial"
+                label="Instagram"
+                value={form.instagram}
+                onChange={(value) => setField("instagram", value)}
+                placeholder="Ex.: @auroraia"
               />
             </div>
-          </SectionCard>
+          </section>
 
-          <SectionCard
-            title="2. Tipo de perfil"
-            text="O cadastro pode representar mais de um papel dentro da plataforma."
-          >
-            <div style={styles.inlineHighlight}>
-              Motorista / Condutor agora aparece como opção visível para facilitar
-              o cadastro de quem busca entrada rápida e direta na Aurora.
-            </div>
-
-            <div style={styles.choiceGrid}>
-              {PERFIS_BASE.map((perfil) => {
-                const active = perfisSelecionados.includes(perfil);
+          <section style={styles.section}>
+            <h2 style={styles.sectionTitle}>2. Perfis e posicionamento</h2>
+            <div style={styles.chipsWrap}>
+              {PERFIS_SUGERIDOS.map((item) => {
+                const active = form.perfisSelecionados.includes(item);
                 return (
                   <button
-                    key={perfil}
+                    key={item}
                     type="button"
-                    onClick={() => togglePerfil(perfil)}
-                    style={{
-                      ...styles.choiceButton,
-                      ...(active ? styles.choiceButtonActive : null),
-                    }}
+                    onClick={() => toggleInArray("perfisSelecionados", item)}
+                    style={{ ...styles.chip, ...(active ? styles.chipActive : {}) }}
                   >
-                    {perfil}
+                    {item}
                   </button>
                 );
               })}
             </div>
-          </SectionCard>
+          </section>
 
-          <SectionCard
-            title="3. Nível de atuação"
-            text="Aqui definimos a seriedade da operação e como a busca futura vai funcionar."
-          >
-            <div style={styles.choiceGrid}>
-              {(
-                [
-                  ["brasil", "Brasil inteiro"],
-                  ["estadual", "Estadual"],
-                  ["regional", "Regional"],
-                  ["municipal", "Municipal"],
-                  ["multilocal", "Multilocal"],
-                ] as Array<[CoverageType, string]>
-              ).map(([value, label]) => (
-                <button
-                  key={value}
-                  type="button"
-                  onClick={() => setCoverageType(value)}
-                  style={{
-                    ...styles.choiceButton,
-                    ...(coverageType === value ? styles.choiceButtonActive : null),
-                  }}
-                >
-                  {label}
-                </button>
-              ))}
-            </div>
-
-            <div style={styles.inlineInfo}>
-              Cobertura selecionada:{" "}
-              <strong>{formatCoverageLabel(coverageType)}</strong>
-            </div>
+          <section style={styles.section}>
+            <h2 style={styles.sectionTitle}>3. Cobertura e operação</h2>
 
             <div style={styles.grid2}>
               <SelectField
-                label="Estado-base"
-                value={estadoBase}
-                onChange={setEstadoBase}
-                options={ESTADOS_BR}
+                label="Tipo de cobertura"
+                value={form.coverageType}
+                onChange={(value) =>
+                  setField("coverageType", value as CoverageType)
+                }
+                options={[
+                  { value: "brasil", label: "Brasil" },
+                  { value: "estadual", label: "Estadual" },
+                  { value: "regional", label: "Regional" },
+                  { value: "municipal", label: "Municipal" },
+                  { value: "multilocal", label: "Multilocal" },
+                ]}
+              />
+              <SelectField
+                label="Estado base"
+                value={form.estadoBase}
+                onChange={(value) => setField("estadoBase", value)}
+                options={[
+                  { value: "", label: "Selecione" },
+                  ...ESTADOS_BR.map((uf) => ({ value: uf, label: uf })),
+                ]}
               />
               <Field
-                label="Região-base"
-                value={regiaoBase}
-                onChange={setRegiaoBase}
-                placeholder="Ex.: Metropolitana de Belo Horizonte"
+                label="Região base"
+                value={form.regiaoBase}
+                onChange={(value) => setField("regiaoBase", value)}
+                placeholder="Ex.: Metropolitana de BH"
               />
               <Field
-                label="Cidade-base"
-                value={cidadeBase}
-                onChange={setCidadeBase}
+                label="Cidade base"
+                value={form.cidadeBase}
+                onChange={(value) => setField("cidadeBase", value)}
                 placeholder="Ex.: Vespasiano"
               />
-              <Field
-                label="Observação de cobertura"
-                value={observacaoCobertura}
-                onChange={setObservacaoCobertura}
-                placeholder="Ex.: atende MG, SP e GO com operação própria"
+              <SelectField
+                label="Tipo de atendimento"
+                value={form.atendimentoTipo}
+                onChange={(value) =>
+                  setField("atendimentoTipo", value as AttendanceType)
+                }
+                options={[
+                  { value: "todos", label: "Todos os segmentos" },
+                  { value: "especificos", label: "Somente segmentos específicos" },
+                ]}
               />
             </div>
-          </SectionCard>
 
-          <SectionCard
-            title="4. Segmentos da operação"
-            text="O sistema precisa crescer com o usuário. Por isso este bloco é aberto, editável e expansível."
-          >
-            <div style={styles.inlineHighlight}>
-              Para reduzir evasão, segmentos ligados a motorista e condutor agora
-              ficam visíveis logo nas sugestões.
-            </div>
-
-            <SuggestionRow
-              title="Sugestões"
-              items={SEGMENTOS_SUGERIDOS}
-              onAdd={(item) => addUniqueValue(item, segmentos, setSegmentos)}
+            <TextAreaField
+              label="Observação de cobertura"
+              value={form.observacaoCobertura}
+              onChange={(value) => setField("observacaoCobertura", value)}
+              placeholder="Explique raio, cidades, regiões ou observações da operação."
+              rows={3}
             />
 
-            <div style={styles.addRow}>
-              <input
-                value={segmentoInput}
-                onChange={(e) => setSegmentoInput(e.target.value)}
-                placeholder="Digite um segmento e clique para adicionar"
-                style={styles.input}
+            {form.atendimentoTipo === "especificos" && (
+              <TextAreaField
+                label="Segmentos específicos atendidos"
+                value={toCsv(form.segmentosEspecificos)}
+                onChange={(value) =>
+                  setField("segmentosEspecificos", parseCsvInput(value))
+                }
+                placeholder="Ex.: locadoras, mineração, fornecedores"
+                rows={3}
               />
-              <button
-                type="button"
-                onClick={handleAddSegmento}
-                style={styles.addButton}
-              >
-                Adicionar segmento
-              </button>
-            </div>
-
-            <TagList
-              items={segmentos}
-              emptyText="Nenhum segmento adicionado ainda."
-              onRemove={(item) => removeValue(item, segmentos, setSegmentos)}
-            />
-          </SectionCard>
-
-          <SectionCard
-            title="5. Produtos e serviços"
-            text="Cadastre o que a empresa vende, entrega, representa, opera ou presta."
-          >
-            <SuggestionRow
-              title="Sugestões"
-              items={PRODUTOS_SUGERIDOS}
-              onAdd={(item) => addUniqueValue(item, produtos, setProdutos)}
-            />
-
-            <div style={styles.addRow}>
-              <input
-                value={produtoInput}
-                onChange={(e) => setProdutoInput(e.target.value)}
-                placeholder="Digite um produto ou serviço e clique para adicionar"
-                style={styles.input}
-              />
-              <button
-                type="button"
-                onClick={handleAddProduto}
-                style={styles.addButton}
-              >
-                Adicionar produto/serviço
-              </button>
-            </div>
-
-            <TagList
-              items={produtos}
-              emptyText="Nenhum produto ou serviço adicionado ainda."
-              onRemove={(item) => removeValue(item, produtos, setProdutos)}
-            />
-          </SectionCard>
-
-          <SectionCard
-            title="6. Atendimento da operação"
-            text="Defina se a empresa atende todos os segmentos ou apenas segmentos específicos."
-          >
-            <div style={styles.choiceGrid}>
-              <button
-                type="button"
-                onClick={() => setAtendimentoTipo("todos")}
-                style={{
-                  ...styles.choiceButton,
-                  ...(atendimentoTipo === "todos" ? styles.choiceButtonActive : null),
-                }}
-              >
-                Atende todos os segmentos
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setAtendimentoTipo("especificos")}
-                style={{
-                  ...styles.choiceButton,
-                  ...(atendimentoTipo === "especificos"
-                    ? styles.choiceButtonActive
-                    : null),
-                }}
-              >
-                Atende segmentos específicos
-              </button>
-            </div>
-
-            {atendimentoTipo === "especificos" ? (
-              <>
-                <div style={styles.addRow}>
-                  <input
-                    value={segmentoEspecificoInput}
-                    onChange={(e) => setSegmentoEspecificoInput(e.target.value)}
-                    placeholder="Digite um segmento atendido"
-                    style={styles.input}
-                  />
-                  <button
-                    type="button"
-                    onClick={handleAddSegmentoEspecifico}
-                    style={styles.addButton}
-                  >
-                    Adicionar segmento atendido
-                  </button>
-                </div>
-
-                <TagList
-                  items={segmentosEspecificos}
-                  emptyText="Nenhum segmento específico informado ainda."
-                  onRemove={(item) =>
-                    removeValue(item, segmentosEspecificos, setSegmentosEspecificos)
-                  }
-                />
-              </>
-            ) : (
-              <div style={styles.inlineInfo}>
-                A empresa será tratada como atendimento amplo no cadastro inicial.
-              </div>
             )}
-          </SectionCard>
+          </section>
 
-          <SectionCard
-            title="7. Descrição principal"
-            text="Explique a operação para dar clareza ao cadastro real."
-          >
-            <label style={styles.label}>Descrição pública interna</label>
-            <textarea
-              value={descricao}
-              onChange={(e) => setDescricao(e.target.value)}
-              placeholder="Ex.: empresa focada em transporte executivo, logística corporativa e locação com atuação em MG e SP."
-              style={styles.textarea}
-              rows={6}
+          <section style={styles.section}>
+            <h2 style={styles.sectionTitle}>4. Segmentos e produtos/serviços</h2>
+
+            <div style={styles.blockLabel}>Segmentos</div>
+            <div style={styles.chipsWrap}>
+              {SEGMENTOS_SUGERIDOS.map((item) => {
+                const active = form.segmentos.includes(item);
+                return (
+                  <button
+                    key={item}
+                    type="button"
+                    onClick={() => toggleInArray("segmentos", item)}
+                    style={{ ...styles.chip, ...(active ? styles.chipActive : {}) }}
+                  >
+                    {item}
+                  </button>
+                );
+              })}
+            </div>
+
+            <TextAreaField
+              label="Adicionar segmentos extras"
+              value={toCsv(form.segmentos)}
+              onChange={(value) => setField("segmentos", parseCsvInput(value))}
+              placeholder="Ex.: Agro, tecnologia, bancos, serviços..."
+              rows={3}
             />
-          </SectionCard>
 
-          <SectionCard
-            title="8. Camada pública controlada"
-            text="Esses campos ajudam a preparar a vitrine pública com privacidade por padrão."
-          >
-            <div style={styles.grid2}>
+            <div style={{ ...styles.blockLabel, marginTop: 18 }}>
+              Produtos e serviços
+            </div>
+            <div style={styles.chipsWrap}>
+              {PRODUTOS_SUGERIDOS.map((item) => {
+                const active = form.produtos.includes(item);
+                return (
+                  <button
+                    key={item}
+                    type="button"
+                    onClick={() => toggleInArray("produtos", item)}
+                    style={{ ...styles.chip, ...(active ? styles.chipActive : {}) }}
+                  >
+                    {item}
+                  </button>
+                );
+              })}
+            </div>
+
+            <TextAreaField
+              label="Adicionar produtos/serviços extras"
+              value={toCsv(form.produtos)}
+              onChange={(value) => setField("produtos", parseCsvInput(value))}
+              placeholder="Ex.: consultoria, intermediação, software, seguros..."
+              rows={3}
+            />
+          </section>
+
+          <section style={styles.section}>
+            <h2 style={styles.sectionTitle}>5. Descrição estratégica</h2>
+            <TextAreaField
+              label="Descrição principal"
+              value={form.descricao}
+              onChange={(value) => setField("descricao", value)}
+              placeholder="Descreva sua operação, proposta de valor e força comercial."
+              rows={5}
+            />
+          </section>
+
+          <section style={styles.section}>
+            <h2 style={styles.sectionTitle}>6. Camada pública segura</h2>
+
+          <div style={styles.grid2}>
               <Field
                 label="Nome público"
-                value={nomePublico}
-                onChange={setNomePublico}
-                placeholder="Ex.: Grupo Executivo Service"
-              />
-              <Field
-                label="Descrição pública curta"
-                value={descricaoPublicaCurta}
-                onChange={setDescricaoPublicaCurta}
-                placeholder="Ex.: operação de transporte executivo e logística"
+                value={form.nomePublico}
+                onChange={(value) => setField("nomePublico", value)}
+                placeholder="Ex.: Aurora IA"
               />
               <Field
                 label="Cidade pública"
-                value={cidadePublica}
-                onChange={setCidadePublica}
+                value={form.cidadePublica}
+                onChange={(value) => setField("cidadePublica", value)}
                 placeholder="Ex.: Belo Horizonte"
               />
-              <SelectField
+              <Field
                 label="Estado público"
-                value={estadoPublico}
-                onChange={setEstadoPublico}
-                options={ESTADOS_BR}
+                value={form.estadoPublico}
+                onChange={(value) => setField("estadoPublico", value)}
+                placeholder="Ex.: MG"
               />
             </div>
 
-            <div style={styles.checkGrid}>
+            <TextAreaField
+              label="Descrição pública curta"
+              value={form.descricaoPublicaCurta}
+              onChange={(value) => setField("descricaoPublicaCurta", value)}
+              placeholder="Resumo público seguro para exibição."
+              rows={3}
+            />
+
+            <div style={styles.checkboxGrid}>
               <CheckboxField
                 label="Mostrar nome público"
-                checked={mostrarNomePublico}
-                onChange={setMostrarNomePublico}
+                checked={form.mostrarNomePublico}
+                onChange={(value) => setField("mostrarNomePublico", value)}
               />
               <CheckboxField
                 label="Mostrar descrição pública"
-                checked={mostrarDescricaoPublica}
-                onChange={setMostrarDescricaoPublica}
+                checked={form.mostrarDescricaoPublica}
+                onChange={(value) => setField("mostrarDescricaoPublica", value)}
               />
               <CheckboxField
                 label="Mostrar cidade pública"
-                checked={mostrarCidadePublica}
-                onChange={setMostrarCidadePublica}
+                checked={form.mostrarCidadePublica}
+                onChange={(value) => setField("mostrarCidadePublica", value)}
               />
               <CheckboxField
                 label="Mostrar estado público"
-                checked={mostrarEstadoPublico}
-                onChange={setMostrarEstadoPublico}
+                checked={form.mostrarEstadoPublico}
+                onChange={(value) => setField("mostrarEstadoPublico", value)}
               />
               <CheckboxField
                 label="Mostrar segmentos públicos"
-                checked={mostrarSegmentosPublicos}
-                onChange={setMostrarSegmentosPublicos}
+                checked={form.mostrarSegmentosPublicos}
+                onChange={(value) => setField("mostrarSegmentosPublicos", value)}
               />
               <CheckboxField
                 label="Mostrar produtos públicos"
-                checked={mostrarProdutosPublicos}
-                onChange={setMostrarProdutosPublicos}
+                checked={form.mostrarProdutosPublicos}
+                onChange={(value) => setField("mostrarProdutosPublicos", value)}
               />
             </div>
-          </SectionCard>
-
-          <section style={styles.submitCard}>
-            <div style={styles.submitTextWrap}>
-              <div style={styles.submitTitle}>Salvar cadastro geral real</div>
-              <div style={styles.submitText}>
-                O registro será salvo no Supabase em rascunho privado, com base
-                preparada para publicação depois no Guardião.
-              </div>
-              <div style={styles.submitSubtext}>
-                O rascunho deste formulário fica salvo automaticamente no navegador
-                para proteção contra queda de internet, travamento ou fechamento acidental.
-              </div>
-            </div>
-
-            <div style={styles.submitActions}>
-              <button type="submit" style={styles.primarySubmit} disabled={saving}>
-                {saving ? "Salvando cadastro real..." : "Salvar cadastro geral"}
-              </button>
-
-              <button
-                type="button"
-                style={styles.secondarySubmit}
-                onClick={clearForm}
-                disabled={saving}
-              >
-                Limpar formulário
-              </button>
-            </div>
           </section>
+
+          <div style={styles.actions}>
+            <button
+              type="submit"
+              style={styles.primaryButton}
+              disabled={loading || loadingCadastro}
+            >
+              {loading ? "Salvando..." : "Salvar cadastro geral"}
+            </button>
+          </div>
         </form>
       </div>
     </main>
-  );
-}
-
-function NavLink({
-  href,
-  label,
-  color,
-}: {
-  href: string;
-  label: string;
-  color: string;
-}) {
-  return (
-    <Link
-      href={href}
-      style={{
-        ...styles.topLink,
-        border: `1px solid ${color}`,
-        color,
-      }}
-    >
-      {label}
-    </Link>
-  );
-}
-
-function MiniInfo({
-  title,
-  value,
-  text,
-}: {
-  title: string;
-  value: string;
-  text: string;
-}) {
-  return (
-    <div style={styles.infoCard}>
-      <div style={styles.infoTitle}>{title}</div>
-      <div style={styles.infoValue}>{value}</div>
-      <div style={styles.infoText}>{text}</div>
-    </div>
-  );
-}
-
-function SectionCard({
-  title,
-  text,
-  children,
-}: {
-  title: string;
-  text: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <section style={styles.sectionCard}>
-      <div style={{ display: "grid", gap: 6 }}>
-        <div style={styles.sectionTitle}>{title}</div>
-        <div style={styles.sectionText}>{text}</div>
-      </div>
-      <div style={{ display: "grid", gap: 14 }}>{children}</div>
-    </section>
   );
 }
 
@@ -1574,12 +1339,12 @@ function Field({
   label: string;
   value: string;
   onChange: (value: string) => void;
-  placeholder: string;
+  placeholder?: string;
   type?: string;
 }) {
   return (
-    <div style={{ display: "grid", gap: 8 }}>
-      <label style={styles.label}>{label}</label>
+    <label style={styles.fieldWrap}>
+      <span style={styles.label}>{label}</span>
       <input
         type={type}
         value={value}
@@ -1587,7 +1352,34 @@ function Field({
         placeholder={placeholder}
         style={styles.input}
       />
-    </div>
+    </label>
+  );
+}
+
+function TextAreaField({
+  label,
+  value,
+  onChange,
+  placeholder,
+  rows = 4,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  placeholder?: string;
+  rows?: number;
+}) {
+  return (
+    <label style={styles.fieldWrap}>
+      <span style={styles.label}>{label}</span>
+      <textarea
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        rows={rows}
+        style={styles.textarea}
+      />
+    </label>
   );
 }
 
@@ -1600,24 +1392,23 @@ function SelectField({
   label: string;
   value: string;
   onChange: (value: string) => void;
-  options: string[];
+  options: { value: string; label: string }[];
 }) {
   return (
-    <div style={{ display: "grid", gap: 8 }}>
-      <label style={styles.label}>{label}</label>
+    <label style={styles.fieldWrap}>
+      <span style={styles.label}>{label}</span>
       <select
         value={value}
         onChange={(e) => onChange(e.target.value)}
         style={styles.select}
       >
-        <option value="">Selecione</option>
         {options.map((option) => (
-          <option key={option} value={option}>
-            {option}
+          <option value={option.value} key={option.value}>
+            {option.label}
           </option>
         ))}
       </select>
-    </div>
+    </label>
   );
 }
 
@@ -1631,7 +1422,7 @@ function CheckboxField({
   onChange: (value: boolean) => void;
 }) {
   return (
-    <label style={styles.checkboxLabel}>
+    <label style={styles.checkboxItem}>
       <input
         type="checkbox"
         checked={checked}
@@ -1642,433 +1433,313 @@ function CheckboxField({
   );
 }
 
-function SuggestionRow({
-  title,
-  items,
-  onAdd,
-}: {
-  title: string;
-  items: string[];
-  onAdd: (item: string) => void;
-}) {
-  return (
-    <div style={{ display: "grid", gap: 10 }}>
-      <div style={styles.label}>{title}</div>
-      <div style={styles.suggestionWrap}>
-        {items.map((item) => (
-          <button
-            key={item}
-            type="button"
-            style={styles.suggestionButton}
-            onClick={() => onAdd(item)}
-          >
-            {item}
-          </button>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function TagList({
-  items,
-  emptyText,
-  onRemove,
-}: {
-  items: string[];
-  emptyText: string;
-  onRemove: (item: string) => void;
-}) {
-  if (items.length === 0) {
-    return <div style={styles.emptyTagBox}>{emptyText}</div>;
-  }
-
-  return (
-    <div style={styles.tagWrap}>
-      {items.map((item) => (
-        <div key={item} style={styles.tag}>
-          <span>{item}</span>
-          <button
-            type="button"
-            style={styles.tagRemove}
-            onClick={() => onRemove(item)}
-          >
-            ×
-          </button>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-const styles: Record<string, CSSProperties> = {
-  main: {
+const styles: Record<string, React.CSSProperties> = {
+  page: {
     minHeight: "100vh",
-    background:
-      "radial-gradient(circle at top, rgba(59,130,246,0.10), transparent 18%), radial-gradient(circle at left, rgba(34,197,94,0.10), transparent 24%), linear-gradient(180deg, #eef6ff 0%, #f7fbff 36%, #edf7f3 100%)",
-    color: "#0f172a",
-    padding: "24px 16px 80px",
+    background: "linear-gradient(180deg, #f8fbff 0%, #eef5ff 100%)",
+    padding: "24px 16px 64px",
+    color: "#142033",
   },
   container: {
-    maxWidth: 1240,
+    maxWidth: 1180,
     margin: "0 auto",
-    display: "grid",
-    gap: 18,
   },
-  topNav: {
+  hero: {
+    background: "linear-gradient(135deg, #ffffff 0%, #f6fbff 100%)",
+    border: "1px solid #d7e6f7",
+    borderRadius: 28,
+    padding: 28,
+    boxShadow: "0 20px 60px rgba(19, 44, 74, 0.08)",
+    marginBottom: 18,
+  },
+  heroTop: {
+    display: "flex",
+    justifyContent: "space-between",
+    gap: 18,
+    flexWrap: "wrap",
+    alignItems: "flex-start",
+  },
+  heroActions: {
     display: "flex",
     gap: 10,
     flexWrap: "wrap",
   },
-  topLink: {
-    textDecoration: "none",
-    border: "1px solid rgba(15,23,42,0.08)",
-    background: "rgba(255,255,255,0.76)",
-    borderRadius: 14,
-    padding: "10px 14px",
-    fontWeight: 800,
-    boxShadow: "0 8px 18px rgba(15,23,42,0.04)",
-  },
-  heroCard: {
-    border: "1px solid rgba(15,23,42,0.08)",
-    background:
-      "linear-gradient(180deg, rgba(255,255,255,0.88), rgba(255,255,255,0.74))",
-    borderRadius: 28,
-    padding: "26px 22px",
-    boxShadow: "0 18px 60px rgba(15,23,42,0.08)",
-    display: "grid",
-    gap: 18,
-  },
   badge: {
     display: "inline-flex",
-    width: "fit-content",
-    alignItems: "center",
-    gap: 8,
     padding: "8px 12px",
     borderRadius: 999,
-    background: "rgba(37,99,235,0.08)",
-    border: "1px solid rgba(37,99,235,0.16)",
-    color: "#2563eb",
-    fontSize: 13,
+    background: "#e8f7ec",
+    border: "1px solid #bfe7c8",
+    color: "#18794e",
+    fontWeight: 800,
+    fontSize: 12,
+    letterSpacing: 0.3,
+    marginBottom: 14,
+  },
+  title: {
+    fontSize: "clamp(30px, 5vw, 48px)",
+    lineHeight: 1.04,
+    margin: "0 0 12px",
+    fontWeight: 900,
+    color: "#0f1f35",
+  },
+  subtitle: {
+    margin: 0,
+    color: "#52637a",
+    fontSize: 16,
+    lineHeight: 1.7,
+    maxWidth: 860,
+  },
+  authBox: {
+    marginTop: 18,
+    padding: 18,
+    borderRadius: 20,
+    background: "#ffffff",
+    border: "1px solid #dde9f5",
+    boxShadow: "0 10px 25px rgba(20, 32, 51, 0.04)",
+  },
+  authTitle: {
+    fontWeight: 900,
+    color: "#13263f",
+    marginBottom: 10,
+  },
+  authLine: {
+    color: "#27415d",
+    marginBottom: 6,
+    wordBreak: "break-word",
+  },
+  authPreview: {
+    marginTop: 8,
+  },
+  codeBox: {
+    marginTop: 6,
+    padding: 12,
+    borderRadius: 12,
+    background: "#f8fbff",
+    border: "1px solid #dde9f5",
+    color: "#27415d",
+    fontFamily: "monospace",
+    fontSize: 12,
+    whiteSpace: "pre-wrap",
+    wordBreak: "break-word",
+  },
+  authActions: {
+    display: "flex",
+    gap: 12,
+    flexWrap: "wrap",
+    marginTop: 12,
+  },
+  linkButton: {
+    textDecoration: "none",
+    padding: "11px 15px",
+    borderRadius: 14,
+    background: "#0f6fff",
+    color: "#ffffff",
+    border: "1px solid #0f6fff",
     fontWeight: 800,
   },
-  heroTitle: {
-    margin: 0,
-    fontSize: "clamp(30px, 6vw, 52px)",
-    lineHeight: 1.02,
-    letterSpacing: "-0.03em",
-    color: "#0f172a",
+  linkButtonSecondary: {
+    textDecoration: "none",
+    padding: "11px 15px",
+    borderRadius: 14,
+    background: "#ffffff",
+    color: "#22415f",
+    border: "1px solid #d6e4f2",
+    fontWeight: 800,
   },
-  heroText: {
-    margin: 0,
-    color: "rgba(15,23,42,0.74)",
-    fontSize: 18,
-    lineHeight: 1.7,
-    maxWidth: 980,
-    fontWeight: 700,
+  progressWrap: {
+    marginTop: 24,
   },
-  heroGrid: {
+  progressHeader: {
+    display: "flex",
+    justifyContent: "space-between",
+    marginBottom: 8,
+    color: "#264766",
+    fontWeight: 800,
+  },
+  progressBar: {
+    height: 12,
+    borderRadius: 999,
+    background: "#e5eef8",
+    overflow: "hidden",
+  },
+  progressFill: {
+    height: "100%",
+    borderRadius: 999,
+    background: "linear-gradient(90deg, #22c55e 0%, #0f6fff 100%)",
+  },
+  infoGrid: {
+    marginTop: 22,
     display: "grid",
-    gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+    gridTemplateColumns: "repeat(auto-fit, minmax(210px, 1fr))",
     gap: 12,
   },
   infoCard: {
-    borderRadius: 18,
-    padding: "16px",
-    background:
-      "linear-gradient(180deg, rgba(255,255,255,0.80), rgba(255,255,255,0.64))",
-    border: "1px solid rgba(15,23,42,0.08)",
-    display: "grid",
-    gap: 8,
-    boxShadow: "0 8px 18px rgba(15,23,42,0.04)",
+    padding: 18,
+    borderRadius: 20,
+    background: "#ffffff",
+    border: "1px solid #dde9f5",
+    boxShadow: "0 10px 25px rgba(20, 32, 51, 0.04)",
   },
-  infoTitle: {
+  infoLabel: {
     fontSize: 12,
-    fontWeight: 900,
-    color: "#2563eb",
     textTransform: "uppercase",
-    letterSpacing: "0.08em",
+    letterSpacing: 0.5,
+    color: "#6c819a",
+    marginBottom: 8,
+    fontWeight: 800,
   },
   infoValue: {
-    fontSize: 22,
+    fontSize: 16,
     fontWeight: 900,
-    color: "#0f172a",
+    color: "#13263f",
   },
-  infoText: {
-    fontSize: 14,
-    lineHeight: 1.6,
-    color: "rgba(15,23,42,0.62)",
-  },
-  feedbackBox: {
+  messageBox: {
+    marginTop: 18,
+    marginBottom: 18,
     borderRadius: 18,
-    padding: "16px 18px",
-    border: "1px solid rgba(15,23,42,0.08)",
-    color: "#0f172a",
-    boxShadow: "0 10px 24px rgba(15,23,42,0.05)",
+    padding: "15px 16px",
+    fontWeight: 800,
   },
-  feedbackSuccess: {
-    background:
-      "linear-gradient(135deg, rgba(16,185,129,0.08), rgba(255,255,255,0.76))",
-    border: "1px solid rgba(16,185,129,0.20)",
+  messageSuccess: {
+    background: "#edf9f0",
+    border: "1px solid #c8ead0",
+    color: "#18794e",
   },
-  feedbackError: {
-    background:
-      "linear-gradient(135deg, rgba(239,68,68,0.08), rgba(255,255,255,0.76))",
-    border: "1px solid rgba(239,68,68,0.20)",
+  messageError: {
+    background: "#fff1f1",
+    border: "1px solid #f3c6c6",
+    color: "#b42318",
   },
-  feedbackInfo: {
-    background:
-      "linear-gradient(135deg, rgba(37,99,235,0.08), rgba(255,255,255,0.76))",
-    border: "1px solid rgba(37,99,235,0.20)",
+  messageInfo: {
+    background: "#eef6ff",
+    border: "1px solid #cfe3fb",
+    color: "#1e5fae",
   },
-  formWrap: {
+  form: {
     display: "grid",
-    gap: 16,
+    gap: 18,
   },
-  sectionCard: {
-    border: "1px solid rgba(15,23,42,0.08)",
-    background:
-      "linear-gradient(180deg, rgba(255,255,255,0.88), rgba(255,255,255,0.74))",
+  section: {
+    background: "#ffffff",
+    border: "1px solid #dde9f5",
     borderRadius: 24,
-    padding: "22px 18px",
-    boxShadow: "0 18px 60px rgba(15,23,42,0.06)",
-    display: "grid",
-    gap: 16,
+    padding: 24,
+    boxShadow: "0 14px 34px rgba(19, 44, 74, 0.05)",
   },
   sectionTitle: {
-    fontSize: 20,
+    margin: "0 0 16px",
+    fontSize: 22,
     fontWeight: 900,
-    lineHeight: 1.2,
-    color: "#0f172a",
-  },
-  sectionText: {
-    fontSize: 14,
-    lineHeight: 1.7,
-    color: "rgba(15,23,42,0.64)",
+    color: "#13263f",
   },
   grid2: {
     display: "grid",
-    gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
-    gap: 12,
+    gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",
+    gap: 14,
+  },
+  fieldWrap: {
+    display: "grid",
+    gap: 8,
   },
   label: {
-    fontSize: 14,
+    color: "#27415d",
     fontWeight: 800,
-    color: "#0f172a",
+    fontSize: 14,
   },
   input: {
     width: "100%",
-    borderRadius: 14,
-    border: "1px solid rgba(15,23,42,0.10)",
-    background: "rgba(255,255,255,0.92)",
-    color: "#0f172a",
-    padding: "14px 14px",
+    minHeight: 50,
+    borderRadius: 16,
+    border: "1px solid #d8e5f1",
+    background: "#fbfdff",
+    color: "#142033",
+    padding: "12px 14px",
     outline: "none",
-    fontSize: 15,
-    boxShadow: "0 6px 14px rgba(15,23,42,0.03)",
-  },
-  select: {
-    width: "100%",
-    borderRadius: 14,
-    border: "1px solid rgba(15,23,42,0.10)",
-    background: "rgba(255,255,255,0.92)",
-    color: "#0f172a",
-    padding: "14px 14px",
-    outline: "none",
-    fontSize: 15,
-    boxShadow: "0 6px 14px rgba(15,23,42,0.03)",
   },
   textarea: {
     width: "100%",
     borderRadius: 16,
-    border: "1px solid rgba(15,23,42,0.10)",
-    background: "rgba(255,255,255,0.92)",
-    color: "#0f172a",
-    padding: "14px 14px",
+    border: "1px solid #d8e5f1",
+    background: "#fbfdff",
+    color: "#142033",
+    padding: "12px 14px",
     outline: "none",
-    fontSize: 15,
     resize: "vertical",
-    boxShadow: "0 6px 14px rgba(15,23,42,0.03)",
   },
-  choiceGrid: {
-    display: "grid",
-    gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
+  select: {
+    width: "100%",
+    minHeight: 50,
+    borderRadius: 16,
+    border: "1px solid #d8e5f1",
+    background: "#fbfdff",
+    color: "#142033",
+    padding: "12px 14px",
+    outline: "none",
+  },
+  chipsWrap: {
+    display: "flex",
+    flexWrap: "wrap",
     gap: 10,
   },
-  choiceButton: {
-    cursor: "pointer",
-    borderRadius: 16,
-    border: "1px solid rgba(15,23,42,0.08)",
-    background: "rgba(255,255,255,0.78)",
-    color: "#0f172a",
-    padding: "14px 16px",
+  chip: {
+    borderRadius: 999,
+    border: "1px solid #d6e4f2",
+    background: "#f8fbff",
+    color: "#27415d",
+    padding: "10px 14px",
     fontWeight: 800,
-    textAlign: "left",
-    boxShadow: "0 8px 18px rgba(15,23,42,0.04)",
+    cursor: "pointer",
   },
-  choiceButtonActive: {
-    background:
-      "linear-gradient(135deg, rgba(37,99,235,0.10), rgba(59,130,246,0.06))",
-    border: "1px solid rgba(37,99,235,0.18)",
-    color: "#1d4ed8",
+  chipActive: {
+    background: "#eaf3ff",
+    border: "1px solid #b8d4fb",
+    color: "#0f6fff",
   },
-  inlineInfo: {
-    borderRadius: 14,
+  blockLabel: {
+    fontWeight: 800,
+    marginBottom: 10,
+    color: "#27415d",
+  },
+  checkboxGrid: {
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+    gap: 12,
+    marginTop: 14,
+  },
+  checkboxItem: {
+    display: "flex",
+    alignItems: "center",
+    gap: 10,
     padding: "12px 14px",
-    background: "rgba(255,255,255,0.76)",
-    border: "1px solid rgba(15,23,42,0.08)",
-    color: "rgba(15,23,42,0.72)",
-    fontSize: 14,
-    boxShadow: "0 8px 18px rgba(15,23,42,0.04)",
-  },
-  inlineHighlight: {
     borderRadius: 16,
-    padding: "14px 16px",
-    background:
-      "linear-gradient(135deg, rgba(37,99,235,0.08), rgba(16,185,129,0.08))",
-    border: "1px solid rgba(37,99,235,0.14)",
-    color: "#0f172a",
-    fontSize: 14,
-    lineHeight: 1.7,
-    fontWeight: 700,
-    boxShadow: "0 8px 18px rgba(15,23,42,0.04)",
-  },
-  suggestionWrap: {
-    display: "flex",
-    flexWrap: "wrap",
-    gap: 8,
-  },
-  suggestionButton: {
-    cursor: "pointer",
-    borderRadius: 999,
-    border: "1px solid rgba(15,23,42,0.08)",
-    background: "rgba(255,255,255,0.80)",
-    color: "#0f172a",
-    padding: "8px 12px",
-    fontWeight: 700,
-    boxShadow: "0 6px 14px rgba(15,23,42,0.03)",
-  },
-  addRow: {
-    display: "grid",
-    gridTemplateColumns: "1fr auto",
-    gap: 10,
-    alignItems: "center",
-  },
-  addButton: {
-    cursor: "pointer",
-    borderRadius: 14,
-    border: "1px solid rgba(37,99,235,0.16)",
-    background: "linear-gradient(135deg, #2563eb, #3b82f6)",
-    color: "#ffffff",
-    padding: "14px 16px",
-    fontWeight: 900,
-    boxShadow: "0 12px 28px rgba(37,99,235,0.16)",
-  },
-  emptyTagBox: {
-    borderRadius: 14,
-    padding: "14px 16px",
-    background: "rgba(255,255,255,0.76)",
-    border: "1px dashed rgba(15,23,42,0.10)",
-    color: "rgba(15,23,42,0.54)",
-    fontSize: 14,
-  },
-  tagWrap: {
-    display: "flex",
-    flexWrap: "wrap",
-    gap: 8,
-  },
-  tag: {
-    display: "inline-flex",
-    alignItems: "center",
-    gap: 8,
-    borderRadius: 999,
-    padding: "9px 12px",
-    background: "rgba(255,255,255,0.82)",
-    border: "1px solid rgba(15,23,42,0.08)",
-    fontSize: 14,
-    fontWeight: 700,
-    color: "#0f172a",
-    boxShadow: "0 6px 14px rgba(15,23,42,0.03)",
-  },
-  tagRemove: {
-    cursor: "pointer",
-    border: "none",
-    background: "transparent",
-    color: "#dc2626",
-    fontSize: 18,
-    lineHeight: 1,
-    padding: 0,
-  },
-  checkGrid: {
-    display: "grid",
-    gridTemplateColumns: "repeat(auto-fit, minmax(230px, 1fr))",
-    gap: 10,
-  },
-  checkboxLabel: {
-    display: "flex",
-    alignItems: "center",
-    gap: 10,
-    borderRadius: 14,
-    padding: "12px 14px",
-    background: "rgba(255,255,255,0.78)",
-    border: "1px solid rgba(15,23,42,0.08)",
-    fontSize: 14,
-    color: "#0f172a",
-    boxShadow: "0 8px 18px rgba(15,23,42,0.04)",
-  },
-  submitCard: {
-    border: "1px solid rgba(15,23,42,0.08)",
-    background:
-      "linear-gradient(135deg, rgba(37,99,235,0.08), rgba(16,185,129,0.08))",
-    borderRadius: 24,
-    padding: "22px 18px",
-    display: "grid",
-    gap: 14,
-    boxShadow: "0 16px 34px rgba(15,23,42,0.06)",
-  },
-  submitTextWrap: {
-    display: "grid",
-    gap: 6,
-  },
-  submitTitle: {
-    fontSize: 22,
-    fontWeight: 900,
-    color: "#0f172a",
-  },
-  submitText: {
-    fontSize: 14,
-    lineHeight: 1.7,
-    color: "rgba(15,23,42,0.72)",
-  },
-  submitSubtext: {
-    fontSize: 13,
-    lineHeight: 1.7,
-    color: "#1d4ed8",
+    border: "1px solid #dde9f5",
+    background: "#fbfdff",
+    color: "#27415d",
     fontWeight: 700,
   },
-  submitActions: {
+  actions: {
     display: "flex",
     gap: 12,
     flexWrap: "wrap",
+    justifyContent: "flex-end",
   },
-  primarySubmit: {
-    cursor: "pointer",
+  primaryButton: {
+    border: 0,
     borderRadius: 16,
-    border: "1px solid rgba(37,99,235,0.16)",
-    background: "linear-gradient(135deg, #2563eb, #3b82f6)",
-    color: "#ffffff",
-    padding: "14px 18px",
+    padding: "14px 20px",
     fontWeight: 900,
-    boxShadow: "0 12px 28px rgba(37,99,235,0.16)",
-  },
-  secondarySubmit: {
     cursor: "pointer",
+    background: "linear-gradient(90deg, #0f6fff 0%, #22c55e 100%)",
+    color: "#ffffff",
+  },
+  secondaryButton: {
     borderRadius: 16,
-    border: "1px solid rgba(15,23,42,0.08)",
-    background: "rgba(255,255,255,0.78)",
-    color: "#0f172a",
-    padding: "14px 18px",
-    fontWeight: 800,
-    boxShadow: "0 8px 18px rgba(15,23,42,0.04)",
+    padding: "14px 20px",
+    fontWeight: 900,
+    cursor: "pointer",
+    background: "#ffffff",
+    color: "#22415f",
+    border: "1px solid #d6e4f2",
   },
 };
