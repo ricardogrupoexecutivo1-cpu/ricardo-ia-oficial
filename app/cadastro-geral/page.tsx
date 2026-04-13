@@ -417,9 +417,11 @@ export default function CadastroGeralPage() {
   const [loading, setLoading] = useState(false);
   const [loadingCadastro, setLoadingCadastro] = useState(true);
   const [message, setMessage] = useState("");
-  const [messageType, setMessageType] = useState<"success" | "error" | "info">(
-    "info"
-  );
+  const [messageType, setMessageType] = useState<"success" | "error" | "info">("info");
+
+  // ✅ Novos estados para botão de sucesso e link de indicação
+  const [isSuccess, setIsSuccess] = useState(false);
+  const [shareLink, setShareLink] = useState("");
   const [sessionEmail, setSessionEmail] = useState("");
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [draftLoaded, setDraftLoaded] = useState(false);
@@ -756,10 +758,7 @@ export default function CadastroGeralPage() {
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-
-    if (submitLockRef.current || loading) {
-      return;
-    }
+    if (submitLockRef.current || loading) return;
 
     const saveId = Date.now();
     currentSaveIdRef.current = saveId;
@@ -773,14 +772,11 @@ export default function CadastroGeralPage() {
       }
 
       startSaveFailsafe(saveId);
-
       const auth = await refreshAuthStatus({ preserveMessage: true });
       const finalEmail = normalizeText(form.email || auth.email).toLowerCase();
 
       if (!auth.accessToken && !finalEmail) {
-        throw new Error(
-          "Sem login ativo e sem e-mail preenchido. Informe o e-mail ou faça login antes de salvar."
-        );
+        throw new Error("Sem login ativo e sem e-mail preenchido.");
       }
 
       const payload = {
@@ -817,9 +813,7 @@ export default function CadastroGeralPage() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          ...(auth.accessToken
-            ? { Authorization: `Bearer ${auth.accessToken}` }
-            : {}),
+          ...(auth.accessToken ? { Authorization: `Bearer ${auth.accessToken}` } : {}),
           ...(finalEmail ? { "x-cadastro-email-hint": finalEmail } : {}),
         },
         body: JSON.stringify(payload),
@@ -829,37 +823,31 @@ export default function CadastroGeralPage() {
         throw new Error(result.data?.error || "Erro ao salvar cadastro geral.");
       }
 
-      if (result.data?.cadastro && mountedRef.current) {
-        replaceForm(mapCadastroToForm(result.data.cadastro));
-      }
-
       if (mountedRef.current && currentSaveIdRef.current === saveId) {
-        setMessage(
-          auth.authenticated
-            ? `Cadastro salvo com sucesso em modo logado. Modo: ${
-                result.data?.mode || "update"
-              }. Se este e-mail já existia, o vínculo com user_id foi tentado automaticamente.`
-            : `Cadastro salvo com sucesso por fallback de e-mail. Modo: ${
-                result.data?.mode || "update"
-              }.`
-        );
+        // ✅ Sucesso
+        setIsSuccess(true);
+
+        const nomeEmpresa = normalizeText(form.nomeEmpresa || "MinhaEmpresa");
+        const link = `https://ricardoiaoficial.com/?src=${encodeURIComponent(nomeEmpresa)}`;
+        setShareLink(link);
+
+        setMessage("✅ Cadastro salvo com sucesso!");
         setMessageType("success");
+
+        if (result.data?.cadastro) {
+          replaceForm(mapCadastroToForm(result.data.cadastro));
+        }
       }
     } catch (error: any) {
       console.error("ERRO REAL CADASTRO GERAL:", error);
-
-      const errorMessage =
-        error?.message || "Erro inesperado ao salvar cadastro.";
-
       if (mountedRef.current && currentSaveIdRef.current === saveId) {
-        setMessage(errorMessage);
+        setMessage(error?.message || "Erro inesperado ao salvar cadastro.");
         setMessageType("error");
       }
     } finally {
       if (currentSaveIdRef.current === saveId) {
         clearSaveFailsafe();
         submitLockRef.current = false;
-
         if (mountedRef.current) {
           setLoading(false);
         }
@@ -1317,12 +1305,70 @@ export default function CadastroGeralPage() {
           <div style={styles.actions}>
             <button
               type="submit"
-              style={styles.primaryButton}
-              disabled={loading || loadingCadastro}
+              style={{
+                ...styles.primaryButton,
+                background: isSuccess 
+                  ? "linear-gradient(90deg, #22c55e, #16a34a)" 
+                  : "linear-gradient(90deg, #0f6fff 0%, #22c55e 100%)",
+                opacity: isSuccess ? 0.95 : 1,
+              }}
+              disabled={loading || loadingCadastro || isSuccess}
             >
-              {loading ? "Salvando..." : "Salvar cadastro geral"}
+              {loading 
+                ? "Salvando..." 
+                : isSuccess 
+                  ? "✅ Cadastro Salvo com Sucesso" 
+                  : "Salvar cadastro geral"}
             </button>
           </div>
+
+          {/* Link de indicação automático */}
+          {isSuccess && shareLink && (
+            <div style={{
+              marginTop: 24,
+              padding: 20,
+              background: "#f8fff9",
+              border: "1px solid #86efac",
+              borderRadius: 16,
+            }}>
+              <p style={{ fontWeight: 800, marginBottom: 8, color: "#166534" }}>
+                Link de indicação da sua empresa:
+              </p>
+              <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                <input 
+                  type="text" 
+                  value={shareLink} 
+                  readOnly 
+                  style={{
+                    flex: 1,
+                    padding: "12px 14px",
+                    borderRadius: 12,
+                    border: "1px solid #86efac",
+                    background: "#ffffff",
+                    fontSize: 14,
+                  }} 
+                />
+                <button 
+                  type="button"
+                  onClick={() => {
+                    navigator.clipboard.writeText(shareLink);
+                    alert("✅ Link copiado com sucesso!");
+                  }}
+                  style={{
+                    padding: "12px 18px",
+                    background: "#22c55e",
+                    color: "#ffffff",
+                    border: "none",
+                    borderRadius: 12,
+                    fontWeight: 800,
+                    cursor: "pointer",
+                  }}
+                >
+                  Copiar
+                </button>
+              </div>
+            </div>
+          )}
         </form>
       </div>
     </main>
