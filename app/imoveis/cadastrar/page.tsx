@@ -1,177 +1,152 @@
 "use client";
-
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import Link from "next/link";
 
-export default function CadastroImoveis() {
-  const router = useRouter();
-
+export default function CadastrarImovel() {
   const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState("");
+  const [success, setSuccess] = useState(false);
 
-  async function handleSubmit(e: any) {
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setLoading(true);
     setMsg("");
 
-    const form = new FormData(e.target);
-    const data = Object.fromEntries(form.entries());
+    const formData = new FormData(e.currentTarget);
+    const data = Object.fromEntries(formData.entries());
 
     try {
-      const res = await fetch("/api/imoveis/cadastrar", {
+      const res = await fetch("/api/imoveis/cadastrar-imovel", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
       });
 
       const json = await res.json();
 
       if (json.ok) {
-        setMsg("Cadastro enviado com sucesso.");
-
-        // limpa formulário
-        e.target.reset();
-
-        // 🔥 REDIRECIONAMENTO SEGURO
-        setTimeout(() => {
-          router.push("/?cadastro=imoveis-sucesso");
-        }, 1200);
+        setSuccess(true);
+        setMsg("✅ Imóvel cadastrado com sucesso!");
+        e.currentTarget.reset();
       } else {
-        setMsg(json.error || "Erro ao cadastrar.");
+        setMsg(json.error || "Erro ao cadastrar o imóvel.");
       }
     } catch (err) {
-      console.error("Erro cadastro:", err);
-      setMsg("Erro inesperado.");
+      setMsg("Erro de conexão. Tente novamente.");
     }
 
     setLoading(false);
   }
 
-  return (
-    <main
-      style={{
-        minHeight: "100vh",
-        padding: 20,
-        display: "flex",
-        justifyContent: "center",
-        alignItems: "flex-start",
-        background: "#05080f",
-        color: "#fff",
-      }}
-    >
-      <div
-        style={{
-          width: "100%",
-          maxWidth: 500,
-        }}
-      >
-        <h1 style={{ fontSize: 26, marginBottom: 10 }}>
-          🏡 Cadastro de Imobiliária
-        </h1>
+  if (success) {
+    return (
+      <main style={mainStyle}>
+        <div style={successContainer}>
+          <h1>✅ Imóvel Cadastrado com Sucesso!</h1>
+          <p>Seu imóvel foi publicado na Aurora Imóveis.</p>
+          <div style={buttonsContainer}>
+            <Link href="/imoveis/busca" style={primaryBtn}>Ver todos os imóveis</Link>
+            <Link href="/imoveis" style={secondaryBtn}>Voltar para Imóveis</Link>
+          </div>
+        </div>
+      </main>
+    );
+  }
 
-        <p style={{ marginBottom: 20, color: "#ccc" }}>
-          Cadastre sua imobiliária e receba contatos dentro da Aurora.
+  return (
+    <main style={mainStyle}>
+      <div style={containerStyle}>
+        <Link href="/imoveis" style={backLink}>← Voltar para Imóveis</Link>
+
+        <h1 style={titleStyle}>🏠 Cadastrar Novo Imóvel</h1>
+        <p style={subtitleStyle}>
+          Preencha os dados do imóvel que deseja anunciar.
         </p>
 
-        <form
-          onSubmit={handleSubmit}
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            gap: 12,
-          }}
-        >
-          <input
-            name="name"
-            placeholder="Nome da imobiliária"
-            required
-            style={inputStyle}
+        <form onSubmit={handleSubmit} style={formStyle}>
+          <input 
+            name="titulo" 
+            placeholder="Título do anúncio (ex: Apartamento 2 quartos no Centro)" 
+            required 
+            style={inputStyle} 
+          />
+          
+          <input 
+            name="tipo" 
+            placeholder="Tipo de imóvel (Apartamento, Casa, Sala, Terreno...)" 
+            required 
+            style={inputStyle} 
           />
 
-          <input
-            name="city"
-            placeholder="Cidade"
-            required
-            style={inputStyle}
+          <div style={rowStyle}>
+            <input name="cidade" placeholder="Cidade *" required style={inputStyle} />
+            <input name="estado" placeholder="Estado (UF) *" required style={inputStyle} />
+          </div>
+
+          <input 
+            name="preco" 
+            type="number" 
+            placeholder="Valor (R$)" 
+            required 
+            style={inputStyle} 
           />
 
-          <input
-            name="state"
-            placeholder="Estado"
-            required
-            style={inputStyle}
+          <textarea 
+            name="descricao" 
+            placeholder="Descrição completa do imóvel..." 
+            rows={5} 
+            required 
+            style={textareaStyle} 
           />
 
-          <input
-            name="whatsapp"
-            placeholder="WhatsApp"
-            required
-            style={inputStyle}
-          />
-
-          <input
-            name="email"
-            placeholder="Email"
-            style={inputStyle}
-          />
-
-          <button
-            type="submit"
-            disabled={loading}
-            style={buttonStyle}
-          >
-            {loading ? "Enviando..." : "🚀 Cadastrar"}
+          <button type="submit" disabled={loading} style={submitButton}>
+            {loading ? "Publicando..." : "Publicar Imóvel"}
           </button>
         </form>
 
-        {msg && (
-          <div
-            style={{
-              marginTop: 16,
-              padding: 12,
-              borderRadius: 10,
-              background:
-                msg.includes("sucesso")
-                  ? "rgba(34,197,94,0.15)"
-                  : "rgba(239,68,68,0.15)",
-              border:
-                msg.includes("sucesso")
-                  ? "1px solid rgba(34,197,94,0.4)"
-                  : "1px solid rgba(239,68,68,0.4)",
-              fontWeight: "bold",
-            }}
-          >
-            {msg}
-          </div>
-        )}
-
-        <p style={{ marginTop: 20, fontSize: 12, opacity: 0.6 }}>
-          Sistema em constante atualização. Podem ocorrer instabilidades.
-        </p>
+        {msg && <p style={msgStyle}>{msg}</p>}
       </div>
     </main>
   );
 }
 
-const inputStyle = {
-  height: 45,
-  borderRadius: 10,
-  border: "1px solid #333",
-  padding: "0 10px",
-  fontSize: 14,
-  background: "#0b1220",
-  color: "#fff",
+/* ==================== ESTILOS ==================== */
+const mainStyle = {
+  minHeight: "100vh",
+  background: "linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%)",
+  padding: "40px 20px",
+  color: "#0f172a",
 };
 
-const buttonStyle = {
-  height: 50,
+const containerStyle = { maxWidth: 700, margin: "0 auto" };
+const backLink = { color: "#64748b", textDecoration: "none", fontWeight: 600, marginBottom: 20, display: "inline-block" };
+
+const titleStyle = { fontSize: 36, fontWeight: 900, marginBottom: 8 };
+const subtitleStyle = { fontSize: 18, color: "#475569", marginBottom: 32 };
+
+const formStyle = { display: "flex", flexDirection: "column" as const, gap: 16 };
+const rowStyle = { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 };
+
+const inputStyle = {
+  padding: "14px 16px",
   borderRadius: 12,
-  border: "none",
-  background: "linear-gradient(135deg, #22c55e, #14b8a6)",
-  color: "#03130d",
-  fontWeight: "bold",
+  border: "1px solid #cbd5e1",
   fontSize: 16,
+  background: "#fff",
+};
+
+const textareaStyle = { ...inputStyle, minHeight: 130 };
+
+const submitButton = {
+  marginTop: 20,
+  padding: "16px",
+  fontSize: 18,
+  fontWeight: 800,
+  background: "linear-gradient(135deg, #22c55e, #16a34a)",
+  color: "#fff",
+  border: "none",
+  borderRadius: 16,
   cursor: "pointer",
 };
+
+const msgStyle = { marginTop: 20, padding: 16, borderRadius: 12, textAlign: "center" as const, fontWeight: 700 };

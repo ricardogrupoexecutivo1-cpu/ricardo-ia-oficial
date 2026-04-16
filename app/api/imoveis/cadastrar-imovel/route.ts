@@ -12,12 +12,7 @@ function getSupabaseAdmin() {
     throw new Error("Variáveis do Supabase não configuradas.");
   }
 
-  return createClient(url, serviceRole, {
-    auth: {
-      persistSession: false,
-      autoRefreshToken: false,
-    },
-  });
+  return createClient(url, serviceRole);
 }
 
 export async function POST(req: NextRequest) {
@@ -25,25 +20,11 @@ export async function POST(req: NextRequest) {
     const supabase = getSupabaseAdmin();
     const body = await req.json();
 
-    const name = body.name || body.nome;
-    const city = body.city || body.cidade;
-    const state = body.state || body.estado;
-    const whatsapp = body.whatsapp;
-    const email = body.email;
-
-    if (!name || !city || !state || !whatsapp || !email) {
-      return NextResponse.json({
-        ok: false,
-        error: "Campos obrigatórios não preenchidos",
-      }, { status: 400 });
-    }
-
+    // Apenas os campos que existem na tabela imoveis_leads
     const payload = {
-      name,
-      city,
-      state,
-      whatsapp,
-      email,
+      name: body.name || body.titulo || "Imóvel sem título",
+      city: body.city || body.cidade,
+      state: body.state || body.estado,
       active: true,
       created_at: new Date().toISOString(),
     };
@@ -54,21 +35,24 @@ export async function POST(req: NextRequest) {
       .select();
 
     if (error) {
-      console.error("Supabase error:", error);
-      return NextResponse.json({ ok: false, error: error.message }, { status: 500 });
+      console.error("Erro Supabase:", error);
+      return NextResponse.json({ 
+        ok: false, 
+        error: error.message 
+      }, { status: 500 });
     }
 
     return NextResponse.json({
       ok: true,
-      message: "Imobiliária cadastrada com sucesso",
+      message: "Imóvel cadastrado com sucesso",
       data,
     });
 
   } catch (error: any) {
     console.error("Erro na API:", error);
-    return NextResponse.json({
-      ok: false,
-      error: error.message || "Erro interno",
+    return NextResponse.json({ 
+      ok: false, 
+      error: error.message || "Erro interno" 
     }, { status: 500 });
   }
 }
