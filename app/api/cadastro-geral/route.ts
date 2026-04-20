@@ -33,7 +33,7 @@ function normalizeBoolean(value: unknown, fallback = false) {
 }
 
 function withTimeout<T>(
-  promise: Promise<T>,
+  promise: PromiseLike<T>,
   ms: number,
   label: string
 ): Promise<T> {
@@ -42,15 +42,16 @@ function withTimeout<T>(
       reject(new Error(`${label} demorou mais que ${ms}ms.`));
     }, ms);
 
-    promise
-      .then((value) => {
+    promise.then(
+      (value) => {
         clearTimeout(timer);
         resolve(value);
-      })
-      .catch((error) => {
+      },
+      (error) => {
         clearTimeout(timer);
         reject(error);
-      });
+      }
+    );
   });
 }
 
