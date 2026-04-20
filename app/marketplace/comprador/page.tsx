@@ -1,659 +1,390 @@
-'use client'
-
-import Link from 'next/link'
-import { useEffect, useState } from 'react'
-import type { CSSProperties } from 'react'
-
-type BlocoItem = {
-  titulo: string
-  descricao: string
-}
-
-const blocosPerfil: BlocoItem[] = [
-  {
-    titulo: 'Página própria do comprador',
-    descricao:
-      'Cada comprador terá sua própria página para acompanhar pedidos, histórico, status e relacionamento com o marketplace.',
-  },
-  {
-    titulo: 'Histórico de compras',
-    descricao:
-      'Área preparada para mostrar pedidos anteriores, valores, vendedores envolvidos e andamento geral.',
-  },
-  {
-    titulo: 'Acompanhamento de pedidos',
-    descricao:
-      'Base para leitura de status, confirmação, andamento e fechamento do ciclo da compra.',
-  },
-  {
-    titulo: 'Relação com vendedores',
-    descricao:
-      'O comprador poderá visualizar quais vendedores atenderam seus pedidos e acompanhar sua jornada dentro da plataforma.',
-  },
-]
-
-const blocosOperacao: BlocoItem[] = [
-  {
-    titulo: 'Pedidos em andamento',
-    descricao:
-      'Visão dos pedidos ativos, aguardando confirmação, preparação, envio ou conclusão.',
-  },
-  {
-    titulo: 'Histórico consolidado',
-    descricao:
-      'Base para centralizar compras anteriores e facilitar nova tomada de decisão do comprador.',
-  },
-  {
-    titulo: 'Acompanhamento por etapa',
-    descricao:
-      'Leitura futura do fluxo do pedido do início até a conclusão, sem perder o histórico.',
-  },
-  {
-    titulo: 'Perfil do comprador',
-    descricao:
-      'Estrutura para organizar dados, preferências, histórico, recorrência e comportamento comercial.',
-  },
-]
-
-const proximasCamadas: BlocoItem[] = [
-  {
-    titulo: 'Cadastro do comprador',
-    descricao:
-      'Formulário seguro para entrada no marketplace com dados principais e base futura de relacionamento.',
-  },
-  {
-    titulo: 'Minha área',
-    descricao:
-      'Página individual do comprador para acompanhamento de pedidos, histórico e status.',
-  },
-  {
-    titulo: 'Histórico por vendedor',
-    descricao:
-      'Visão futura para entender de quem comprou, com qual frequência e como foi o atendimento.',
-  },
-  {
-    titulo: 'Ligação com financeiro',
-    descricao:
-      'Base posterior para leitura de pagamentos, confirmações e evolução comercial do comprador.',
-  },
-]
+import Link from "next/link";
 
 export default function MarketplaceCompradorPage() {
-  const [isMobile, setIsMobile] = useState(false)
-
-  useEffect(() => {
-    function handleResize() {
-      setIsMobile(window.innerWidth <= 820)
-    }
-
-    handleResize()
-    window.addEventListener('resize', handleResize)
-    return () => window.removeEventListener('resize', handleResize)
-  }, [])
-
-  const pageStyle: CSSProperties = {
-    minHeight: '100vh',
-    background:
-      'radial-gradient(circle at top, rgba(6,182,212,0.16), rgba(255,255,255,1) 28%, rgba(240,249,255,1) 65%, rgba(224,242,254,1) 100%)',
-    color: '#0f172a',
-    padding: isMobile ? '10px 10px 18px' : '14px 14px 22px',
-  }
-
-  const shellStyle: CSSProperties = {
-    width: '100%',
-    maxWidth: 1280,
-    margin: '0 auto',
-    display: 'flex',
-    flexDirection: 'column',
-    gap: isMobile ? 12 : 14,
-  }
-
-  const sectionCardStyle: CSSProperties = {
-    borderRadius: isMobile ? 20 : 24,
-    background: '#ffffff',
-    border: '1px solid rgba(6,182,212,0.12)',
-    boxShadow: '0 14px 40px rgba(2,132,199,0.08)',
-  }
-
-  const badgeStyle: CSSProperties = {
-    display: 'inline-flex',
-    alignItems: 'center',
-    borderRadius: 999,
-    border: '1px solid rgba(6,182,212,0.18)',
-    background: '#ecfeff',
-    color: '#0369a1',
-    padding: isMobile ? '5px 9px' : '6px 10px',
-    fontSize: 10,
-    fontWeight: 900,
-    letterSpacing: '0.08em',
-    textTransform: 'uppercase',
-  }
-
-  const titleStyle: CSSProperties = {
-    margin: '10px 0 0',
-    fontSize: isMobile ? 24 : 30,
-    lineHeight: 1.05,
-    fontWeight: 900,
-    letterSpacing: '-0.03em',
-  }
-
-  const textStyle: CSSProperties = {
-    margin: '8px 0 0',
-    color: '#475569',
-    fontSize: isMobile ? 13 : 14,
-    lineHeight: 1.55,
-  }
-
-  const primaryButtonStyle: CSSProperties = {
-    display: 'inline-flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    minHeight: isMobile ? 38 : 40,
-    padding: isMobile ? '0 12px' : '0 14px',
-    borderRadius: 10,
-    background: 'linear-gradient(135deg, #06b6d4 0%, #2563eb 100%)',
-    color: '#ffffff',
-    fontWeight: 900,
-    textTransform: 'uppercase',
-    letterSpacing: '0.05em',
-    fontSize: 11,
-    boxShadow: '0 10px 18px rgba(2,132,199,0.14)',
-  }
-
-  const darkButtonStyle: CSSProperties = {
-    display: 'inline-flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    minHeight: isMobile ? 38 : 40,
-    padding: isMobile ? '0 12px' : '0 14px',
-    borderRadius: 10,
-    background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)',
-    color: '#ffffff',
-    fontWeight: 900,
-    textTransform: 'uppercase',
-    letterSpacing: '0.05em',
-    fontSize: 11,
-  }
-
-  const outlineButtonStyle: CSSProperties = {
-    display: 'inline-flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    minHeight: isMobile ? 38 : 40,
-    padding: isMobile ? '0 12px' : '0 14px',
-    borderRadius: 10,
-    border: '1px solid rgba(6,182,212,0.18)',
-    background: '#ffffff',
-    color: '#0369a1',
-    fontWeight: 900,
-    textTransform: 'uppercase',
-    letterSpacing: '0.05em',
-    fontSize: 11,
-  }
-
   return (
-    <main style={pageStyle}>
-      <div style={shellStyle}>
-        <section style={{ ...sectionCardStyle, overflow: 'hidden' }}>
-          <div
-            style={{
-              background: 'linear-gradient(135deg, #06b6d4 0%, #0ea5e9 48%, #2563eb 100%)',
-              color: '#ffffff',
-              padding: isMobile ? '16px 14px' : '18px 18px',
-            }}
-          >
-            <div
-              style={{
-                display: 'grid',
-                gap: 12,
-                gridTemplateColumns: isMobile ? '1fr' : '1.12fr 0.88fr',
-                alignItems: 'stretch',
-              }}
-            >
-              <div>
-                <div
-                  style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    padding: '6px 10px',
-                    borderRadius: 999,
-                    border: '1px solid rgba(255,255,255,0.24)',
-                    background: 'rgba(255,255,255,0.10)',
-                    fontSize: 10,
-                    fontWeight: 900,
-                    letterSpacing: '0.08em',
-                    textTransform: 'uppercase',
-                  }}
-                >
-                  Aurora Marketplace • Comprador
-                </div>
+    <main style={styles.page}>
+      <div style={styles.bgGlowTop} />
+      <div style={styles.bgGlowBottom} />
 
-                <h1
-                  style={{
-                    margin: '10px 0 0',
-                    fontSize: isMobile ? 30 : 36,
-                    lineHeight: 0.96,
-                    fontWeight: 900,
-                    letterSpacing: '-0.04em',
-                  }}
-                >
-                  ÁREA DO COMPRADOR
-                </h1>
-
-                <p
-                  style={{
-                    margin: '10px 0 0',
-                    maxWidth: 760,
-                    fontSize: isMobile ? 13 : 14,
-                    lineHeight: 1.55,
-                    color: 'rgba(255,255,255,0.92)',
-                  }}
-                >
-                  Camada isolada para estruturar a página própria do comprador, seu histórico,
-                  acompanhamento de pedidos e sua relação comercial dentro do Marketplace Aurora Shop.
-                </p>
-
-                <div
-                  style={{
-                    display: 'flex',
-                    flexWrap: 'wrap',
-                    gap: 8,
-                    marginTop: 12,
-                  }}
-                >
-                  <Link href="/marketplace" style={outlineButtonStyle}>
-                    Voltar ao marketplace
-                  </Link>
-
-                  <Link href="/marketplace/vendedor" style={primaryButtonStyle}>
-                    Ver área do vendedor
-                  </Link>
-                </div>
-              </div>
-
-              <div
-                style={{
-                  display: 'grid',
-                  gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
-                  gap: 8,
-                }}
-              >
-                {[
-                  ['Página', 'Própria do comprador'],
-                  ['Histórico', 'Compras e pedidos'],
-                  ['Acompanhamento', 'Status e evolução'],
-                  ['Base', 'Pronta para crescer'],
-                ].map(([label, value]) => (
-                  <div
-                    key={label}
-                    style={{
-                      borderRadius: 14,
-                      padding: isMobile ? 10 : 12,
-                      background: 'rgba(255,255,255,0.14)',
-                      border: '1px solid rgba(255,255,255,0.18)',
-                    }}
-                  >
-                    <div
-                      style={{
-                        fontSize: 9,
-                        fontWeight: 900,
-                        letterSpacing: '0.08em',
-                        textTransform: 'uppercase',
-                        color: 'rgba(255,255,255,0.84)',
-                      }}
-                    >
-                      {label}
-                    </div>
-                    <div
-                      style={{
-                        marginTop: 6,
-                        fontSize: isMobile ? 15 : 17,
-                        lineHeight: 1.15,
-                        fontWeight: 900,
-                      }}
-                    >
-                      {value}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          <div style={{ padding: isMobile ? 12 : 14 }}>
-            <div
-              style={{
-                display: 'grid',
-                gap: 12,
-                gridTemplateColumns: isMobile ? '1fr' : '1.18fr 0.82fr',
-              }}
-            >
-              <div
-                style={{
-                  borderRadius: 18,
-                  border: '1px solid rgba(6,182,212,0.14)',
-                  background: 'linear-gradient(180deg, #ffffff 0%, #f0f9ff 100%)',
-                  padding: isMobile ? 12 : 14,
-                  boxShadow: '0 8px 22px rgba(2,132,199,0.06)',
-                }}
-              >
-                <div style={badgeStyle}>Visão central</div>
-
-                <h2 style={titleStyle}>Todo comprador terá sua própria página com histórico e acompanhamento</h2>
-
-                <p style={textStyle}>
-                  Esta base organiza a visão do comprador como uma jornada completa dentro do
-                  marketplace, sem perder pedidos, relações e evolução comercial.
-                </p>
-
-                <div
-                  style={{
-                    display: 'grid',
-                    gap: 8,
-                    marginTop: 10,
-                  }}
-                >
-                  {blocosPerfil.map((item) => (
-                    <div
-                      key={item.titulo}
-                      style={{
-                        borderRadius: 10,
-                        border: '1px solid rgba(6,182,212,0.10)',
-                        background: '#ffffff',
-                        padding: '9px 10px',
-                      }}
-                    >
-                      <div
-                        style={{
-                          fontSize: 12,
-                          fontWeight: 900,
-                          color: '#0f172a',
-                        }}
-                      >
-                        {item.titulo}
-                      </div>
-                      <div
-                        style={{
-                          marginTop: 4,
-                          fontSize: 12,
-                          lineHeight: 1.45,
-                          color: '#475569',
-                        }}
-                      >
-                        {item.descricao}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <div
-                style={{
-                  borderRadius: 18,
-                  background: 'linear-gradient(135deg, #0f172a 0%, #111827 50%, #083344 100%)',
-                  color: '#ffffff',
-                  padding: isMobile ? 12 : 14,
-                  boxShadow: '0 16px 34px rgba(15,23,42,0.18)',
-                }}
-              >
-                <div
-                  style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    borderRadius: 999,
-                    border: '1px solid rgba(34,211,238,0.20)',
-                    background: 'rgba(34,211,238,0.10)',
-                    color: '#a5f3fc',
-                    padding: '6px 10px',
-                    fontSize: 9,
-                    fontWeight: 900,
-                    letterSpacing: '0.08em',
-                    textTransform: 'uppercase',
-                  }}
-                >
-                  Direção comercial
-                </div>
-
-                <h2
-                  style={{
-                    margin: '10px 0 0',
-                    fontSize: isMobile ? 22 : 24,
-                    lineHeight: 1.04,
-                    fontWeight: 900,
-                    letterSpacing: '-0.03em',
-                  }}
-                >
-                  O comprador será parte viva do ecossistema
-                </h2>
-
-                <p
-                  style={{
-                    margin: '8px 0 0',
-                    color: 'rgba(226,232,240,0.90)',
-                    fontSize: 13,
-                    lineHeight: 1.5,
-                  }}
-                >
-                  Queremos uma jornada forte, com clareza de histórico, pedidos, status e
-                  relacionamento com vendedores, em linha com plataformas grandes.
-                </p>
-
-                <div
-                  style={{
-                    display: 'grid',
-                    gap: 8,
-                    marginTop: 10,
-                  }}
-                >
-                  {[
-                    'Histórico organizado',
-                    'Pedidos visíveis',
-                    'Acompanhamento claro',
-                    'Base futura de recompra',
-                  ].map((item) => (
-                    <div
-                      key={item}
-                      style={{
-                        borderRadius: 10,
-                        padding: '9px 10px',
-                        border: '1px solid rgba(255,255,255,0.08)',
-                        background: 'rgba(255,255,255,0.06)',
-                        color: '#f8fafc',
-                        fontSize: 12,
-                        lineHeight: 1.4,
-                      }}
-                    >
-                      {item}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <section
-          style={{
-            display: 'grid',
-            gridTemplateColumns: isMobile ? '1fr' : '1.45fr 1fr',
-            gap: 12,
-          }}
-        >
-          <div style={{ ...sectionCardStyle, padding: isMobile ? 12 : 14 }}>
-            <div style={badgeStyle}>Operação do comprador</div>
-            <h2 style={titleStyle}>Base da futura área interna</h2>
-            <p style={textStyle}>
-              Estrutura preparada para pedidos, histórico, status e leitura comercial do comprador.
+      <section style={styles.heroCard}>
+        <div style={styles.heroHeader}>
+          <div>
+            <span style={styles.kicker}>Aurora Marketplace • Área do comprador</span>
+            <h1 style={styles.title}>PAINEL DO COMPRADOR</h1>
+            <p style={styles.lead}>
+              Área central do comprador para explorar vitrines, acompanhar interesses,
+              preparar entrega e seguir o fluxo comercial do Marketplace Aurora com
+              clareza, leveza e padrão visual premium.
             </p>
+          </div>
 
-            <div
-              style={{
-                display: 'grid',
-                gap: 8,
-                marginTop: 12,
-              }}
-            >
-              {blocosOperacao.map((item) => (
-                <div
-                  key={item.titulo}
-                  style={{
-                    borderRadius: 12,
-                    border: '1px solid rgba(6,182,212,0.10)',
-                    background: '#ffffff',
-                    padding: '10px 11px',
-                  }}
-                >
-                  <div
-                    style={{
-                      fontSize: 12,
-                      fontWeight: 900,
-                      color: '#0f172a',
-                    }}
-                  >
-                    {item.titulo}
-                  </div>
-                  <div
-                    style={{
-                      marginTop: 4,
-                      fontSize: 12,
-                      lineHeight: 1.45,
-                      color: '#475569',
-                    }}
-                  >
-                    {item.descricao}
-                  </div>
-                </div>
-              ))}
+          <div style={styles.heroActions}>
+            <Link href="/marketplace" style={styles.linkGhost}>
+              Voltar ao Marketplace
+            </Link>
+            <Link href="/marketplace/vendedor/vitrine" style={styles.linkPrimary}>
+              Explorar vitrine
+            </Link>
+          </div>
+        </div>
+
+        <div style={styles.statsGrid}>
+          <div style={styles.statCard}>
+            <span style={styles.statLabel}>Fluxo atual</span>
+            <strong style={styles.statValueSmall}>Comprador local</strong>
+          </div>
+          <div style={styles.statCard}>
+            <span style={styles.statLabel}>Busca</span>
+            <strong style={styles.statValueSmall}>Manual</strong>
+          </div>
+          <div style={styles.statCard}>
+            <span style={styles.statLabel}>Entrega</span>
+            <strong style={styles.statValueSmall}>Página isolada</strong>
+          </div>
+          <div style={styles.statCard}>
+            <span style={styles.statLabel}>Próxima camada</span>
+            <strong style={styles.statValueSmall}>Histórico do comprador</strong>
+          </div>
+        </div>
+      </section>
+
+      <section style={styles.grid}>
+        <article style={styles.card}>
+          <span style={styles.cardKicker}>Explorar</span>
+          <h2 style={styles.cardTitle}>Ver vitrines e produtos</h2>
+          <p style={styles.cardText}>
+            Entrada principal para o comprador navegar pelos produtos disponíveis
+            e encontrar oportunidades reais publicadas pelos vendedores.
+          </p>
+          <Link href="/marketplace/vendedor/vitrine" style={styles.blockPrimary}>
+            Abrir vitrine pública
+          </Link>
+        </article>
+
+        <article style={styles.card}>
+          <span style={styles.cardKicker}>Entrega</span>
+          <h2 style={styles.cardTitle}>Cadastrar endereço de entrega</h2>
+          <p style={styles.cardText}>
+            Aqui o comprador registra nome de recebimento, telefone, CEP, endereço,
+            número, bairro, cidade, estado e observações para preparar a compra real.
+          </p>
+          <Link href="/marketplace/comprador/entrega" style={styles.blockPrimary}>
+            Abrir endereço de entrega
+          </Link>
+        </article>
+
+        <article style={styles.card}>
+          <span style={styles.cardKicker}>Interesse</span>
+          <h2 style={styles.cardTitle}>Fluxo comercial inicial</h2>
+          <p style={styles.cardText}>
+            Nesta fase, o comprador usa o botão de interesse da vitrine como porta
+            inicial do contato. Depois ligaremos histórico, pedidos e acompanhamento.
+          </p>
+          <div style={styles.badgeBox}>
+            <span style={styles.badge}>Tenho interesse</span>
+            <span style={styles.badgeText}>
+              Botão já preparado como base comercial inicial.
+            </span>
+          </div>
+        </article>
+
+        <article style={styles.card}>
+          <span style={styles.cardKicker}>Evolução</span>
+          <h2 style={styles.cardTitle}>Próximos passos do comprador</h2>
+          <p style={styles.cardText}>
+            Depois desta blindagem visual, o caminho natural é criar histórico do
+            comprador, página própria de acompanhamento e vínculo com a loja pública.
+          </p>
+          <div style={styles.stepList}>
+            <div style={styles.stepItem}>
+              <strong>1.</strong>
+              <span>Explorar produtos reais</span>
+            </div>
+            <div style={styles.stepItem}>
+              <strong>2.</strong>
+              <span>Registrar interesse</span>
+            </div>
+            <div style={styles.stepItem}>
+              <strong>3.</strong>
+              <span>Salvar entrega</span>
+            </div>
+            <div style={styles.stepItem}>
+              <strong>4.</strong>
+              <span>Acompanhar histórico</span>
             </div>
           </div>
+        </article>
+      </section>
 
-          <div
-            style={{
-              display: 'flex',
-              flexDirection: 'column',
-              gap: 12,
-            }}
-          >
-            <section style={{ ...sectionCardStyle, padding: isMobile ? 12 : 14 }}>
-              <div style={badgeStyle}>Próximas camadas</div>
-              <h2 style={titleStyle}>Crescimento seguro</h2>
-              <p style={textStyle}>
-                Tudo em páginas novas, mantendo a blindagem do que já está pronto.
-              </p>
+      <section style={styles.infoCard}>
+        <span style={styles.cardKicker}>Regra oficial desta fase</span>
+        <h3 style={styles.infoTitle}>Marketplace separado, fluxo mais claro</h3>
+        <p style={styles.infoText}>
+          O comprador entra por uma área própria, sem confundir com o vendedor,
+          mantendo a organização do Marketplace Aurora e preparando a expansão
+          futura com entrega, histórico, acompanhamento e páginas individuais.
+        </p>
 
-              <div
-                style={{
-                  display: 'grid',
-                  gap: 8,
-                  marginTop: 12,
-                }}
-              >
-                {proximasCamadas.map((item) => (
-                  <div
-                    key={item.titulo}
-                    style={{
-                      borderRadius: 10,
-                      border: '1px solid rgba(6,182,212,0.10)',
-                      background: 'linear-gradient(90deg, #ecfeff 0%, #f0f9ff 100%)',
-                      padding: '9px 10px',
-                    }}
-                  >
-                    <div
-                      style={{
-                        fontSize: 11,
-                        fontWeight: 900,
-                        color: '#0369a1',
-                        textTransform: 'uppercase',
-                        letterSpacing: '0.05em',
-                      }}
-                    >
-                      {item.titulo}
-                    </div>
-                    <div
-                      style={{
-                        marginTop: 4,
-                        fontSize: 12,
-                        lineHeight: 1.45,
-                        color: '#334155',
-                      }}
-                    >
-                      {item.descricao}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </section>
-
-            <section
-              style={{
-                borderRadius: isMobile ? 20 : 24,
-                padding: isMobile ? 12 : 14,
-                color: '#ffffff',
-                background: 'linear-gradient(135deg, #06b6d4 0%, #0ea5e9 46%, #2563eb 100%)',
-                boxShadow: '0 16px 42px rgba(2,132,199,0.18)',
-              }}
-            >
-              <div
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  borderRadius: 999,
-                  border: '1px solid rgba(255,255,255,0.24)',
-                  background: 'rgba(255,255,255,0.10)',
-                  color: '#ffffff',
-                  padding: '6px 10px',
-                  fontSize: 9,
-                  fontWeight: 900,
-                  letterSpacing: '0.08em',
-                  textTransform: 'uppercase',
-                }}
-              >
-                Próximo passo
-              </div>
-
-              <h2
-                style={{
-                  margin: '10px 0 0',
-                  fontSize: isMobile ? 22 : 24,
-                  lineHeight: 1.04,
-                  fontWeight: 900,
-                  letterSpacing: '-0.03em',
-                }}
-              >
-                Depois desta página, criamos a entrada real de cadastro do vendedor
-              </h2>
-
-              <p
-                style={{
-                  margin: '8px 0 0',
-                  color: 'rgba(255,255,255,0.92)',
-                  fontSize: 13,
-                  lineHeight: 1.5,
-                }}
-              >
-                A sequência lógica agora é transformar a visão em entrada prática para o vendedor
-                começar a operar de verdade dentro do marketplace.
-              </p>
-
-              <div
-                style={{
-                  display: 'grid',
-                  gap: 8,
-                  marginTop: 10,
-                }}
-              >
-                <Link href="/marketplace/vendedor" style={outlineButtonStyle}>
-                  Voltar à área do vendedor
-                </Link>
-
-                <Link href="/marketplace" style={darkButtonStyle}>
-                  Voltar ao marketplace
-                </Link>
-              </div>
-            </section>
-          </div>
-        </section>
-      </div>
+        <div style={styles.infoActions}>
+          <Link href="/marketplace" style={styles.linkGhostBlock}>
+            Voltar ao Marketplace
+          </Link>
+          <Link href="/marketplace/comprador/entrega" style={styles.linkPrimaryBlock}>
+            Ir para entrega
+          </Link>
+        </div>
+      </section>
     </main>
-  )
+  );
 }
+
+const styles: Record<string, React.CSSProperties> = {
+  page: {
+    minHeight: "100vh",
+    padding: "32px 20px 56px",
+    background: "linear-gradient(180deg, #eef8ff 0%, #f7fbff 40%, #ffffff 100%)",
+    position: "relative",
+    overflow: "hidden",
+  },
+  bgGlowTop: {
+    position: "absolute",
+    top: -120,
+    right: -120,
+    width: 320,
+    height: 320,
+    borderRadius: "50%",
+    background: "rgba(0, 191, 255, 0.14)",
+    filter: "blur(60px)",
+    pointerEvents: "none",
+  },
+  bgGlowBottom: {
+    position: "absolute",
+    bottom: -160,
+    left: -120,
+    width: 360,
+    height: 360,
+    borderRadius: "50%",
+    background: "rgba(0, 153, 255, 0.12)",
+    filter: "blur(70px)",
+    pointerEvents: "none",
+  },
+  heroCard: {
+    position: "relative",
+    zIndex: 1,
+    maxWidth: 1280,
+    margin: "0 auto 24px",
+    borderRadius: 28,
+    border: "1px solid rgba(120, 170, 220, 0.22)",
+    background: "rgba(255,255,255,0.82)",
+    boxShadow: "0 22px 60px rgba(31, 80, 140, 0.10)",
+    backdropFilter: "blur(14px)",
+    padding: 28,
+  },
+  heroHeader: {
+    display: "flex",
+    gap: 20,
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+    flexWrap: "wrap",
+  },
+  kicker: {
+    display: "inline-block",
+    fontSize: 12,
+    fontWeight: 800,
+    letterSpacing: 1.1,
+    textTransform: "uppercase",
+    color: "#0b74c7",
+    marginBottom: 10,
+  },
+  title: {
+    margin: 0,
+    fontSize: "clamp(2rem, 4vw, 3.2rem)",
+    lineHeight: 1.02,
+    color: "#082849",
+  },
+  lead: {
+    margin: "12px 0 0",
+    maxWidth: 760,
+    fontSize: 16,
+    lineHeight: 1.7,
+    color: "#42627f",
+  },
+  heroActions: {
+    display: "flex",
+    gap: 12,
+    flexWrap: "wrap",
+  },
+  linkPrimary: {
+    textDecoration: "none",
+    background: "linear-gradient(135deg, #0aa2ff 0%, #0b7ed6 100%)",
+    color: "#fff",
+    padding: "14px 18px",
+    borderRadius: 16,
+    fontWeight: 800,
+    boxShadow: "0 18px 40px rgba(0, 122, 204, 0.22)",
+  },
+  linkGhost: {
+    textDecoration: "none",
+    background: "#f4fbff",
+    color: "#0c5d96",
+    padding: "14px 18px",
+    borderRadius: 16,
+    fontWeight: 700,
+    border: "1px solid rgba(99, 163, 214, 0.24)",
+  },
+  statsGrid: {
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
+    gap: 14,
+    marginTop: 22,
+  },
+  statCard: {
+    background: "linear-gradient(180deg, #fafdff 0%, #eff7ff 100%)",
+    borderRadius: 20,
+    padding: 18,
+    border: "1px solid rgba(121, 178, 224, 0.20)",
+  },
+  statLabel: {
+    display: "block",
+    fontSize: 13,
+    color: "#55738d",
+    marginBottom: 8,
+    fontWeight: 700,
+  },
+  statValueSmall: {
+    fontSize: 20,
+    color: "#0a2946",
+  },
+  grid: {
+    position: "relative",
+    zIndex: 1,
+    maxWidth: 1280,
+    margin: "0 auto 24px",
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",
+    gap: 20,
+  },
+  card: {
+    borderRadius: 24,
+    border: "1px solid rgba(120, 170, 220, 0.18)",
+    background: "linear-gradient(180deg, #ffffff 0%, #f7fbff 100%)",
+    boxShadow: "0 16px 36px rgba(31, 80, 140, 0.07)",
+    padding: 24,
+  },
+  cardKicker: {
+    display: "inline-block",
+    fontSize: 12,
+    fontWeight: 800,
+    letterSpacing: 1,
+    textTransform: "uppercase",
+    color: "#1292ec",
+    marginBottom: 8,
+  },
+  cardTitle: {
+    margin: 0,
+    fontSize: 24,
+    color: "#0c2b49",
+  },
+  cardText: {
+    margin: "12px 0 18px",
+    fontSize: 15,
+    lineHeight: 1.7,
+    color: "#4b6781",
+  },
+  blockPrimary: {
+    display: "inline-block",
+    textDecoration: "none",
+    background: "linear-gradient(135deg, #0aa2ff 0%, #0b7ed6 100%)",
+    color: "#fff",
+    padding: "14px 18px",
+    borderRadius: 16,
+    fontWeight: 800,
+  },
+  badgeBox: {
+    borderRadius: 18,
+    border: "1px solid rgba(120, 170, 220, 0.18)",
+    background: "#f8fbff",
+    padding: 16,
+    display: "grid",
+    gap: 10,
+  },
+  badge: {
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    width: "fit-content",
+    minHeight: 38,
+    padding: "0 14px",
+    borderRadius: 999,
+    background: "linear-gradient(135deg, #08a2ff 0%, #0a76cf 100%)",
+    color: "#fff",
+    fontWeight: 800,
+    fontSize: 14,
+  },
+  badgeText: {
+    color: "#4b6781",
+    lineHeight: 1.6,
+    fontSize: 14,
+  },
+  stepList: {
+    display: "grid",
+    gap: 12,
+  },
+  stepItem: {
+    display: "flex",
+    gap: 10,
+    alignItems: "center",
+    padding: "12px 14px",
+    borderRadius: 16,
+    background: "#f8fbff",
+    border: "1px solid rgba(120, 170, 220, 0.16)",
+    color: "#234764",
+  },
+  infoCard: {
+    position: "relative",
+    zIndex: 1,
+    maxWidth: 1280,
+    margin: "0 auto",
+    borderRadius: 28,
+    border: "1px solid rgba(120, 170, 220, 0.22)",
+    background: "rgba(255,255,255,0.90)",
+    boxShadow: "0 22px 60px rgba(31, 80, 140, 0.08)",
+    padding: 28,
+  },
+  infoTitle: {
+    margin: 0,
+    fontSize: 26,
+    color: "#0c2b49",
+  },
+  infoText: {
+    margin: "12px 0 0",
+    fontSize: 15,
+    lineHeight: 1.7,
+    color: "#4b6781",
+  },
+  infoActions: {
+    display: "flex",
+    gap: 12,
+    flexWrap: "wrap",
+    marginTop: 20,
+  },
+  linkPrimaryBlock: {
+    textDecoration: "none",
+    textAlign: "center",
+    background: "linear-gradient(135deg, #0aa2ff 0%, #0b7ed6 100%)",
+    color: "#fff",
+    padding: "14px 18px",
+    borderRadius: 16,
+    fontWeight: 800,
+  },
+  linkGhostBlock: {
+    textDecoration: "none",
+    textAlign: "center",
+    background: "#f4fbff",
+    color: "#0c5d96",
+    padding: "14px 18px",
+    borderRadius: 16,
+    fontWeight: 800,
+    border: "1px solid rgba(99, 163, 214, 0.24)",
+  },
+};
