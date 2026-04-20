@@ -60,9 +60,9 @@ type FetchJsonResult = {
 };
 
 const STORAGE_KEY = "aurora_cadastro_geral_rascunho_v4";
-const REQUEST_TIMEOUT_MS = 25000;
-const LOAD_UI_FAILSAFE_MS = 12000;
-const SAVE_UI_FAILSAFE_MS = 12000;
+const REQUEST_TIMEOUT_MS = 45000;
+const LOAD_UI_FAILSAFE_MS = 50000;
+const SAVE_UI_FAILSAFE_MS = 50000;
 
 const PERFIS_SUGERIDOS = [
   "Empresa",
@@ -489,9 +489,9 @@ export default function CadastroGeralPage() {
       loadLockRef.current = false;
       setLoadingCadastro(false);
       setMessage(
-        "A recarga demorou demais e foi liberada na interface para não prender a tela. O sistema está em constante atualização e pode haver momentos de instabilidade."
+        "A recarga está demorando mais do que o normal. Aguarde a resposta final da API. O sistema está em constante atualização e pode haver momentos de instabilidade."
       );
-      setMessageType("error");
+      setMessageType("info");
     }, LOAD_UI_FAILSAFE_MS);
   }
 
@@ -502,12 +502,10 @@ export default function CadastroGeralPage() {
       if (!mountedRef.current) return;
       if (currentSaveIdRef.current !== saveId) return;
 
-      submitLockRef.current = false;
-      setLoading(false);
       setMessage(
-        "O salvamento demorou demais e a interface foi liberada para não prender a tela. Confira no Guardião se o cadastro foi salvo antes de clicar novamente."
+        "O salvamento está demorando mais do que o normal. Aguarde a resposta final da API. O sistema está em constante atualização e pode haver momentos de instabilidade."
       );
-      setMessageType("error");
+      setMessageType("info");
     }, SAVE_UI_FAILSAFE_MS);
   }
 
@@ -1251,7 +1249,7 @@ export default function CadastroGeralPage() {
           <section style={styles.section}>
             <h2 style={styles.sectionTitle}>6. Camada pública segura</h2>
 
-          <div style={styles.grid2}>
+            <div style={styles.grid2}>
               <Field
                 label="Nome público"
                 value={form.nomePublico}

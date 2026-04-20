@@ -35,66 +35,61 @@ export default function AuthCallbackPage() {
           if (!active) return;
 
           setMessage(
-            "Auth público ainda não está disponível neste ambiente. Redirecionando para a entrada oficial..."
+            "Auth ainda não disponível. Redirecionando para entrada..."
           );
 
-          window.setTimeout(() => {
+          setTimeout(() => {
             window.location.href = "/entrada";
           }, 1200);
 
           return;
         }
 
+        // 🔥 pega código do Google
         const url = new URL(window.location.href);
         const code = url.searchParams.get("code");
 
         if (code) {
           const { error } = await supabase.auth.exchangeCodeForSession(code);
 
-          if (error) {
-            throw error;
-          }
+          if (error) throw error;
         }
 
+        // 🔥 verifica sessão criada
         const {
           data: { session },
           error: sessionError,
         } = await supabase.auth.getSession();
 
-        if (sessionError) {
-          throw sessionError;
-        }
+        if (sessionError) throw sessionError;
 
         if (!active) return;
 
         if (session) {
           setMessage(
-            "Login concluído com sucesso. Redirecionando para a home oficial da Aurora..."
+            "Login concluído. Redirecionando para a home da Aurora..."
           );
 
-          window.setTimeout(() => {
-            window.location.href = "/";
-          }, 900);
+          setTimeout(() => {
+            window.location.href = "/home"; // 🔥 CORREÇÃO FINAL
+          }, 800);
 
           return;
         }
 
-        setMessage(
-          "Nenhuma sessão válida foi encontrada. Redirecionando para a entrada oficial..."
-        );
+        setMessage("Sessão não encontrada. Voltando para entrada...");
 
-        window.setTimeout(() => {
+        setTimeout(() => {
           window.location.href = "/entrada";
         }, 1200);
       } catch (error: any) {
         if (!active) return;
 
         setMessage(
-          error?.message ||
-            "Não foi possível concluir o login agora. Redirecionando para a entrada oficial..."
+          error?.message || "Erro no login. Voltando para entrada..."
         );
 
-        window.setTimeout(() => {
+        setTimeout(() => {
           window.location.href = "/entrada";
         }, 1400);
       }
@@ -116,97 +111,26 @@ export default function AuthCallbackPage() {
         justifyContent: "center",
         padding: 24,
         background:
-          "radial-gradient(circle at top, rgba(59,130,246,0.10), transparent 18%), radial-gradient(circle at left, rgba(34,197,94,0.10), transparent 24%), linear-gradient(180deg, #eef6ff 0%, #f7fbff 36%, #edf7f3 100%)",
+          "radial-gradient(circle at top, rgba(34,197,94,0.15), transparent 30%), #020617",
+        color: "#fff",
       }}
     >
-      <section
+      <div
         style={{
-          width: "100%",
-          maxWidth: 760,
-          background: "rgba(255,255,255,0.92)",
-          border: "1px solid rgba(15,23,42,0.08)",
-          borderRadius: 24,
-          padding: 28,
-          boxShadow: "0 18px 42px rgba(15,23,42,0.08)",
+          maxWidth: 420,
           textAlign: "center",
-          display: "grid",
-          gap: 14,
         }}
       >
-        <div
-          style={{
-            fontSize: 12,
-            fontWeight: 900,
-            letterSpacing: "0.08em",
-            textTransform: "uppercase",
-            color: "#2563eb",
-          }}
-        >
-          Aurora Auth Callback
-        </div>
-
-        <h1
-          style={{
-            margin: 0,
-            fontSize: "clamp(26px, 4vw, 38px)",
-            lineHeight: 1.05,
-            color: "#0f172a",
-          }}
-        >
-          Confirmando seu acesso
+        <h1 style={{ fontSize: 26, fontWeight: 900 }}>
+          Conectando à Aurora
         </h1>
 
-        <p
-          style={{
-            margin: 0,
-            color: "rgba(15,23,42,0.72)",
-            lineHeight: 1.75,
-            fontSize: 16,
-          }}
-        >
-          {message}
+        <p style={{ marginTop: 10, opacity: 0.7 }}>{message}</p>
+
+        <p style={{ marginTop: 20, fontSize: 12, opacity: 0.5 }}>
+          Sistema em constante atualização.
         </p>
-
-        <div
-          style={{
-            marginTop: 6,
-            display: "flex",
-            gap: 12,
-            justifyContent: "center",
-            flexWrap: "wrap",
-          }}
-        >
-          <a
-            href="/entrada"
-            style={{
-              padding: "12px 18px",
-              borderRadius: 12,
-              background: "#ffffff",
-              border: "1px solid #e2e8f0",
-              color: "#0f172a",
-              textDecoration: "none",
-              fontWeight: 800,
-            }}
-          >
-            Voltar para entrada
-          </a>
-
-          <a
-            href="/"
-            style={{
-              padding: "12px 18px",
-              borderRadius: 12,
-              background: "linear-gradient(135deg, #2563eb, #3b82f6)",
-              color: "#fff",
-              textDecoration: "none",
-              fontWeight: 900,
-              boxShadow: "0 14px 30px rgba(37,99,235,0.16)",
-            }}
-          >
-            Ir para home oficial
-          </a>
-        </div>
-      </section>
+      </div>
     </main>
   );
 }

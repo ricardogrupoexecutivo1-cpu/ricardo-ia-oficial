@@ -142,10 +142,15 @@ export async function createSellerInDb(payload: {
         active: payload.active ?? true,
         featured: payload.featured ?? false,
       },
+      company: null,
+      listing: null,
     };
   }
 
-  const { data, error } = await client
+  const isActive = payload.active ?? true;
+  const isFeatured = payload.featured ?? false;
+
+  const { data: seller, error: sellerError } = await client
     .from(SELLERS_TABLE)
     .insert({
       tenant_slug: payload.tenantSlug,
@@ -158,19 +163,144 @@ export async function createSellerInDb(payload: {
       logo_text: payload.logoText,
       city: payload.city ?? null,
       state: payload.state ?? null,
-      active: payload.active ?? true,
-      featured: payload.featured ?? false,
+      active: isActive,
+      featured: isFeatured,
     })
     .select("*")
     .single();
 
-  if (error) {
-    throw new Error(error.message || "Erro ao criar locadora no banco.");
+  if (sellerError) {
+    throw new Error(sellerError.message || "Erro ao criar locadora no banco.");
+  }
+
+  let company: any = null;
+  let listing: any = null;
+
+  const { data: existingCompany, error: existingCompanyError } = await client
+    .from("companies")
+    .select("id, name, slug")
+    .eq("slug", payload.tenantSlug)
+    .maybeSingle();
+
+  if (existingCompanyError) {
+    console.error(
+      "[locadora-db] erro ao procurar company existente:",
+      existingCompanyError
+    );
+  }
+
+  if (existingCompany) {
+    company = existingCompany;
+
+    const { error: updateCompanyError } = await client
+      .from("companies")
+      .update({
+        name: payload.companyName,
+        city: payload.city ?? null,
+        state: payload.state ?? null,
+        whatsapp: payload.whatsapp ?? null,
+        phone: payload.phone ?? null,
+        is_active: isActive,
+      })
+      .eq("id", existingCompany.id);
+
+    if (updateCompanyError) {
+      console.error(
+        "[locadora-db] erro ao atualizar company existente:",
+        updateCompanyError
+      );
+    }
+  } else {
+    const { data: createdCompany, error: companyError } = await client
+      .from("companies")
+      .insert({
+        name: payload.companyName,
+        slug: payload.tenantSlug,
+        city: payload.city ?? null,
+        state: payload.state ?? null,
+        whatsapp: payload.whatsapp ?? null,
+        phone: payload.phone ?? null,
+        is_active: isActive,
+      })
+      .select("*")
+      .single();
+
+    if (companyError) {
+      throw new Error(companyError.message || "Erro ao criar company.");
+    }
+
+    company = createdCompany;
+  }
+
+  if (company?.id) {
+    const { data: existingListing, error: existingListingError } = await client
+      .from("listings")
+      .select("id, company_id, module")
+      .eq("company_id", company.id)
+      .eq("module", "locadora")
+      .maybeSingle();
+
+    if (existingListingError) {
+      console.error(
+        "[locadora-db] erro ao procurar listing existente:",
+        existingListingError
+      );
+    }
+
+    if (existingListing) {
+      const { data: updatedListing, error: updateListingError } = await client
+        .from("listings")
+        .update({
+          category: "locadora",
+          title: payload.tradeName || payload.companyName,
+          description: payload.tagline ?? null,
+          city: payload.city ?? null,
+          state: payload.state ?? null,
+          is_active: isActive,
+          is_featured: isFeatured,
+        })
+        .eq("id", existingListing.id)
+        .select("*")
+        .single();
+
+      if (updateListingError) {
+        console.error(
+          "[locadora-db] erro ao atualizar listing existente:",
+          updateListingError
+        );
+      } else {
+        listing = updatedListing;
+      }
+    } else {
+      const { data: createdListing, error: listingError } = await client
+        .from("listings")
+        .insert({
+          company_id: company.id,
+          module: "locadora",
+          category: "locadora",
+          title: payload.tradeName || payload.companyName,
+          description: payload.tagline ?? null,
+          city: payload.city ?? null,
+          state: payload.state ?? null,
+          is_active: isActive,
+          is_featured: isFeatured,
+        })
+        .select("*")
+        .single();
+
+      if (listingError) {
+        throw new Error(listingError.message || "Erro ao criar listing.");
+      }
+
+      listing = createdListing;
+    }
   }
 
   return {
     mode: "database" as const,
-    seller: data,
+    seller,
+    company,
+    listing,
   };
 }
 
