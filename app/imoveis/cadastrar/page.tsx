@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type CSSProperties, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 
 export default function CadastroImoveis() {
@@ -9,12 +9,12 @@ export default function CadastroImoveis() {
   const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState("");
 
-  async function handleSubmit(e: any) {
+  async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setLoading(true);
     setMsg("");
 
-    const form = new FormData(e.target);
+    const form = new FormData(e.currentTarget);
     const data = Object.fromEntries(form.entries());
 
     try {
@@ -30,8 +30,7 @@ export default function CadastroImoveis() {
 
       if (json.ok) {
         setMsg("Cadastro enviado com sucesso.");
-
-        e.target.reset();
+        e.currentTarget.reset();
 
         setTimeout(() => {
           router.push("/?cadastro=imoveis-sucesso");
@@ -50,22 +49,52 @@ export default function CadastroImoveis() {
   return (
     <main style={mainStyle}>
       <div style={containerStyle}>
-        <h1 style={{ fontSize: 26, marginBottom: 10 }}>
-          🏡 Cadastro de Imobiliária
-        </h1>
+        <h1 style={titleStyle}>🏡 Cadastro de Imobiliária</h1>
 
-        <p style={{ marginBottom: 20, color: "#ccc" }}>
+        <p style={subtitleStyle}>
           Cadastre sua imobiliária e receba contatos dentro da Aurora.
         </p>
 
         <form onSubmit={handleSubmit} style={formStyle}>
-          <input name="name" placeholder="Nome da imobiliária" required style={inputStyle} />
-          <input name="city" placeholder="Cidade" required style={inputStyle} />
-          <input name="state" placeholder="Estado" required style={inputStyle} />
-          <input name="whatsapp" placeholder="WhatsApp" required style={inputStyle} />
-          <input name="email" placeholder="Email" style={inputStyle} />
+          <input
+            name="name"
+            placeholder="Nome da imobiliária"
+            required
+            style={inputStyle}
+          />
 
-          <button type="submit" disabled={loading} style={buttonStyle}>
+          <input
+            name="city"
+            placeholder="Cidade"
+            required
+            style={inputStyle}
+          />
+
+          <input
+            name="state"
+            placeholder="Estado"
+            required
+            style={inputStyle}
+          />
+
+          <input
+            name="whatsapp"
+            placeholder="WhatsApp"
+            required
+            style={inputStyle}
+          />
+
+          <input
+            name="email"
+            placeholder="Email"
+            style={inputStyle}
+          />
+
+          <button
+            type="submit"
+            disabled={loading}
+            style={buttonStyle}
+          >
             {loading ? "Enviando..." : "🚀 Cadastrar"}
           </button>
         </form>
@@ -84,9 +113,7 @@ export default function CadastroImoveis() {
   );
 }
 
-/* 🔒 STYLES DEFINIDOS (EVITA ERRO DE BUILD) */
-
-const mainStyle = {
+const mainStyle: CSSProperties = {
   minHeight: "100vh",
   padding: 20,
   display: "flex",
@@ -96,18 +123,28 @@ const mainStyle = {
   color: "#fff",
 };
 
-const containerStyle = {
+const containerStyle: CSSProperties = {
   width: "100%",
   maxWidth: 500,
 };
 
-const formStyle = {
+const titleStyle: CSSProperties = {
+  fontSize: 26,
+  marginBottom: 10,
+};
+
+const subtitleStyle: CSSProperties = {
+  marginBottom: 20,
+  color: "#ccc",
+};
+
+const formStyle: CSSProperties = {
   display: "flex",
   flexDirection: "column",
   gap: 12,
 };
 
-const inputStyle = {
+const inputStyle: CSSProperties = {
   height: 45,
   borderRadius: 10,
   border: "1px solid #333",
@@ -117,7 +154,7 @@ const inputStyle = {
   color: "#fff",
 };
 
-const buttonStyle = {
+const buttonStyle: CSSProperties = {
   height: 50,
   borderRadius: 12,
   border: "none",
@@ -128,7 +165,7 @@ const buttonStyle = {
   cursor: "pointer",
 };
 
-const successMsgStyle = {
+const successMsgStyle: CSSProperties = {
   marginTop: 16,
   padding: 12,
   borderRadius: 10,
@@ -137,7 +174,7 @@ const successMsgStyle = {
   fontWeight: "bold",
 };
 
-const errorMsgStyle = {
+const errorMsgStyle: CSSProperties = {
   marginTop: 16,
   padding: 12,
   borderRadius: 10,
@@ -146,7 +183,7 @@ const errorMsgStyle = {
   fontWeight: "bold",
 };
 
-const footerStyle = {
+const footerStyle: CSSProperties = {
   marginTop: 20,
   fontSize: 12,
   opacity: 0.6,
