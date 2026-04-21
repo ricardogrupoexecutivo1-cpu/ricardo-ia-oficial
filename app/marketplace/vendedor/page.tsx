@@ -1,313 +1,224 @@
-import Link from "next/link";
+'use client'
+
+import Link from 'next/link'
+import type { CSSProperties } from 'react'
 
 export default function MarketplaceVendedorPage() {
   return (
     <main style={styles.page}>
-      <div style={styles.bgGlowTop} />
-      <div style={styles.bgGlowBottom} />
-
-      <section style={styles.heroCard}>
-        <div style={styles.heroHeader}>
+      <section style={styles.hero}>
+        <div style={styles.heroTop}>
           <div>
-            <span style={styles.kicker}>Aurora Marketplace • Área do vendedor</span>
-            <h1 style={styles.title}>PAINEL DO VENDEDOR</h1>
-            <p style={styles.lead}>
-              Área central do vendedor para organizar cadastro da loja, produtos reais e vitrine pública, mantendo o Marketplace separado da Home Global e seguindo o padrão memoriol com máxima segurança.
+            <p style={styles.kicker}>Aurora Marketplace • Vendedor</p>
+            <h1 style={styles.title}>Área do vendedor</h1>
+            <p style={styles.subtitle}>
+              Porta comercial do vendedor com entrada organizada para cadastro,
+              verificação, vitrine e operação protegida. A segurança da plataforma
+              começa pela validação do vendedor antes da liberação plena das vendas.
             </p>
           </div>
 
-          <div style={styles.heroActions}>
-            <Link href="/marketplace" style={styles.linkGhost}>
+          <div style={styles.actions}>
+            <Link href="/marketplace" style={styles.secondaryButton}>
               Voltar ao Marketplace
             </Link>
-            <Link href="/marketplace/vendedor/produtos" style={styles.linkPrimary}>
-              Ir para produtos
+            <Link href="/marketplace/vendedor/acesso-seguro" style={styles.primaryButton}>
+              Entrar com segurança
             </Link>
           </div>
         </div>
 
-        <div style={styles.statsGrid}>
-          <div style={styles.statCard}>
-            <span style={styles.statLabel}>Fluxo atual</span>
-            <strong style={styles.statValueSmall}>Vendedor local</strong>
-          </div>
-          <div style={styles.statCard}>
-            <span style={styles.statLabel}>Produtos reais</span>
-            <strong style={styles.statValueSmall}>Ativos</strong>
-          </div>
-          <div style={styles.statCard}>
-            <span style={styles.statLabel}>Vitrine</span>
-            <strong style={styles.statValueSmall}>Ligada</strong>
-          </div>
-          <div style={styles.statCard}>
-            <span style={styles.statLabel}>Próxima camada</span>
-            <strong style={styles.statValueSmall}>Slug da loja</strong>
-          </div>
+        <div style={styles.notice}>
+          Sistema em constante atualização e podem ocorrer instabilidades momentâneas
+          durante melhorias.
         </div>
       </section>
 
       <section style={styles.grid}>
         <article style={styles.card}>
-          <span style={styles.cardKicker}>Cadastro</span>
-          <h2 style={styles.cardTitle}>Dados iniciais do vendedor</h2>
+          <span style={styles.cardLabel}>Etapa 1</span>
+          <h2 style={styles.cardTitle}>Verificação obrigatória</h2>
           <p style={styles.cardText}>
-            Entrada para dados básicos da loja e estrutura inicial do vendedor dentro do Marketplace Aurora.
+            Antes de vender, o lojista deve validar identidade, documento, telefone
+            e dados de recebimento. Essa é a camada que protege a reputação do
+            Marketplace.
           </p>
-          <Link href="/marketplace/vendedor/cadastro" style={styles.blockPrimary}>
-            Abrir cadastro do vendedor
-          </Link>
+
+          <div style={styles.cardButtons}>
+            <Link href="/marketplace/vendedor/verificacao" style={styles.primaryButton}>
+              Fazer verificação
+            </Link>
+            <Link href="/marketplace/vendedor/acesso-seguro" style={styles.secondaryButton}>
+              Ver status seguro
+            </Link>
+          </div>
         </article>
 
         <article style={styles.card}>
-          <span style={styles.cardKicker}>Produtos</span>
-          <h2 style={styles.cardTitle}>Catálogo real da loja</h2>
+          <span style={styles.cardLabel}>Etapa 2</span>
+          <h2 style={styles.cardTitle}>Entrada protegida</h2>
           <p style={styles.cardText}>
-            Cadastre produtos verdadeiros, com imagem real, preço, categoria, estoque e status de publicação.
+            O caminho correto para a operação do vendedor agora passa primeiro pela
+            camada de acesso seguro. Sem isso, a plataforma perde controle sobre quem
+            realmente está apto a vender.
           </p>
-          <Link href="/marketplace/vendedor/produtos" style={styles.blockPrimary}>
-            Abrir produtos reais
-          </Link>
+
+          <div style={styles.cardButtons}>
+            <Link href="/marketplace/vendedor/acesso-seguro" style={styles.primaryButton}>
+              Acessar camada segura
+            </Link>
+          </div>
         </article>
 
         <article style={styles.card}>
-          <span style={styles.cardKicker}>Vitrine</span>
-          <h2 style={styles.cardTitle}>Leitura pública da loja</h2>
+          <span style={styles.cardLabel}>Etapa 3</span>
+          <h2 style={styles.cardTitle}>Operação comercial</h2>
           <p style={styles.cardText}>
-            Visualize como a loja pública do vendedor está aparecendo com base nos produtos disponíveis.
+            Depois da aprovação, o vendedor segue para produtos, vitrine e operação
+            real. Essa separação evita liberar vendas para perfis ainda sem análise.
           </p>
-          <Link href="/marketplace/vendedor/vitrine" style={styles.blockPrimary}>
-            Abrir vitrine pública
-          </Link>
+
+          <div style={styles.cardButtons}>
+            <Link href="/marketplace/vendedor/produtos" style={styles.secondaryButton}>
+              Ver produtos
+            </Link>
+            <Link href="/marketplace/vendedor/vitrine" style={styles.secondaryButton}>
+              Ver vitrine
+            </Link>
+          </div>
         </article>
-      </section>
-
-      <section style={styles.infoCard}>
-        <span style={styles.cardKicker}>Regra oficial desta fase</span>
-        <h3 style={styles.infoTitle}>Sem planos e sem mensalidade</h3>
-        <p style={styles.infoText}>
-          O modelo atual do Aurora Marketplace segue somente com comissão sobre venda realizada, mantendo a operação mais leve e mais rápida para entrada de vendedores.
-        </p>
-
-        <div style={styles.infoActions}>
-          <Link href="/marketplace" style={styles.linkGhostBlock}>
-            Voltar ao Marketplace
-          </Link>
-          <Link href="/marketplace/vendedor/produtos" style={styles.linkPrimaryBlock}>
-            Continuar no vendedor
-          </Link>
-        </div>
       </section>
     </main>
-  );
+  )
 }
 
-const styles: Record<string, React.CSSProperties> = {
+const styles: Record<string, CSSProperties> = {
   page: {
-    minHeight: "100vh",
-    padding: "32px 20px 56px",
-    background: "linear-gradient(180deg, #eef8ff 0%, #f7fbff 40%, #ffffff 100%)",
-    position: "relative",
-    overflow: "hidden",
+    minHeight: '100vh',
+    background: 'linear-gradient(180deg, #eef8ff 0%, #ffffff 100%)',
+    padding: '24px 16px 56px',
+    color: '#0f172a',
   },
-  bgGlowTop: {
-    position: "absolute",
-    top: -120,
-    right: -120,
-    width: 320,
-    height: 320,
-    borderRadius: "50%",
-    background: "rgba(0, 191, 255, 0.14)",
-    filter: "blur(60px)",
-    pointerEvents: "none",
-  },
-  bgGlowBottom: {
-    position: "absolute",
-    bottom: -160,
-    left: -120,
-    width: 360,
-    height: 360,
-    borderRadius: "50%",
-    background: "rgba(0, 153, 255, 0.12)",
-    filter: "blur(70px)",
-    pointerEvents: "none",
-  },
-  heroCard: {
-    position: "relative",
-    zIndex: 1,
-    maxWidth: 1280,
-    margin: "0 auto 24px",
+  hero: {
+    maxWidth: '1200px',
+    margin: '0 auto 20px auto',
+    background: 'rgba(255,255,255,0.94)',
+    border: '1px solid rgba(8, 145, 178, 0.14)',
     borderRadius: 28,
-    border: "1px solid rgba(120, 170, 220, 0.22)",
-    background: "rgba(255,255,255,0.82)",
-    boxShadow: "0 22px 60px rgba(31, 80, 140, 0.10)",
-    backdropFilter: "blur(14px)",
-    padding: 28,
+    padding: 24,
+    boxShadow: '0 18px 60px rgba(15, 23, 42, 0.08)',
   },
-  heroHeader: {
-    display: "flex",
-    gap: 20,
-    justifyContent: "space-between",
-    alignItems: "flex-start",
-    flexWrap: "wrap",
+  heroTop: {
+    display: 'flex',
+    gap: 16,
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    flexWrap: 'wrap',
   },
   kicker: {
-    display: "inline-block",
-    fontSize: 12,
+    margin: 0,
+    fontSize: 13,
     fontWeight: 800,
-    letterSpacing: 1.1,
-    textTransform: "uppercase",
-    color: "#0b74c7",
-    marginBottom: 10,
+    letterSpacing: 1.2,
+    textTransform: 'uppercase',
+    color: '#0891b2',
   },
   title: {
-    margin: 0,
-    fontSize: "clamp(2rem, 4vw, 3.2rem)",
-    lineHeight: 1.02,
-    color: "#082849",
+    margin: '8px 0 10px',
+    fontSize: 'clamp(28px, 4vw, 44px)',
+    lineHeight: 1.04,
+    fontWeight: 900,
+    color: '#082f49',
   },
-  lead: {
-    margin: "12px 0 0",
-    maxWidth: 760,
+  subtitle: {
+    margin: 0,
+    maxWidth: 820,
     fontSize: 16,
     lineHeight: 1.7,
-    color: "#42627f",
+    color: '#334155',
   },
-  heroActions: {
-    display: "flex",
+  actions: {
+    display: 'flex',
     gap: 12,
-    flexWrap: "wrap",
+    flexWrap: 'wrap',
   },
-  linkPrimary: {
-    textDecoration: "none",
-    background: "linear-gradient(135deg, #0aa2ff 0%, #0b7ed6 100%)",
-    color: "#fff",
-    padding: "14px 18px",
-    borderRadius: 16,
+  primaryButton: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 46,
+    padding: '0 18px',
+    borderRadius: 14,
+    textDecoration: 'none',
     fontWeight: 800,
-    boxShadow: "0 18px 40px rgba(0, 122, 204, 0.22)",
+    background: 'linear-gradient(135deg, #22d3ee 0%, #0ea5e9 100%)',
+    color: '#ffffff',
+    boxShadow: '0 14px 28px rgba(14, 165, 233, 0.25)',
   },
-  linkGhost: {
-    textDecoration: "none",
-    background: "#f4fbff",
-    color: "#0c5d96",
-    padding: "14px 18px",
-    borderRadius: 16,
+  secondaryButton: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 46,
+    padding: '0 18px',
+    borderRadius: 14,
+    textDecoration: 'none',
+    fontWeight: 800,
+    background: '#ffffff',
+    color: '#0f172a',
+    border: '1px solid rgba(148, 163, 184, 0.35)',
+  },
+  notice: {
+    marginTop: 18,
+    borderRadius: 18,
+    padding: '14px 16px',
+    background: 'linear-gradient(135deg, #ecfeff 0%, #eff6ff 100%)',
+    border: '1px solid rgba(34, 211, 238, 0.2)',
+    color: '#155e75',
+    fontSize: 14,
     fontWeight: 700,
-    border: "1px solid rgba(99, 163, 214, 0.24)",
-  },
-  statsGrid: {
-    display: "grid",
-    gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
-    gap: 14,
-    marginTop: 22,
-  },
-  statCard: {
-    background: "linear-gradient(180deg, #fafdff 0%, #eff7ff 100%)",
-    borderRadius: 20,
-    padding: 18,
-    border: "1px solid rgba(121, 178, 224, 0.20)",
-  },
-  statLabel: {
-    display: "block",
-    fontSize: 13,
-    color: "#55738d",
-    marginBottom: 8,
-    fontWeight: 700,
-  },
-  statValueSmall: {
-    fontSize: 20,
-    color: "#0a2946",
   },
   grid: {
-    position: "relative",
-    zIndex: 1,
-    maxWidth: 1280,
-    margin: "0 auto 24px",
-    display: "grid",
-    gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",
-    gap: 20,
+    maxWidth: '1200px',
+    margin: '0 auto',
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+    gap: 16,
   },
   card: {
+    background: '#ffffff',
     borderRadius: 24,
-    border: "1px solid rgba(120, 170, 220, 0.18)",
-    background: "linear-gradient(180deg, #ffffff 0%, #f7fbff 100%)",
-    boxShadow: "0 16px 36px rgba(31, 80, 140, 0.07)",
-    padding: 24,
+    padding: 22,
+    border: '1px solid rgba(8, 145, 178, 0.12)',
+    boxShadow: '0 16px 44px rgba(15, 23, 42, 0.06)',
   },
-  cardKicker: {
-    display: "inline-block",
+  cardLabel: {
+    display: 'inline-flex',
+    padding: '6px 10px',
+    borderRadius: 999,
+    background: '#ecfeff',
+    color: '#155e75',
     fontSize: 12,
     fontWeight: 800,
-    letterSpacing: 1,
-    textTransform: "uppercase",
-    color: "#1292ec",
-    marginBottom: 8,
+    textTransform: 'uppercase',
+    letterSpacing: 0.8,
   },
   cardTitle: {
-    margin: 0,
+    margin: '12px 0 10px',
     fontSize: 24,
-    color: "#0c2b49",
+    lineHeight: 1.15,
+    color: '#082f49',
   },
   cardText: {
-    margin: "12px 0 18px",
-    fontSize: 15,
-    lineHeight: 1.7,
-    color: "#4b6781",
-  },
-  blockPrimary: {
-    display: "inline-block",
-    textDecoration: "none",
-    background: "linear-gradient(135deg, #0aa2ff 0%, #0b7ed6 100%)",
-    color: "#fff",
-    padding: "14px 18px",
-    borderRadius: 16,
-    fontWeight: 800,
-  },
-  infoCard: {
-    position: "relative",
-    zIndex: 1,
-    maxWidth: 1280,
-    margin: "0 auto",
-    borderRadius: 28,
-    border: "1px solid rgba(120, 170, 220, 0.22)",
-    background: "rgba(255,255,255,0.90)",
-    boxShadow: "0 22px 60px rgba(31, 80, 140, 0.08)",
-    padding: 28,
-  },
-  infoTitle: {
     margin: 0,
-    fontSize: 26,
-    color: "#0c2b49",
-  },
-  infoText: {
-    margin: "12px 0 0",
     fontSize: 15,
     lineHeight: 1.7,
-    color: "#4b6781",
+    color: '#475569',
   },
-  infoActions: {
-    display: "flex",
-    gap: 12,
-    flexWrap: "wrap",
-    marginTop: 20,
+  cardButtons: {
+    marginTop: 18,
+    display: 'flex',
+    gap: 10,
+    flexWrap: 'wrap',
   },
-  linkPrimaryBlock: {
-    textDecoration: "none",
-    textAlign: "center",
-    background: "linear-gradient(135deg, #0aa2ff 0%, #0b7ed6 100%)",
-    color: "#fff",
-    padding: "14px 18px",
-    borderRadius: 16,
-    fontWeight: 800,
-  },
-  linkGhostBlock: {
-    textDecoration: "none",
-    textAlign: "center",
-    background: "#f4fbff",
-    color: "#0c5d96",
-    padding: "14px 18px",
-    borderRadius: 16,
-    fontWeight: 800,
-    border: "1px solid rgba(99, 163, 214, 0.24)",
-  },
-};
+}

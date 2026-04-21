@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { useEffect, useMemo, useState } from 'react'
+import { supabase } from '@/lib/supabase'
 
 type ProdutoMarketplace = {
   id: string
@@ -49,20 +50,31 @@ type PedidoMarketplace = {
   vendedorNome?: string
 }
 
+type PedidoInteresseStorage = {
+  produto?: unknown
+  entrega?: unknown
+  origem?: string
+  criadoEm?: string
+}
+
 const STORAGE_KEYS = {
+  pedidoAtual: ['aurora_marketplace_pedido'],
   produtoSelecionado: [
+    'aurora_marketplace_interesse_produto',
     'aurora-marketplace-produto-selecionado',
     'marketplace-produto-selecionado',
     'produto-interesse-marketplace',
     'produtoSelecionadoMarketplace',
   ],
   produtos: [
+    'aurora_marketplace_produtos',
     'aurora-marketplace-produtos',
     'marketplace-produtos',
     'produtos-marketplace',
     'marketplaceProdutos',
   ],
   entrega: [
+    'aurora_marketplace_comprador_entrega',
     'aurora-marketplace-entrega-comprador',
     'marketplace-entrega-comprador',
     'comprador-entrega-marketplace',
@@ -91,12 +103,6 @@ function lerPrimeiroJsonValido<T>(keys: readonly string[], fallback: T): T {
   return fallback
 }
 
-function salvarEmPrimeiraChave(keys: readonly string[], value: unknown) {
-  if (typeof window === 'undefined') return
-  if (!keys.length) return
-  localStorage.setItem(keys[0], JSON.stringify(value))
-}
-
 function moeda(valor: number) {
   return new Intl.NumberFormat('pt-BR', {
     style: 'currency',
@@ -123,40 +129,268 @@ function textoEndereco(entrega: EnderecoComprador) {
   return [linha1, linha2, linha3].filter(Boolean)
 }
 
+function normalizarStatusProduto(status: unknown): 'disponivel' | 'pausado' | 'rascunho' {
+  const valor = String(status ?? '')
+    .trim()
+    .toLowerCase()
+
+  if (valor === 'pausado') return 'pausado'
+  if (valor === 'rascunho') return 'rascunho'
+  return 'disponivel'
+}
+
+function normalizarPreco(preco: unknown): number {
+  if (typeof preco === 'number') {
+    return Number.isFinite(preco) ? preco : 0
+  }
+
+  const texto = String(preco ?? '').trim()
+  if (!texto) return 0
+
+  const normalizado = texto.replace(/\./g, '').replace(',', '.').replace(/[^\d.-]/g, '')
+  const numero = Number(normalizado)
+
+  return Number.isFinite(numero) ? numero : 0
+}
+
+function normalizarProdutoMarketplace(valor: unknown): ProdutoMarketplace | null {
+  if (!valor || typeof valor !== 'object') return null
+
+  const item = valor as Record<string, unknown>
+
+  const id = String(item.id ?? '').trim()
+  const nome = String(item.nome ?? '').trim()
+
+  if (!id && !nome) return null
+
+  return {
+    id: id || `produto-${Date.now()}`,
+    nome: nome || 'Produto sem nome',
+    preco: normalizarPreco(item.preco),
+    descricao: String(item.descricao ?? '').trim() || undefined,
+    categoria: String(item.categoria ?? '').trim() || undefined,
+    estoque: String(item.estoque ?? '').trim() || undefined,
+    status: normalizarStatusProduto(item.status),
+    imagem: String(item.imagem ?? '').trim() || undefined,
+    vendedorNome: String(item.vendedorNome ?? '').trim() || undefined,
+    lojaNome: String(item.lojaNome ?? '').trim() || undefined,
+    lojaSlug: String(item.lojaSlug ?? '').trim() || undefined,
+  }
+}
+
+function normalizarEntregaComprador(valor: unknown): EnderecoComprador {
+  if (!valor || typeof valor !== 'object') return {}
+
+  const item = valor as Record<string, unknown>
+
+  return {
+    nome: String(item.nome ?? item.nomeRecebedor ?? '').trim() || undefined,
+    telefone: String(item.telefone ?? '').trim() || undefined,
+    email: String(item.email ?? '').trim() || undefined,
+    cep: String(item.cep ?? '').trim() || undefined,
+    endereco: String(item.endereco ?? '').trim() || undefined,
+    numero: String(item.numero ?? '').trim() || undefined,
+    complemento: String(item.complemento ?? '').trim() || undefined,
+    bairro: String(item.bairro ?? '').trim() || undefined,
+    cidade: String(item.cidade ?? '').trim() || undefined,
+    estado: String(item.estado ?? '').trim() || undefined,
+    referencia: String(item.referencia ?? '').trim() || undefined,
+  }
+}
+
+function lerPedidoAtualDoInteresse(): {
+  produto: ProdutoMarketplace | null
+  entrega: EnderecoComprador
+} {
+  const pedidoAtual = lerPrimeiroJsonValido<PedidoInteresseStorage | null>(STORAGE_KEYS.pedidoAtual, null)
+
+  if (!pedidoAtual) {
+    return {
+      produto: null,
+      entrega: {},
+    }
+  }
+
+  return {
+    produto: normalizarProdutoMarketplace(pedidoAtual.produto),
+    entrega: normalizarEntregaComprador(pedidoAtual.entrega),
+  }
+}
+
+function compactarPedido(pedido: PedidoMarketplace): PedidoMarketplace {
+  return {
+    id: pedido.id,
+    criadoEm: pedido.criadoEm,
+    status: pedido.status,
+    produtoId: pedido.produtoId,
+    produtoNome: pedido.produtoNome,
+    produtoPreco: Number(pedido.produtoPreco || 0),
+    produtoCategoria: pedido.produtoCategoria || undefined,
+    produtoImagem: undefined,
+    compradorNome: pedido.compradorNome || undefined,
+    compradorTelefone: pedido.compradorTelefone || undefined,
+    compradorEmail: pedido.compradorEmail || undefined,
+    entrega: {
+      nome: pedido.entrega?.nome || undefined,
+      telefone: pedido.entrega?.telefone || undefined,
+      email: pedido.entrega?.email || undefined,
+      cep: pedido.entrega?.cep || undefined,
+      endereco: pedido.entrega?.endereco || undefined,
+      numero: pedido.entrega?.numero || undefined,
+      complemento: pedido.entrega?.complemento || undefined,
+      bairro: pedido.entrega?.bairro || undefined,
+      cidade: pedido.entrega?.cidade || undefined,
+      estado: pedido.entrega?.estado || undefined,
+      referencia: pedido.entrega?.referencia || undefined,
+    },
+    lojaNome: pedido.lojaNome || undefined,
+    lojaSlug: pedido.lojaSlug || undefined,
+    vendedorNome: pedido.vendedorNome || undefined,
+  }
+}
+
+function salvarHistoricoPedidosComBlindagem(
+  keys: readonly string[],
+  pedidos: PedidoMarketplace[],
+): { ok: boolean; erro?: string } {
+  if (typeof window === 'undefined') {
+    return { ok: false, erro: 'Storage indisponível no servidor.' }
+  }
+
+  if (!keys.length) {
+    return { ok: false, erro: 'Nenhuma chave de armazenamento foi definida.' }
+  }
+
+  const chavePrincipal = keys[0]
+  const pedidosCompactados = pedidos.map(compactarPedido)
+
+  const tentativas: PedidoMarketplace[][] = [
+    pedidosCompactados.slice(0, 20),
+    pedidosCompactados.slice(0, 10),
+    pedidosCompactados.slice(0, 5),
+    pedidosCompactados.slice(0, 3),
+    pedidosCompactados.slice(0, 1),
+  ]
+
+  for (const tentativa of tentativas) {
+    try {
+      localStorage.setItem(chavePrincipal, JSON.stringify(tentativa))
+      return { ok: true }
+    } catch {}
+  }
+
+  try {
+    localStorage.removeItem(chavePrincipal)
+    localStorage.setItem(chavePrincipal, JSON.stringify([pedidosCompactados[0]]))
+    return { ok: true }
+  } catch {
+    return {
+      ok: false,
+      erro: 'O navegador está sem espaço no armazenamento local para salvar o histórico.',
+    }
+  }
+}
+
+async function salvarPedidoNoSupabase(pedido: PedidoMarketplace): Promise<{ ok: boolean; erro?: string }> {
+  try {
+    const { error } = await supabase.from('marketplace_orders').insert({
+      public_order_code: pedido.id,
+      status: pedido.status,
+      product_id: pedido.produtoId || null,
+      product_name: pedido.produtoNome,
+      product_price: Number(pedido.produtoPreco || 0),
+      product_category: pedido.produtoCategoria || null,
+      product_image: pedido.produtoImagem || null,
+      buyer_name: pedido.compradorNome || null,
+      buyer_phone: pedido.compradorTelefone || null,
+      buyer_email: pedido.compradorEmail || null,
+      delivery_name: pedido.entrega?.nome || null,
+      delivery_phone: pedido.entrega?.telefone || null,
+      delivery_email: pedido.entrega?.email || null,
+      delivery_cep: pedido.entrega?.cep || null,
+      delivery_address: pedido.entrega?.endereco || null,
+      delivery_number: pedido.entrega?.numero || null,
+      delivery_complement: pedido.entrega?.complemento || null,
+      delivery_neighborhood: pedido.entrega?.bairro || null,
+      delivery_city: pedido.entrega?.cidade || null,
+      delivery_state: pedido.entrega?.estado || null,
+      delivery_reference: pedido.entrega?.referencia || null,
+      seller_name: pedido.vendedorNome || null,
+      store_name: pedido.lojaNome || null,
+      store_slug: pedido.lojaSlug || null,
+      source: 'marketplace_local',
+    })
+
+    if (error) {
+      return { ok: false, erro: error.message }
+    }
+
+    return { ok: true }
+  } catch (error) {
+    return {
+      ok: false,
+      erro: error instanceof Error ? error.message : 'Falha desconhecida ao salvar no Supabase.',
+    }
+  }
+}
+
 export default function MarketplacePedidoPage() {
   const [produto, setProduto] = useState<ProdutoMarketplace | null>(null)
   const [entrega, setEntrega] = useState<EnderecoComprador>({})
   const [carregando, setCarregando] = useState(true)
   const [mensagem, setMensagem] = useState('')
   const [pedidoCriado, setPedidoCriado] = useState<PedidoMarketplace | null>(null)
+  const [salvandoPedido, setSalvandoPedido] = useState(false)
 
   useEffect(() => {
     try {
-      const produtoSelecionado = lerPrimeiroJsonValido<ProdutoMarketplace | null>(
+      const pedidoAtual = lerPedidoAtualDoInteresse()
+
+      const produtoSelecionadoAntigo = lerPrimeiroJsonValido<unknown>(
         STORAGE_KEYS.produtoSelecionado,
         null,
       )
 
-      const listaProdutos = lerPrimeiroJsonValido<ProdutoMarketplace[]>(STORAGE_KEYS.produtos, [])
-      const enderecoAtual = lerPrimeiroJsonValido<EnderecoComprador>(STORAGE_KEYS.entrega, {})
+      const listaProdutosAntiga = lerPrimeiroJsonValido<unknown[]>(STORAGE_KEYS.produtos, [])
+      const enderecoAntigo = lerPrimeiroJsonValido<unknown>(STORAGE_KEYS.entrega, {})
+
+      const produtoSelecionadoNormalizado = normalizarProdutoMarketplace(produtoSelecionadoAntigo)
+
+      const listaProdutosNormalizada = Array.isArray(listaProdutosAntiga)
+        ? listaProdutosAntiga
+            .map((item) => normalizarProdutoMarketplace(item))
+            .filter((item): item is ProdutoMarketplace => item !== null)
+        : []
 
       const primeiroDisponivel =
-        listaProdutos.find((item) => (item.status || 'disponivel') === 'disponivel') || null
+        listaProdutosNormalizada.find((item) => (item.status || 'disponivel') === 'disponivel') || null
 
-      setProduto(produtoSelecionado || primeiroDisponivel || null)
-      setEntrega(enderecoAtual || {})
+      const enderecoNormalizadoAntigo = normalizarEntregaComprador(enderecoAntigo)
+
+      setProduto(pedidoAtual.produto || produtoSelecionadoNormalizado || primeiroDisponivel || null)
+      setEntrega(
+        Object.keys(pedidoAtual.entrega || {}).length
+          ? pedidoAtual.entrega
+          : enderecoNormalizadoAntigo || {},
+      )
     } finally {
       setCarregando(false)
     }
   }, [])
 
   const entregaCompleta = useMemo(() => {
-    return Boolean(entrega?.nome && entrega?.telefone && entrega?.cidade && entrega?.estado && entrega?.endereco)
+    return Boolean(
+      entrega?.nome &&
+        entrega?.telefone &&
+        entrega?.cidade &&
+        entrega?.estado &&
+        entrega?.endereco,
+    )
   }, [entrega])
 
   const linhasEndereco = useMemo(() => textoEndereco(entrega), [entrega])
 
-  function criarPedidoLocal() {
+  async function criarPedidoLocal() {
     if (!produto) {
       setMensagem('Nenhum produto disponível para gerar o pedido nesta etapa.')
       return
@@ -166,6 +400,9 @@ export default function MarketplacePedidoPage() {
       setMensagem('Entrega incompleta. Preencha o endereço do comprador antes de concluir o pedido.')
       return
     }
+
+    setSalvandoPedido(true)
+    setMensagem('')
 
     const novoPedido: PedidoMarketplace = {
       id: gerarIdPedido(),
@@ -188,17 +425,34 @@ export default function MarketplacePedidoPage() {
     const pedidosAtuais = lerPrimeiroJsonValido<PedidoMarketplace[]>(STORAGE_KEYS.pedidos, [])
     const novosPedidos = [novoPedido, ...pedidosAtuais]
 
-    salvarEmPrimeiraChave(STORAGE_KEYS.pedidos, novosPedidos)
-    setPedidoCriado(novoPedido)
-    setMensagem('Pedido local criado com sucesso. O histórico já recebeu este registro.')
+    const resultadoLocal = salvarHistoricoPedidosComBlindagem(STORAGE_KEYS.pedidos, novosPedidos)
+
+    if (!resultadoLocal.ok) {
+      setSalvandoPedido(false)
+      setMensagem(resultadoLocal.erro || 'Não foi possível salvar o histórico local do pedido.')
+      return
+    }
+
+    const resultadoSupabase = await salvarPedidoNoSupabase(novoPedido)
+
+    setPedidoCriado(compactarPedido(novoPedido))
+
+    if (resultadoSupabase.ok) {
+      setMensagem('Pedido local criado com sucesso e gravado também no Supabase.')
+    } else {
+      setMensagem(
+        `Pedido local criado com sucesso. O histórico local foi salvo, mas o Supabase não confirmou agora: ${resultadoSupabase.erro}`,
+      )
+    }
+
+    setSalvandoPedido(false)
   }
 
   return (
     <main
       style={{
         minHeight: '100vh',
-        background:
-          'linear-gradient(180deg, #eef9ff 0%, #f8fdff 45%, #ffffff 100%)',
+        background: 'linear-gradient(180deg, #eef9ff 0%, #f8fdff 45%, #ffffff 100%)',
         color: '#0f172a',
       }}
     >
@@ -234,8 +488,8 @@ export default function MarketplacePedidoPage() {
             <Link href="/marketplace/comprador/entrega" style={botaoSecundario}>
               Ver entrega
             </Link>
-            <Link href="/marketplace/comprador" style={botaoSecundario}>
-              Área do comprador
+            <Link href="/marketplace/comprador/pedidos" style={botaoSecundario}>
+              Pedidos do comprador
             </Link>
           </div>
 
@@ -290,8 +544,8 @@ export default function MarketplacePedidoPage() {
               </div>
               <div style={cardResumo}>
                 <strong style={tituloMini}>Histórico</strong>
-                <span style={numeroMini}>Local</span>
-                <p style={textoMini}>O pedido fica salvo localmente nesta primeira etapa.</p>
+                <span style={numeroMini}>Híbrido</span>
+                <p style={textoMini}>O pedido tenta salvar no local e também no Supabase.</p>
               </div>
             </div>
           </div>
@@ -313,8 +567,8 @@ export default function MarketplacePedidoPage() {
               <div style={{ marginBottom: 18 }}>
                 <h2 style={tituloSecao}>Produto selecionado</h2>
                 <p style={paragrafoPadrao}>
-                  Nesta fase, o sistema tenta ler o produto salvo no interesse. Se não encontrar,
-                  usa o primeiro item disponível como base de continuidade.
+                  Nesta fase, o sistema tenta ler primeiro o pedido salvo no interesse. Se não encontrar,
+                  usa as chaves antigas e, por fim, o primeiro item disponível como base de continuidade.
                 </p>
               </div>
 
@@ -478,8 +732,8 @@ export default function MarketplacePedidoPage() {
             <div>
               <h2 style={tituloSecao}>Fechamento inicial do pedido</h2>
               <p style={paragrafoPadrao}>
-                Nesta primeira ligação, o pedido ainda é local. Ele já entra no histórico com status
-                <strong> aguardando confirmação</strong>, pronto para evolução futura.
+                Nesta primeira ligação, o pedido entra no histórico local e também tenta gravar no banco
+                real do Supabase sem quebrar o fluxo atual.
               </p>
               <p
                 style={{
@@ -497,8 +751,9 @@ export default function MarketplacePedidoPage() {
               type="button"
               onClick={criarPedidoLocal}
               style={botaoPrincipal}
+              disabled={salvandoPedido}
             >
-              Criar pedido local
+              {salvandoPedido ? 'Salvando pedido...' : 'Criar pedido local'}
             </button>
           </div>
 
@@ -573,11 +828,11 @@ export default function MarketplacePedidoPage() {
                   marginTop: 6,
                 }}
               >
-                <Link href="/marketplace/comprador" style={botaoSecundario}>
-                  Voltar ao comprador
+                <Link href="/marketplace/comprador/pedidos" style={botaoSecundario}>
+                  Ver pedidos do comprador
                 </Link>
-                <Link href="/marketplace/interesse" style={botaoSecundario}>
-                  Voltar ao interesse
+                <Link href="/marketplace/painel" style={botaoSecundario}>
+                  Ver painel geral
                 </Link>
               </div>
             </div>

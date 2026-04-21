@@ -1,285 +1,388 @@
-"use client";
+'use client'
 
-import Link from "next/link";
-import { ChangeEvent, useEffect, useMemo, useState } from "react";
+import Link from 'next/link'
+import { useEffect, useMemo, useState, type CSSProperties } from 'react'
 
-type ProdutoStatus = "Disponível" | "Pausado" | "Rascunho";
+type SellerVerification = {
+  nome?: string
+  documento?: string
+  telefone?: string
+  pix?: string
+  aceite?: boolean
+  status?: 'em_analise' | 'verificado' | 'rejeitado'
+  criadoEm?: string
+}
 
-type Produto = {
-  id: string;
-  nome: string;
-  preco: string;
-  categoria: string;
-  estoque: string;
-  status: ProdutoStatus;
-  imagem: string;
-  descricao: string;
-  criadoEm: string;
-};
+type SellerProduct = {
+  id: string
+  nome: string
+  preco: string
+  categoria: string
+  estoque: string
+  status: 'disponivel' | 'pausado' | 'rascunho'
+  imagem: string
+  descricao: string
+  criadoEm: string
+}
 
-const STORAGE_KEY = "aurora_marketplace_produtos";
+const VERIFICATION_KEY = 'aurora_vendedor_verificacao'
+const PRODUCTS_KEY = 'aurora-marketplace-vendedor-produtos'
 
-function carregarProdutos(): Produto[] {
-  if (typeof window === "undefined") return [];
+const EMPTY_FORM = {
+  nome: '',
+  preco: '',
+  categoria: '',
+  estoque: '',
+  status: 'disponivel' as 'disponivel' | 'pausado' | 'rascunho',
+  imagem: '',
+  descricao: '',
+}
+
+function parseProductsFromStorage(): SellerProduct[] {
+  if (typeof window === 'undefined') return []
 
   try {
-    const bruto = localStorage.getItem(STORAGE_KEY);
-    if (!bruto) return [];
+    const raw = localStorage.getItem(PRODUCTS_KEY)
+    if (!raw) return []
 
-    const dados = JSON.parse(bruto);
-    if (!Array.isArray(dados)) return [];
+    const parsed = JSON.parse(raw)
 
-    return dados.map((item) => ({
-      id: String(item?.id ?? Date.now()),
-      nome: String(item?.nome ?? ""),
-      preco: String(item?.preco ?? ""),
-      categoria: String(item?.categoria ?? ""),
-      estoque: String(item?.estoque ?? ""),
-      status: (["Disponível", "Pausado", "Rascunho"].includes(item?.status)
-        ? item.status
-        : "Disponível") as ProdutoStatus,
-      imagem: String(item?.imagem ?? ""),
-      descricao: String(item?.descricao ?? ""),
-      criadoEm: String(item?.criadoEm ?? new Date().toISOString()),
-    }));
-  } catch {
-    return [];
+    if (!Array.isArray(parsed)) return []
+
+    return parsed
+      .map((item: any) => ({
+        id: String(item?.id || `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`),
+        nome: String(item?.nome || ''),
+        preco: String(item?.preco || ''),
+        categoria: String(item?.categoria || ''),
+        estoque: String(item?.estoque || ''),
+        status:
+          item?.status === 'pausado' || item?.status === 'rascunho'
+            ? item.status
+            : 'disponivel',
+        imagem: String(item?.imagem || ''),
+        descricao: String(item?.descricao || ''),
+        criadoEm: String(item?.criadoEm || new Date().toISOString()),
+      }))
+      .sort((a, b) => {
+        const dateA = new Date(a.criadoEm).getTime()
+        const dateB = new Date(b.criadoEm).getTime()
+        return dateB - dateA
+      })
+  } catch (error) {
+    console.error('Erro ao ler produtos do vendedor:', error)
+    return []
   }
 }
 
-export default function MarketplaceVendedorProdutosPage() {
-  const [produtos, setProdutos] = useState<Produto[]>([]);
-  const [mensagem, setMensagem] = useState("");
+function saveProductsToStorage(products: SellerProduct[]) {
+  localStorage.setItem(PRODUCTS_KEY, JSON.stringify(products))
+}
 
-  const [nome, setNome] = useState("");
-  const [preco, setPreco] = useState("");
-  const [categoria, setCategoria] = useState("");
-  const [estoque, setEstoque] = useState("");
-  const [status, setStatus] = useState<ProdutoStatus>("Disponível");
-  const [imagem, setImagem] = useState("");
-  const [descricao, setDescricao] = useState("");
+export default function MarketplaceVendedorProdutosPage() {
+  const [loading, setLoading] = useState(true)
+  const [isVerified, setIsVerified] = useState(false)
+  const [verification, setVerification] = useState<SellerVerification | null>(null)
+  const [products, setProducts] = useState<SellerProduct[]>([])
+  const [message, setMessage] = useState('')
+  const [form, setForm] = useState(EMPTY_FORM)
 
   useEffect(() => {
-    setProdutos(carregarProdutos());
-  }, []);
+    try {
+      const rawVerification = localStorage.getItem(VERIFICATION_KEY)
+      const parsedVerification = rawVerification
+        ? (JSON.parse(rawVerification) as SellerVerification)
+        : null
 
-  function persistir(lista: Produto[]) {
-    setProdutos(lista);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(lista));
-  }
+      setVerification(parsedVerification)
+      setIsVerified(parsedVerification?.status === 'verificado')
 
-  function onSelecionarImagem(event: ChangeEvent<HTMLInputElement>) {
-    const arquivo = event.target.files?.[0];
-    if (!arquivo) return;
+      const storedProducts = parseProductsFromStorage()
+      setProducts(storedProducts)
+    } catch (error) {
+      console.error('Erro ao carregar página de produtos do vendedor:', error)
+      setIsVerified(false)
+      setProducts([])
+    } finally {
+      setLoading(false)
+    }
+  }, [])
 
-    const reader = new FileReader();
-    reader.onload = () => {
-      const resultado = typeof reader.result === "string" ? reader.result : "";
-      setImagem(resultado);
-    };
-    reader.readAsDataURL(arquivo);
-  }
+  const metrics = useMemo(() => {
+    const total = products.length
+    const disponiveis = products.filter((item) => item.status === 'disponivel').length
+    const pausados = products.filter((item) => item.status === 'pausado').length
+    const rascunhos = products.filter((item) => item.status === 'rascunho').length
 
-  function salvarProduto() {
-    const nomeLimpo = nome.trim();
-    const precoLimpo = preco.trim();
-    const categoriaLimpa = categoria.trim();
-    const estoqueLimpo = estoque.trim();
-    const descricaoLimpa = descricao.trim();
+    return {
+      total,
+      disponiveis,
+      pausados,
+      rascunhos,
+    }
+  }, [products])
 
-    if (!nomeLimpo || !precoLimpo) {
-      setMensagem("Preencha pelo menos nome e preço do produto.");
-      return;
+  function handleSaveProduct() {
+    setMessage('')
+
+    if (!form.nome.trim()) {
+      setMessage('Informe o nome do produto.')
+      return
     }
 
-    const novoProduto: Produto = {
-      id: crypto.randomUUID(),
-      nome: nomeLimpo,
-      preco: precoLimpo,
-      categoria: categoriaLimpa,
-      estoque: estoqueLimpo,
-      status,
-      imagem,
-      descricao: descricaoLimpa,
+    if (!form.preco.trim()) {
+      setMessage('Informe o preço do produto.')
+      return
+    }
+
+    if (!form.categoria.trim()) {
+      setMessage('Informe a categoria do produto.')
+      return
+    }
+
+    const newProduct: SellerProduct = {
+      id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      nome: form.nome.trim(),
+      preco: form.preco.trim(),
+      categoria: form.categoria.trim(),
+      estoque: form.estoque.trim(),
+      status: form.status,
+      imagem: form.imagem.trim(),
+      descricao: form.descricao.trim(),
       criadoEm: new Date().toISOString(),
-    };
+    }
 
-    const listaAtualizada = [novoProduto, ...produtos];
-    persistir(listaAtualizada);
-
-    setNome("");
-    setPreco("");
-    setCategoria("");
-    setEstoque("");
-    setStatus("Disponível");
-    setImagem("");
-    setDescricao("");
-    setMensagem("Produto salvo localmente com sucesso. Esta etapa já prepara a próxima ligação com a vitrine.");
+    const updatedProducts = [newProduct, ...products]
+    setProducts(updatedProducts)
+    saveProductsToStorage(updatedProducts)
+    setForm(EMPTY_FORM)
+    setMessage('Produto salvo localmente com sucesso. Esta etapa já prepara a próxima ligação com a vitrine.')
   }
 
-  function removerProduto(id: string) {
-    const listaAtualizada = produtos.filter((produto) => produto.id !== id);
-    persistir(listaAtualizada);
-    setMensagem("Produto removido da base local do vendedor.");
+  if (loading) {
+    return (
+      <main style={styles.page}>
+        <section style={styles.centerCard}>
+          <p style={styles.kicker}>Aurora Marketplace • Produtos</p>
+          <h1 style={styles.title}>Carregando proteção do vendedor...</h1>
+          <p style={styles.subtitle}>
+            Estamos validando se a operação do vendedor está autorizada.
+          </p>
+        </section>
+      </main>
+    )
   }
 
-  const resumo = useMemo(() => {
-    const total = produtos.length;
-    const disponiveis = produtos.filter((item) => item.status === "Disponível").length;
-    const pausados = produtos.filter((item) => item.status === "Pausado").length;
-    const rascunhos = produtos.filter((item) => item.status === "Rascunho").length;
+  if (!isVerified) {
+    return (
+      <main style={styles.page}>
+        <section style={styles.blockedCard}>
+          <p style={styles.kicker}>Aurora Marketplace • Produtos</p>
+          <h1 style={styles.title}>Operação bloqueada por segurança</h1>
+          <p style={styles.subtitle}>
+            Esta área só pode ser acessada por vendedor com status <strong>verificado</strong>.
+            Sem essa validação, a plataforma perde o controle sobre quem realmente está apto a vender.
+          </p>
 
-    return { total, disponiveis, pausados, rascunhos };
-  }, [produtos]);
-
-  return (
-    <main style={styles.page}>
-      <div style={styles.bgGlowTop} />
-      <div style={styles.bgGlowBottom} />
-
-      <section style={styles.heroCard}>
-        <div style={styles.heroHeader}>
-          <div>
-            <span style={styles.kicker}>Aurora Marketplace • Produtos do vendedor</span>
-            <h1 style={styles.title}>PRODUTOS REAIS</h1>
-            <p style={styles.lead}>
-              Página isolada para cadastrar produtos reais da loja, organizar catálogo e preparar a vitrine pública com conteúdo de verdade.
-            </p>
+          <div style={styles.notice}>
+            Status atual:{' '}
+            <strong>
+              {verification?.status ? verification.status.toUpperCase() : 'NÃO ENVIADO'}
+            </strong>
           </div>
 
-          <div style={styles.heroActions}>
-            <Link href="/marketplace/vendedor/vitrine" style={styles.linkGhost}>
-              Voltar à vitrine
-            </Link>
-            <Link href="/marketplace/vendedor" style={styles.linkPrimary}>
-              Área do vendedor
-            </Link>
-          </div>
-        </div>
+          <div style={styles.summaryGrid}>
+            <div style={styles.summaryItem}>
+              <span style={styles.summaryLabel}>Nome / razão social</span>
+              <strong style={styles.summaryValue}>
+                {verification?.nome || 'Não informado'}
+              </strong>
+            </div>
 
-        <div style={styles.statsGrid}>
-          <div style={styles.statCard}>
-            <span style={styles.statLabel}>Produtos</span>
-            <strong style={styles.statValue}>{resumo.total}</strong>
-          </div>
-          <div style={styles.statCard}>
-            <span style={styles.statLabel}>Disponíveis</span>
-            <strong style={styles.statValue}>{resumo.disponiveis}</strong>
-          </div>
-          <div style={styles.statCard}>
-            <span style={styles.statLabel}>Pausados</span>
-            <strong style={styles.statValue}>{resumo.pausados}</strong>
-          </div>
-          <div style={styles.statCard}>
-            <span style={styles.statLabel}>Rascunhos</span>
-            <strong style={styles.statValue}>{resumo.rascunhos}</strong>
-          </div>
-        </div>
-      </section>
+            <div style={styles.summaryItem}>
+              <span style={styles.summaryLabel}>Documento</span>
+              <strong style={styles.summaryValue}>
+                {verification?.documento || 'Não informado'}
+              </strong>
+            </div>
 
-      <section style={styles.contentGrid}>
-        <div style={styles.panel}>
-          <div style={styles.panelHeader}>
-            <div>
-              <span style={styles.panelKicker}>Cadastro do produto</span>
-              <h2 style={styles.panelTitle}>Monte seu catálogo real</h2>
-              <p style={styles.panelText}>
-                Nesta etapa, o vendedor começa a cadastrar os produtos que depois irão aparecer na vitrine.
-              </p>
+            <div style={styles.summaryItem}>
+              <span style={styles.summaryLabel}>Telefone</span>
+              <strong style={styles.summaryValue}>
+                {verification?.telefone || 'Não informado'}
+              </strong>
+            </div>
+
+            <div style={styles.summaryItem}>
+              <span style={styles.summaryLabel}>Chave PIX</span>
+              <strong style={styles.summaryValue}>
+                {verification?.pix || 'Não informada'}
+              </strong>
             </div>
           </div>
 
+          <div style={styles.buttonRow}>
+            <Link href="/marketplace/vendedor/acesso-seguro" style={styles.primaryButton}>
+              Ir para acesso seguro
+            </Link>
+            <Link href="/marketplace/vendedor/verificacao" style={styles.secondaryButton}>
+              Revisar verificação
+            </Link>
+            <Link href="/marketplace/vendedor" style={styles.secondaryButton}>
+              Voltar à área do vendedor
+            </Link>
+          </div>
+        </section>
+      </main>
+    )
+  }
+
+  return (
+    <main style={styles.page}>
+      <section style={styles.hero}>
+        <div style={styles.heroTop}>
+          <div>
+            <p style={styles.kicker}>Aurora Marketplace • Produtos do vendedor</p>
+            <h1 style={styles.title}>Produtos reais</h1>
+            <p style={styles.subtitle}>
+              Área operacional protegida do vendedor. Como o status está <strong>verificado</strong>,
+              a plataforma libera o cadastro de produtos e a preparação da vitrine pública.
+            </p>
+          </div>
+
+          <div style={styles.actions}>
+            <Link href="/marketplace/vendedor" style={styles.secondaryButton}>
+              Área do vendedor
+            </Link>
+            <Link href="/marketplace/vendedor/vitrine" style={styles.primaryButton}>
+              Ver vitrine
+            </Link>
+          </div>
+        </div>
+
+        <div style={styles.notice}>
+          Sistema em constante atualização e podem ocorrer instabilidades momentâneas durante melhorias.
+        </div>
+      </section>
+
+      <section style={styles.metricsGrid}>
+        <article style={styles.metricCard}>
+          <span style={styles.metricLabel}>Produtos</span>
+          <strong style={styles.metricValue}>{metrics.total}</strong>
+          <span style={styles.metricHelp}>Total cadastrado na área protegida</span>
+        </article>
+
+        <article style={styles.metricCard}>
+          <span style={styles.metricLabel}>Disponíveis</span>
+          <strong style={styles.metricValue}>{metrics.disponiveis}</strong>
+          <span style={styles.metricHelp}>Produtos ativos na operação</span>
+        </article>
+
+        <article style={styles.metricCard}>
+          <span style={styles.metricLabel}>Pausados</span>
+          <strong style={styles.metricValue}>{metrics.pausados}</strong>
+          <span style={styles.metricHelp}>Produtos temporariamente fora</span>
+        </article>
+
+        <article style={styles.metricCard}>
+          <span style={styles.metricLabel}>Rascunhos</span>
+          <strong style={styles.metricValue}>{metrics.rascunhos}</strong>
+          <span style={styles.metricHelp}>Produtos ainda em preparação</span>
+        </article>
+      </section>
+
+      <section style={styles.contentGrid}>
+        <article style={styles.formCard}>
+          <div style={styles.sectionHeader}>
+            <p style={styles.sectionKicker}>Cadastro do produto</p>
+            <h2 style={styles.sectionTitle}>Monte seu catálogo real</h2>
+            <p style={styles.sectionText}>
+              Nesta etapa, o vendedor começa a cadastrar os produtos que depois irão aparecer na vitrine.
+            </p>
+          </div>
+
           <div style={styles.formGrid}>
-            <div style={styles.field}>
+            <div style={styles.fieldBlock}>
               <label style={styles.label}>Nome do produto</label>
               <input
                 style={styles.input}
                 placeholder="Ex.: Curso Aurora Premium"
-                value={nome}
-                onChange={(e) => setNome(e.target.value)}
+                value={form.nome}
+                onChange={(e) => setForm((current) => ({ ...current, nome: e.target.value }))}
               />
             </div>
 
-            <div style={styles.field}>
+            <div style={styles.fieldBlock}>
               <label style={styles.label}>Preço</label>
               <input
                 style={styles.input}
                 placeholder="Ex.: R$ 197,00"
-                value={preco}
-                onChange={(e) => setPreco(e.target.value)}
+                value={form.preco}
+                onChange={(e) => setForm((current) => ({ ...current, preco: e.target.value }))}
               />
             </div>
 
-            <div style={styles.field}>
+            <div style={styles.fieldBlock}>
               <label style={styles.label}>Categoria</label>
               <input
                 style={styles.input}
                 placeholder="Ex.: Cursos, moda, beleza..."
-                value={categoria}
-                onChange={(e) => setCategoria(e.target.value)}
+                value={form.categoria}
+                onChange={(e) => setForm((current) => ({ ...current, categoria: e.target.value }))}
               />
             </div>
 
-            <div style={styles.field}>
+            <div style={styles.fieldBlock}>
               <label style={styles.label}>Estoque ou quantidade</label>
               <input
                 style={styles.input}
                 placeholder="Ex.: 12 unidades"
-                value={estoque}
-                onChange={(e) => setEstoque(e.target.value)}
+                value={form.estoque}
+                onChange={(e) => setForm((current) => ({ ...current, estoque: e.target.value }))}
               />
             </div>
 
-            <div style={styles.field}>
+            <div style={styles.fieldBlock}>
               <label style={styles.label}>Status</label>
               <select
                 style={styles.input}
-                value={status}
-                onChange={(e) => setStatus(e.target.value as ProdutoStatus)}
+                value={form.status}
+                onChange={(e) =>
+                  setForm((current) => ({
+                    ...current,
+                    status: e.target.value as 'disponivel' | 'pausado' | 'rascunho',
+                  }))
+                }
               >
-                <option value="Disponível">Disponível</option>
-                <option value="Pausado">Pausado</option>
-                <option value="Rascunho">Rascunho</option>
+                <option value="disponivel">Disponível</option>
+                <option value="pausado">Pausado</option>
+                <option value="rascunho">Rascunho</option>
               </select>
             </div>
 
-            <div style={styles.field}>
-              <label style={styles.label}>Imagem real do produto</label>
-              <label style={styles.uploadBox}>
-                <span style={styles.uploadTitle}>Selecionar imagem</span>
-                <span style={styles.uploadText}>
-                  PNG, JPG ou WEBP. A imagem será salva localmente nesta fase.
-                </span>
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={onSelecionarImagem}
-                  style={{ display: "none" }}
-                />
-              </label>
+            <div style={styles.fieldBlock}>
+              <label style={styles.label}>Link da imagem</label>
+              <input
+                style={styles.input}
+                placeholder="https://imagem-do-produto"
+                value={form.imagem}
+                onChange={(e) => setForm((current) => ({ ...current, imagem: e.target.value }))}
+              />
             </div>
 
-            <div style={{ ...styles.field, gridColumn: "1 / -1" }}>
+            <div style={styles.textareaBlock}>
               <label style={styles.label}>Descrição do produto</label>
               <textarea
                 style={styles.textarea}
                 placeholder="Descreva o produto, diferenciais e detalhes importantes."
-                value={descricao}
-                onChange={(e) => setDescricao(e.target.value)}
-                rows={5}
+                value={form.descricao}
+                onChange={(e) => setForm((current) => ({ ...current, descricao: e.target.value }))}
               />
             </div>
           </div>
 
-          {imagem ? (
-            <div style={styles.previewWrap}>
-              <span style={styles.previewLabel}>Prévia da imagem</span>
-              <img src={imagem} alt="Prévia do produto" style={styles.previewImage} />
-            </div>
-          ) : null}
-
           <div style={styles.buttonRow}>
-            <button type="button" onClick={salvarProduto} style={styles.primaryButton}>
+            <button style={styles.primaryActionButton} onClick={handleSaveProduct}>
               Salvar produto
             </button>
 
@@ -288,581 +391,489 @@ export default function MarketplaceVendedorProdutosPage() {
             </Link>
           </div>
 
-          {mensagem ? <div style={styles.alert}>{mensagem}</div> : null}
-        </div>
+          {message ? <div style={styles.successBox}>{message}</div> : null}
+        </article>
 
-        <div style={styles.sideColumn}>
-          <div style={styles.sideCard}>
-            <span style={styles.panelKicker}>Leitura rápida</span>
-            <h3 style={styles.sideTitle}>Resumo do catálogo</h3>
-            <p style={styles.sideText}>
+        <article style={styles.sideCard}>
+          <div style={styles.sectionHeader}>
+            <p style={styles.sectionKicker}>Leitura rápida</p>
+            <h2 style={styles.sectionTitle}>Resumo do catálogo</h2>
+            <p style={styles.sectionText}>
               Fotografia rápida da operação atual dos produtos do vendedor.
             </p>
+          </div>
 
-            <div style={styles.resumeList}>
-              <div style={styles.resumeItem}>
-                <span>Total de produtos</span>
-                <strong>{resumo.total}</strong>
-              </div>
-              <div style={styles.resumeItem}>
-                <span>Disponíveis</span>
-                <strong>{resumo.disponiveis}</strong>
-              </div>
-              <div style={styles.resumeItem}>
-                <span>Pausados</span>
-                <strong>{resumo.pausados}</strong>
-              </div>
-              <div style={styles.resumeItem}>
-                <span>Rascunhos</span>
-                <strong>{resumo.rascunhos}</strong>
-              </div>
+          <div style={styles.summaryGrid}>
+            <div style={styles.summaryItem}>
+              <span style={styles.summaryLabel}>Vendedor</span>
+              <strong style={styles.summaryValue}>
+                {verification?.nome || 'Não informado'}
+              </strong>
+            </div>
+
+            <div style={styles.summaryItem}>
+              <span style={styles.summaryLabel}>Status da conta</span>
+              <strong style={styles.summaryValue}>
+                {verification?.status?.toUpperCase() || 'NÃO INFORMADO'}
+              </strong>
+            </div>
+
+            <div style={styles.summaryItem}>
+              <span style={styles.summaryLabel}>Documento</span>
+              <strong style={styles.summaryValue}>
+                {verification?.documento || 'Não informado'}
+              </strong>
+            </div>
+
+            <div style={styles.summaryItem}>
+              <span style={styles.summaryLabel}>Telefone</span>
+              <strong style={styles.summaryValue}>
+                {verification?.telefone || 'Não informado'}
+              </strong>
             </div>
           </div>
 
-          <div style={styles.sideCard}>
-            <span style={styles.panelKicker}>Próximo passo</span>
-            <h3 style={styles.sideTitle}>Depois desta área, ligamos os produtos reais à vitrine</h3>
-            <p style={styles.sideText}>
-              A sequência correta é fazer a vitrine pública ler os produtos salvos e substituir os exemplos pelos itens reais da loja.
-            </p>
-
-            <div style={styles.sideActions}>
-              <Link href="/marketplace/vendedor/vitrine" style={styles.linkPrimaryBlock}>
-                Voltar à vitrine
-              </Link>
-              <Link href="/marketplace/vendedor" style={styles.linkGhostBlock}>
-                Voltar à área do vendedor
-              </Link>
-            </div>
+          <div style={styles.helperBox}>
+            A operação desta página está blindada localmente para abrir apenas quando o vendedor estiver verificado.
           </div>
-        </div>
+        </article>
       </section>
 
-      <section style={styles.panel}>
-        <div style={styles.panelHeader}>
-          <div>
-            <span style={styles.panelKicker}>Produtos cadastrados</span>
-            <h2 style={styles.panelTitle}>Sua base real de itens</h2>
-            <p style={styles.panelText}>
-              Aqui ficam os produtos salvos localmente enquanto estruturamos a próxima ligação com a vitrine.
-            </p>
-          </div>
+      <section style={styles.listSection}>
+        <div style={styles.sectionHeader}>
+          <p style={styles.sectionKicker}>Catálogo salvo</p>
+          <h2 style={styles.sectionTitle}>Produtos cadastrados</h2>
         </div>
 
-        {produtos.length === 0 ? (
-          <div style={styles.emptyState}>
-            <strong style={styles.emptyTitle}>Nenhum produto salvo ainda</strong>
-            <p style={styles.emptyText}>
-              Cadastre o primeiro item real da loja para começar a formar sua vitrine pública.
-            </p>
+        {products.length === 0 ? (
+          <div style={styles.emptyBox}>
+            Nenhum produto cadastrado ainda. Use o formulário acima para iniciar a vitrine.
           </div>
         ) : (
           <div style={styles.productsGrid}>
-            {produtos.map((produto) => (
-              <article key={produto.id} style={styles.productCard}>
-                <div style={styles.productMedia}>
-                  {produto.imagem ? (
-                    <img src={produto.imagem} alt={produto.nome} style={styles.productImage} />
-                  ) : (
-                    <div style={styles.productFallback}>Sem imagem</div>
-                  )}
+            {products.map((product) => (
+              <article key={product.id} style={styles.productCard}>
+                <div style={styles.productTop}>
+                  <span style={styles.productBadge}>
+                    {product.status.toUpperCase()}
+                  </span>
+                  <span style={styles.productDate}>
+                    {new Date(product.criadoEm).toLocaleString('pt-BR')}
+                  </span>
                 </div>
 
-                <div style={styles.badgeRow}>
-                  <span style={styles.statusBadge}>{produto.status}</span>
-                </div>
+                <h3 style={styles.productTitle}>{product.nome || 'Produto sem nome'}</h3>
 
-                <h3 style={styles.productName}>{produto.nome || "Produto sem nome"}</h3>
-                <div style={styles.productPrice}>{produto.preco || "Preço não informado"}</div>
-                <p style={styles.productDescription}>
-                  {produto.descricao || "Descrição ainda não informada para este item."}
-                </p>
-
-                <div style={styles.metaList}>
-                  <div style={styles.metaItem}>
-                    <span>Categoria:</span>
-                    <strong>{produto.categoria || "Não informada"}</strong>
+                <div style={styles.productInfoGrid}>
+                  <div style={styles.summaryItem}>
+                    <span style={styles.summaryLabel}>Preço</span>
+                    <strong style={styles.summaryValue}>
+                      {product.preco || 'Não informado'}
+                    </strong>
                   </div>
-                  <div style={styles.metaItem}>
-                    <span>Estoque:</span>
-                    <strong>{produto.estoque || "Não informado"}</strong>
+
+                  <div style={styles.summaryItem}>
+                    <span style={styles.summaryLabel}>Categoria</span>
+                    <strong style={styles.summaryValue}>
+                      {product.categoria || 'Não informada'}
+                    </strong>
+                  </div>
+
+                  <div style={styles.summaryItem}>
+                    <span style={styles.summaryLabel}>Estoque</span>
+                    <strong style={styles.summaryValue}>
+                      {product.estoque || 'Não informado'}
+                    </strong>
+                  </div>
+
+                  <div style={styles.summaryItem}>
+                    <span style={styles.summaryLabel}>Imagem</span>
+                    <strong style={styles.summaryValue}>
+                      {product.imagem || 'Não informada'}
+                    </strong>
                   </div>
                 </div>
 
-                <button
-                  type="button"
-                  onClick={() => removerProduto(produto.id)}
-                  style={styles.removeButton}
-                >
-                  Remover
-                </button>
+                <div style={styles.descriptionBox}>
+                  <span style={styles.summaryLabel}>Descrição</span>
+                  <p style={styles.descriptionText}>
+                    {product.descricao || 'Descrição ainda não informada para este item.'}
+                  </p>
+                </div>
               </article>
             ))}
           </div>
         )}
       </section>
     </main>
-  );
+  )
 }
 
-const styles: Record<string, React.CSSProperties> = {
+const styles: Record<string, CSSProperties> = {
   page: {
-    minHeight: "100vh",
-    padding: "32px 20px 56px",
-    background:
-      "linear-gradient(180deg, #eef8ff 0%, #f7fbff 40%, #ffffff 100%)",
-    position: "relative",
-    overflow: "hidden",
+    minHeight: '100vh',
+    background: 'linear-gradient(180deg, #eef8ff 0%, #ffffff 100%)',
+    padding: '24px 16px 56px',
+    color: '#0f172a',
   },
-  bgGlowTop: {
-    position: "absolute",
-    top: -120,
-    right: -120,
-    width: 320,
-    height: 320,
-    borderRadius: "50%",
-    background: "rgba(0, 191, 255, 0.14)",
-    filter: "blur(60px)",
-    pointerEvents: "none",
-  },
-  bgGlowBottom: {
-    position: "absolute",
-    bottom: -160,
-    left: -120,
-    width: 360,
-    height: 360,
-    borderRadius: "50%",
-    background: "rgba(0, 153, 255, 0.12)",
-    filter: "blur(70px)",
-    pointerEvents: "none",
-  },
-  heroCard: {
-    position: "relative",
-    zIndex: 1,
-    maxWidth: 1280,
-    margin: "0 auto 24px",
+  centerCard: {
+    maxWidth: 820,
+    margin: '0 auto',
+    background: '#ffffff',
     borderRadius: 28,
-    border: "1px solid rgba(120, 170, 220, 0.22)",
-    background: "rgba(255,255,255,0.82)",
-    boxShadow: "0 22px 60px rgba(31, 80, 140, 0.10)",
-    backdropFilter: "blur(14px)",
-    padding: 28,
+    padding: 24,
+    border: '1px solid rgba(8, 145, 178, 0.12)',
+    boxShadow: '0 20px 60px rgba(15, 23, 42, 0.08)',
   },
-  heroHeader: {
-    display: "flex",
-    gap: 20,
-    justifyContent: "space-between",
-    alignItems: "flex-start",
-    flexWrap: "wrap",
+  blockedCard: {
+    maxWidth: 980,
+    margin: '0 auto',
+    background: '#fff7ed',
+    borderRadius: 28,
+    padding: 24,
+    border: '1px solid #fed7aa',
+    boxShadow: '0 20px 60px rgba(15, 23, 42, 0.08)',
+  },
+  hero: {
+    maxWidth: '1200px',
+    margin: '0 auto 20px auto',
+    background: 'rgba(255,255,255,0.94)',
+    border: '1px solid rgba(8, 145, 178, 0.14)',
+    borderRadius: 28,
+    padding: 24,
+    boxShadow: '0 18px 60px rgba(15, 23, 42, 0.08)',
+  },
+  heroTop: {
+    display: 'flex',
+    gap: 16,
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    flexWrap: 'wrap',
   },
   kicker: {
-    display: "inline-block",
-    fontSize: 12,
+    margin: 0,
+    fontSize: 13,
     fontWeight: 800,
-    letterSpacing: 1.1,
-    textTransform: "uppercase",
-    color: "#0b74c7",
-    marginBottom: 10,
+    letterSpacing: 1.2,
+    textTransform: 'uppercase',
+    color: '#0891b2',
   },
   title: {
-    margin: 0,
-    fontSize: "clamp(2rem, 4vw, 3.2rem)",
-    lineHeight: 1.02,
-    color: "#082849",
+    margin: '8px 0 10px',
+    fontSize: 'clamp(28px, 4vw, 44px)',
+    lineHeight: 1.04,
+    fontWeight: 900,
+    color: '#082f49',
   },
-  lead: {
-    margin: "12px 0 0",
-    maxWidth: 760,
+  subtitle: {
+    margin: 0,
+    maxWidth: 860,
     fontSize: 16,
     lineHeight: 1.7,
-    color: "#42627f",
+    color: '#334155',
   },
-  heroActions: {
-    display: "flex",
+  actions: {
+    display: 'flex',
     gap: 12,
-    flexWrap: "wrap",
+    flexWrap: 'wrap',
   },
-  linkPrimary: {
-    textDecoration: "none",
-    background: "linear-gradient(135deg, #0aa2ff 0%, #0b7ed6 100%)",
-    color: "#fff",
-    padding: "14px 18px",
-    borderRadius: 16,
-    fontWeight: 800,
-    boxShadow: "0 18px 40px rgba(0, 122, 204, 0.22)",
-  },
-  linkGhost: {
-    textDecoration: "none",
-    background: "#f4fbff",
-    color: "#0c5d96",
-    padding: "14px 18px",
-    borderRadius: 16,
+  notice: {
+    marginTop: 18,
+    borderRadius: 18,
+    padding: '14px 16px',
+    background: 'linear-gradient(135deg, #ecfeff 0%, #eff6ff 100%)',
+    border: '1px solid rgba(34, 211, 238, 0.2)',
+    color: '#155e75',
+    fontSize: 14,
     fontWeight: 700,
-    border: "1px solid rgba(99, 163, 214, 0.24)",
   },
-  statsGrid: {
-    display: "grid",
-    gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
-    gap: 14,
-    marginTop: 22,
+  metricsGrid: {
+    maxWidth: '1200px',
+    margin: '0 auto 18px auto',
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+    gap: 16,
   },
-  statCard: {
-    background: "linear-gradient(180deg, #fafdff 0%, #eff7ff 100%)",
-    borderRadius: 20,
-    padding: 18,
-    border: "1px solid rgba(121, 178, 224, 0.20)",
+  metricCard: {
+    background: '#ffffff',
+    borderRadius: 24,
+    padding: 20,
+    border: '1px solid rgba(8, 145, 178, 0.12)',
+    boxShadow: '0 14px 40px rgba(15, 23, 42, 0.06)',
   },
-  statLabel: {
-    display: "block",
+  metricLabel: {
+    display: 'block',
     fontSize: 13,
-    color: "#55738d",
-    marginBottom: 8,
-    fontWeight: 700,
+    fontWeight: 800,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+    color: '#0891b2',
   },
-  statValue: {
-    fontSize: 28,
-    color: "#0a2946",
+  metricValue: {
+    display: 'block',
+    marginTop: 10,
+    fontSize: 30,
+    lineHeight: 1.1,
+    color: '#082f49',
+  },
+  metricHelp: {
+    display: 'block',
+    marginTop: 10,
+    fontSize: 14,
+    color: '#475569',
   },
   contentGrid: {
-    position: "relative",
-    zIndex: 1,
-    maxWidth: 1280,
-    margin: "0 auto 24px",
-    display: "grid",
-    gridTemplateColumns: "minmax(0, 1.5fr) minmax(320px, 0.85fr)",
-    gap: 24,
+    maxWidth: '1200px',
+    margin: '0 auto 18px auto',
+    display: 'grid',
+    gridTemplateColumns: 'minmax(0, 2fr) minmax(320px, 1fr)',
+    gap: 16,
   },
-  panel: {
-    position: "relative",
-    zIndex: 1,
-    maxWidth: 1280,
-    margin: "0 auto 24px",
-    borderRadius: 28,
-    border: "1px solid rgba(120, 170, 220, 0.22)",
-    background: "rgba(255,255,255,0.90)",
-    boxShadow: "0 22px 60px rgba(31, 80, 140, 0.08)",
-    padding: 28,
-  },
-  sideColumn: {
-    display: "grid",
-    gap: 24,
-    alignContent: "start",
+  formCard: {
+    background: '#ffffff',
+    borderRadius: 24,
+    padding: 22,
+    border: '1px solid rgba(8, 145, 178, 0.12)',
+    boxShadow: '0 16px 44px rgba(15, 23, 42, 0.06)',
   },
   sideCard: {
+    background: '#ffffff',
     borderRadius: 24,
-    border: "1px solid rgba(120, 170, 220, 0.18)",
-    background: "linear-gradient(180deg, #ffffff 0%, #f6fbff 100%)",
-    boxShadow: "0 18px 40px rgba(31, 80, 140, 0.06)",
-    padding: 24,
+    padding: 22,
+    border: '1px solid rgba(8, 145, 178, 0.12)',
+    boxShadow: '0 16px 44px rgba(15, 23, 42, 0.06)',
   },
-  panelHeader: {
-    display: "flex",
-    justifyContent: "space-between",
-    gap: 16,
-    alignItems: "flex-start",
-    flexWrap: "wrap",
-    marginBottom: 22,
+  sectionHeader: {
+    marginBottom: 16,
   },
-  panelKicker: {
-    display: "inline-block",
-    fontSize: 12,
-    fontWeight: 800,
-    letterSpacing: 1,
-    textTransform: "uppercase",
-    color: "#1292ec",
-    marginBottom: 8,
-  },
-  panelTitle: {
+  sectionKicker: {
     margin: 0,
-    fontSize: 26,
-    color: "#0c2b49",
-  },
-  panelText: {
-    margin: "10px 0 0",
-    fontSize: 15,
-    lineHeight: 1.7,
-    color: "#4b6781",
-  },
-  formGrid: {
-    display: "grid",
-    gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-    gap: 18,
-  },
-  field: {
-    display: "flex",
-    flexDirection: "column",
-    gap: 8,
-  },
-  label: {
-    fontSize: 14,
-    fontWeight: 700,
-    color: "#17456d",
-  },
-  input: {
-    width: "100%",
-    minHeight: 52,
-    borderRadius: 16,
-    border: "1px solid rgba(113, 160, 205, 0.28)",
-    background: "#f9fcff",
-    padding: "0 16px",
-    fontSize: 15,
-    color: "#14324d",
-    outline: "none",
-  },
-  textarea: {
-    width: "100%",
-    borderRadius: 18,
-    border: "1px solid rgba(113, 160, 205, 0.28)",
-    background: "#f9fcff",
-    padding: "14px 16px",
-    fontSize: 15,
-    color: "#14324d",
-    outline: "none",
-    resize: "vertical",
-  },
-  uploadBox: {
-    minHeight: 110,
-    borderRadius: 20,
-    border: "1.5px dashed rgba(24, 146, 236, 0.35)",
-    background: "linear-gradient(180deg, #fafdff 0%, #eef7ff 100%)",
-    padding: 18,
-    display: "flex",
-    flexDirection: "column",
-    justifyContent: "center",
-    cursor: "pointer",
-  },
-  uploadTitle: {
-    fontSize: 15,
-    fontWeight: 800,
-    color: "#0c4e84",
-    marginBottom: 6,
-  },
-  uploadText: {
-    fontSize: 14,
-    lineHeight: 1.55,
-    color: "#5c7893",
-  },
-  previewWrap: {
-    marginTop: 20,
-    background: "#f7fbff",
-    borderRadius: 22,
-    padding: 18,
-    border: "1px solid rgba(120, 170, 220, 0.16)",
-  },
-  previewLabel: {
-    display: "block",
     fontSize: 13,
     fontWeight: 800,
-    color: "#167bc8",
-    marginBottom: 10,
-    textTransform: "uppercase",
-    letterSpacing: 0.8,
+    textTransform: 'uppercase',
+    letterSpacing: 1.1,
+    color: '#0891b2',
   },
-  previewImage: {
-    width: "100%",
-    maxWidth: 320,
-    height: "auto",
-    objectFit: "cover",
-    borderRadius: 18,
-    display: "block",
-    border: "1px solid rgba(120, 170, 220, 0.18)",
+  sectionTitle: {
+    margin: '6px 0 10px',
+    fontSize: 28,
+    lineHeight: 1.15,
+    color: '#082f49',
+  },
+  sectionText: {
+    margin: 0,
+    fontSize: 15,
+    lineHeight: 1.7,
+    color: '#475569',
+  },
+  formGrid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
+    gap: 14,
+  },
+  fieldBlock: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 8,
+  },
+  textareaBlock: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 8,
+    gridColumn: '1 / -1',
+  },
+  label: {
+    fontSize: 13,
+    fontWeight: 800,
+    color: '#155e75',
+  },
+  input: {
+    minHeight: 48,
+    padding: '0 14px',
+    borderRadius: 14,
+    border: '1px solid rgba(148, 163, 184, 0.35)',
+    background: '#ffffff',
+    color: '#0f172a',
+    fontSize: 14,
+    outline: 'none',
+  },
+  textarea: {
+    minHeight: 120,
+    padding: 14,
+    borderRadius: 14,
+    border: '1px solid rgba(148, 163, 184, 0.35)',
+    background: '#ffffff',
+    color: '#0f172a',
+    fontSize: 14,
+    outline: 'none',
+    resize: 'vertical',
+    fontFamily: 'inherit',
   },
   buttonRow: {
-    display: "flex",
+    marginTop: 18,
+    display: 'flex',
     gap: 12,
-    flexWrap: "wrap",
-    marginTop: 22,
+    flexWrap: 'wrap',
   },
   primaryButton: {
-    border: "none",
-    borderRadius: 16,
-    padding: "14px 20px",
-    background: "linear-gradient(135deg, #08a2ff 0%, #0a76cf 100%)",
-    color: "#fff",
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 46,
+    padding: '0 18px',
+    borderRadius: 14,
+    textDecoration: 'none',
     fontWeight: 800,
-    fontSize: 15,
-    cursor: "pointer",
-    boxShadow: "0 18px 40px rgba(0, 122, 204, 0.22)",
+    background: 'linear-gradient(135deg, #22d3ee 0%, #0ea5e9 100%)',
+    color: '#ffffff',
+    boxShadow: '0 14px 28px rgba(14, 165, 233, 0.25)',
   },
   secondaryButton: {
-    textDecoration: "none",
-    borderRadius: 16,
-    padding: "14px 20px",
-    background: "#f4fbff",
-    color: "#0c5d96",
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 46,
+    padding: '0 18px',
+    borderRadius: 14,
+    textDecoration: 'none',
     fontWeight: 800,
-    fontSize: 15,
-    border: "1px solid rgba(99, 163, 214, 0.24)",
+    background: '#ffffff',
+    color: '#0f172a',
+    border: '1px solid rgba(148, 163, 184, 0.35)',
   },
-  alert: {
-    marginTop: 18,
-    borderRadius: 18,
-    padding: "16px 18px",
-    background: "#eef8ff",
-    border: "1px solid rgba(84, 166, 226, 0.24)",
-    color: "#174b73",
+  primaryActionButton: {
+    minHeight: 46,
+    padding: '0 18px',
+    borderRadius: 14,
+    border: 'none',
+    fontWeight: 800,
+    background: 'linear-gradient(135deg, #22d3ee 0%, #0ea5e9 100%)',
+    color: '#ffffff',
+    boxShadow: '0 14px 28px rgba(14, 165, 233, 0.25)',
+    cursor: 'pointer',
+  },
+  successBox: {
+    marginTop: 16,
+    borderRadius: 16,
+    padding: '14px 16px',
+    background: '#ecfdf5',
+    border: '1px solid #a7f3d0',
+    color: '#047857',
+    fontWeight: 700,
     lineHeight: 1.6,
-    fontWeight: 600,
   },
-  sideTitle: {
-    margin: 0,
-    fontSize: 22,
-    color: "#0d2c49",
-  },
-  sideText: {
-    margin: "10px 0 0",
-    color: "#4e6a84",
-    lineHeight: 1.7,
-    fontSize: 15,
-  },
-  resumeList: {
-    display: "grid",
-    gap: 12,
-    marginTop: 18,
-  },
-  resumeItem: {
-    display: "flex",
-    justifyContent: "space-between",
-    gap: 12,
-    padding: "14px 16px",
+  helperBox: {
+    marginTop: 16,
     borderRadius: 16,
-    background: "#f8fbff",
-    border: "1px solid rgba(120, 170, 220, 0.16)",
-    color: "#234764",
+    padding: '14px 16px',
+    background: '#eff6ff',
+    border: '1px solid #bfdbfe',
+    color: '#1d4ed8',
+    fontWeight: 700,
+    lineHeight: 1.6,
   },
-  sideActions: {
-    display: "grid",
-    gap: 12,
-    marginTop: 20,
-  },
-  linkPrimaryBlock: {
-    textDecoration: "none",
-    textAlign: "center",
-    background: "linear-gradient(135deg, #0aa2ff 0%, #0b7ed6 100%)",
-    color: "#fff",
-    padding: "14px 18px",
-    borderRadius: 16,
-    fontWeight: 800,
-  },
-  linkGhostBlock: {
-    textDecoration: "none",
-    textAlign: "center",
-    background: "#f4fbff",
-    color: "#0c5d96",
-    padding: "14px 18px",
-    borderRadius: 16,
-    fontWeight: 800,
-    border: "1px solid rgba(99, 163, 214, 0.24)",
-  },
-  emptyState: {
+  listSection: {
+    maxWidth: '1200px',
+    margin: '0 auto',
+    background: '#ffffff',
     borderRadius: 24,
-    padding: 28,
-    background: "linear-gradient(180deg, #fbfdff 0%, #f1f8ff 100%)",
-    border: "1px solid rgba(120, 170, 220, 0.18)",
+    padding: 22,
+    border: '1px solid rgba(8, 145, 178, 0.12)',
+    boxShadow: '0 16px 44px rgba(15, 23, 42, 0.06)',
   },
-  emptyTitle: {
-    display: "block",
-    fontSize: 20,
-    color: "#12314e",
-    marginBottom: 10,
-  },
-  emptyText: {
-    margin: 0,
-    color: "#50708b",
+  emptyBox: {
+    borderRadius: 18,
+    padding: 18,
+    background: '#f8fafc',
+    border: '1px solid rgba(148, 163, 184, 0.15)',
+    color: '#475569',
     lineHeight: 1.7,
   },
   productsGrid: {
-    display: "grid",
-    gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",
-    gap: 18,
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+    gap: 16,
   },
   productCard: {
-    borderRadius: 24,
-    border: "1px solid rgba(120, 170, 220, 0.18)",
-    background: "linear-gradient(180deg, #ffffff 0%, #f7fbff 100%)",
-    boxShadow: "0 16px 36px rgba(31, 80, 140, 0.07)",
+    background: '#ffffff',
+    borderRadius: 22,
     padding: 18,
+    border: '1px solid rgba(8, 145, 178, 0.12)',
+    boxShadow: '0 12px 34px rgba(15, 23, 42, 0.05)',
   },
-  productMedia: {
-    width: "100%",
-    aspectRatio: "1 / 1",
-    borderRadius: 20,
-    overflow: "hidden",
-    background: "#eef6fd",
-    border: "1px solid rgba(120, 170, 220, 0.18)",
-    marginBottom: 14,
-  },
-  productImage: {
-    width: "100%",
-    height: "100%",
-    objectFit: "cover",
-    display: "block",
-  },
-  productFallback: {
-    width: "100%",
-    height: "100%",
-    display: "grid",
-    placeItems: "center",
-    color: "#67839c",
-    fontWeight: 700,
-    fontSize: 14,
-  },
-  badgeRow: {
-    display: "flex",
-    marginBottom: 12,
-  },
-  statusBadge: {
-    display: "inline-flex",
-    alignItems: "center",
-    minHeight: 34,
-    padding: "0 12px",
-    borderRadius: 999,
-    background: "#eaf7ff",
-    color: "#0b6eb8",
-    fontSize: 13,
-    fontWeight: 800,
-  },
-  productName: {
-    margin: 0,
-    fontSize: 20,
-    color: "#092949",
-    textTransform: "uppercase",
-  },
-  productPrice: {
-    marginTop: 8,
-    fontSize: 24,
-    fontWeight: 900,
-    color: "#0a7cd3",
-  },
-  productDescription: {
-    margin: "12px 0 0",
-    color: "#516d86",
-    lineHeight: 1.65,
-    minHeight: 78,
-  },
-  metaList: {
-    display: "grid",
-    gap: 10,
-    marginTop: 16,
-  },
-  metaItem: {
-    display: "flex",
-    justifyContent: "space-between",
+  productTop: {
+    display: 'flex',
+    justifyContent: 'space-between',
     gap: 12,
-    borderTop: "1px solid rgba(120, 170, 220, 0.16)",
-    paddingTop: 10,
-    color: "#33536f",
-    fontSize: 14,
+    flexWrap: 'wrap',
+    alignItems: 'center',
   },
-  removeButton: {
-    marginTop: 18,
-    width: "100%",
-    minHeight: 46,
-    borderRadius: 14,
-    border: "1px solid rgba(213, 89, 89, 0.18)",
-    background: "#fff5f5",
-    color: "#b54747",
+  productBadge: {
+    display: 'inline-flex',
+    padding: '6px 10px',
+    borderRadius: 999,
+    background: '#ecfeff',
+    color: '#155e75',
+    fontSize: 12,
     fontWeight: 800,
-    cursor: "pointer",
+    textTransform: 'uppercase',
+    letterSpacing: 0.8,
   },
-};
+  productDate: {
+    fontSize: 12,
+    color: '#64748b',
+    fontWeight: 700,
+  },
+  productTitle: {
+    margin: '12px 0 14px',
+    fontSize: 22,
+    lineHeight: 1.2,
+    color: '#082f49',
+  },
+  productInfoGrid: {
+    display: 'grid',
+    gridTemplateColumns: '1fr 1fr',
+    gap: 12,
+  },
+  summaryGrid: {
+    marginTop: 18,
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+    gap: 12,
+  },
+  summaryItem: {
+    background: 'rgba(255,255,255,0.82)',
+    borderRadius: 16,
+    padding: 14,
+    border: '1px solid rgba(148, 163, 184, 0.15)',
+  },
+  summaryLabel: {
+    display: 'block',
+    fontSize: 12,
+    fontWeight: 800,
+    textTransform: 'uppercase',
+    letterSpacing: 0.8,
+    color: '#0891b2',
+  },
+  summaryValue: {
+    display: 'block',
+    marginTop: 8,
+    fontSize: 15,
+    lineHeight: 1.5,
+    color: '#0f172a',
+    wordBreak: 'break-word',
+  },
+  descriptionBox: {
+    marginTop: 14,
+    background: '#f8fafc',
+    borderRadius: 18,
+    padding: 14,
+    border: '1px solid rgba(148, 163, 184, 0.15)',
+  },
+  descriptionText: {
+    margin: '8px 0 0',
+    color: '#334155',
+    lineHeight: 1.6,
+    fontSize: 15,
+  },
+}

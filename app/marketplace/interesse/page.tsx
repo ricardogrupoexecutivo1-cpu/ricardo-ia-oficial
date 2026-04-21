@@ -32,9 +32,37 @@ type EnderecoEntrega = {
   observacoes: string;
 };
 
+type PedidoMarketplace = {
+  produto: Produto | null;
+  entrega: EnderecoEntrega | null;
+  origem: "interesse";
+  criadoEm: string;
+};
+
 const STORAGE_KEY_PRODUTOS = "aurora_marketplace_produtos";
 const STORAGE_KEY_ENTREGA = "aurora_marketplace_comprador_entrega";
 const STORAGE_KEY_INTERESSE = "aurora_marketplace_interesse_produto";
+const STORAGE_KEY_PEDIDO = "aurora_marketplace_pedido";
+
+function normalizarProduto(item: unknown): Produto | null {
+  if (!item || typeof item !== "object") return null;
+
+  const valor = item as Partial<Produto> & { status?: string };
+
+  return {
+    id: String(valor.id ?? ""),
+    nome: String(valor.nome ?? ""),
+    preco: String(valor.preco ?? ""),
+    categoria: String(valor.categoria ?? ""),
+    estoque: String(valor.estoque ?? ""),
+    status: (["Disponível", "Pausado", "Rascunho"].includes(valor.status ?? "")
+      ? valor.status
+      : "Disponível") as ProdutoStatus,
+    imagem: String(valor.imagem ?? ""),
+    descricao: String(valor.descricao ?? ""),
+    criadoEm: String(valor.criadoEm ?? ""),
+  };
+}
 
 function lerProdutoInteresse(): Produto | null {
   if (typeof window === "undefined") return null;
@@ -43,20 +71,9 @@ function lerProdutoInteresse(): Produto | null {
     const brutoInteresse = localStorage.getItem(STORAGE_KEY_INTERESSE);
     if (brutoInteresse) {
       const item = JSON.parse(brutoInteresse);
-      if (item && typeof item === "object") {
-        return {
-          id: String(item?.id ?? ""),
-          nome: String(item?.nome ?? ""),
-          preco: String(item?.preco ?? ""),
-          categoria: String(item?.categoria ?? ""),
-          estoque: String(item?.estoque ?? ""),
-          status: (["Disponível", "Pausado", "Rascunho"].includes(item?.status)
-            ? item.status
-            : "Disponível") as ProdutoStatus,
-          imagem: String(item?.imagem ?? ""),
-          descricao: String(item?.descricao ?? ""),
-          criadoEm: String(item?.criadoEm ?? ""),
-        };
+      const produtoNormalizado = normalizarProduto(item);
+      if (produtoNormalizado) {
+        return produtoNormalizado;
       }
     }
 
@@ -67,21 +84,7 @@ function lerProdutoInteresse(): Produto | null {
     if (!Array.isArray(lista)) return null;
 
     const primeiroDisponivel = lista.find((item) => item?.status === "Disponível");
-    if (!primeiroDisponivel) return null;
-
-    return {
-      id: String(primeiroDisponivel?.id ?? ""),
-      nome: String(primeiroDisponivel?.nome ?? ""),
-      preco: String(primeiroDisponivel?.preco ?? ""),
-      categoria: String(primeiroDisponivel?.categoria ?? ""),
-      estoque: String(primeiroDisponivel?.estoque ?? ""),
-      status: (["Disponível", "Pausado", "Rascunho"].includes(primeiroDisponivel?.status)
-        ? primeiroDisponivel.status
-        : "Disponível") as ProdutoStatus,
-      imagem: String(primeiroDisponivel?.imagem ?? ""),
-      descricao: String(primeiroDisponivel?.descricao ?? ""),
-      criadoEm: String(primeiroDisponivel?.criadoEm ?? ""),
-    };
+    return normalizarProduto(primeiroDisponivel);
   } catch {
     return null;
   }
@@ -115,12 +118,32 @@ function lerEntrega(): EnderecoEntrega | null {
   }
 }
 
+function salvarPedidoMarketplace(produto: Produto | null, entrega: EnderecoEntrega | null) {
+  if (typeof window === "undefined") return false;
+
+  try {
+    const payload: PedidoMarketplace = {
+      produto,
+      entrega,
+      origem: "interesse",
+      criadoEm: new Date().toISOString(),
+    };
+
+    localStorage.setItem(STORAGE_KEY_PEDIDO, JSON.stringify(payload));
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 export default function MarketplaceInteressePage() {
   const [produto, setProduto] = useState<Produto | null>(null);
   const [entrega, setEntrega] = useState<EnderecoEntrega | null>(null);
   const [mensagem] = useState(
-    "Posso te ajudar a fechar esse pedido agora sem enrolação. Se quiser, siga para a entrega e deixe seus dados prontos."
+    "Posso te ajudar a fechar esse pedido agora sem enrolação. Se quiser, siga para o pedido e deixe seu fechamento pronto."
   );
+  const [aviso, setAviso] = useState("");
+  const [carregandoAvanco, setCarregandoAvanco] = useState(false);
 
   useEffect(() => {
     setProduto(lerProdutoInteresse());
@@ -141,6 +164,40 @@ export default function MarketplaceInteressePage() {
         entrega.estado.trim()
     );
   }, [entrega]);
+
+  function avancarParaPedido() {
+    if (!produto) {
+      setAviso("Nenhum produto válido foi encontrado para seguir ao pedido.");
+      return;
+    }
+
+    setCarregandoAvanco(true);
+    setAviso("");
+
+    let interesseSalvo = false;
+    let pedidoSalvo = false;
+
+    try {
+      localStorage.setItem(STORAGE_KEY_INTERESSE, JSON.stringify(produto));
+      interesseSalvo = true;
+    } catch {
+      interesseSalvo = false;
+    }
+
+    pedidoSalvo = salvarPedidoMarketplace(produto, entrega);
+
+    if (!interesseSalvo && !pedidoSalvo) {
+      setCarregandoAvanco(false);
+      setAviso("Não foi possível preparar o pedido agora. Tente novamente.");
+      return;
+    }
+
+    setAviso("Produto preparado com sucesso. Abrindo o pedido...");
+
+    setTimeout(() => {
+      window.location.assign("/marketplace/pedido");
+    }, 150);
+  }
 
   return (
     <main style={styles.page}>
@@ -217,6 +274,23 @@ export default function MarketplaceInteressePage() {
                   <strong>{produto.estoque || "Não informado"}</strong>
                 </div>
               </div>
+
+              <div style={styles.productActions}>
+                <button
+                  type="button"
+                  onClick={avancarParaPedido}
+                  style={styles.primaryButton}
+                  disabled={carregandoAvanco}
+                >
+                  {carregandoAvanco ? "Preparando pedido..." : "Avançar para pedido"}
+                </button>
+
+                <Link href="/marketplace/comprador/entrega" style={styles.secondaryButton}>
+                  Ajustar entrega antes
+                </Link>
+              </div>
+
+              {aviso ? <p style={styles.feedbackText}>{aviso}</p> : null}
             </div>
           )}
         </div>
@@ -230,7 +304,9 @@ export default function MarketplaceInteressePage() {
             <div style={styles.robotBox}>
               <strong style={styles.robotTitle}>Sugestão automática</strong>
               <p style={styles.robotText}>
-                Este produto já está pronto para avanço. O melhor próximo passo é confirmar a entrega para acelerar o fechamento.
+                {entregaCompleta
+                  ? "Este produto e a entrega já estão prontos para avanço. O melhor próximo passo agora é abrir o pedido."
+                  : "Este produto já está pronto para avanço. Antes do fechamento, vale completar a entrega para acelerar o pedido."}
               </p>
             </div>
           </div>
@@ -521,6 +597,40 @@ const styles: Record<string, React.CSSProperties> = {
     paddingTop: 10,
     color: "#33536f",
     fontSize: 14,
+  },
+  productActions: {
+    display: "grid",
+    gap: 12,
+    marginTop: 20,
+  },
+  primaryButton: {
+    border: "none",
+    cursor: "pointer",
+    textAlign: "center",
+    background: "linear-gradient(135deg, #0aa2ff 0%, #0b7ed6 100%)",
+    color: "#fff",
+    padding: "15px 18px",
+    borderRadius: 16,
+    fontWeight: 800,
+    fontSize: 15,
+    boxShadow: "0 18px 40px rgba(0, 122, 204, 0.18)",
+  },
+  secondaryButton: {
+    textDecoration: "none",
+    textAlign: "center",
+    background: "#f4fbff",
+    color: "#0c5d96",
+    padding: "14px 18px",
+    borderRadius: 16,
+    fontWeight: 800,
+    border: "1px solid rgba(99, 163, 214, 0.24)",
+  },
+  feedbackText: {
+    margin: "12px 0 0",
+    color: "#0c5d96",
+    fontSize: 14,
+    lineHeight: 1.6,
+    fontWeight: 700,
   },
   sideTitle: {
     margin: 0,
