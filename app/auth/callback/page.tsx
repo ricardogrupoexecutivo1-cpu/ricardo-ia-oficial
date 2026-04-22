@@ -39,7 +39,7 @@ export default function AuthCallbackPage() {
           );
 
           window.setTimeout(() => {
-            window.location.href = "/entrada";
+            window.location.href = "/";
           }, 1200);
 
           return;
@@ -84,7 +84,7 @@ export default function AuthCallbackPage() {
         );
 
         window.setTimeout(() => {
-          window.location.href = "/entrada";
+          window.location.href = "/";
         }, 1200);
       } catch (error: any) {
         if (!active) return;
@@ -95,7 +95,7 @@ export default function AuthCallbackPage() {
         );
 
         window.setTimeout(() => {
-          window.location.href = "/entrada";
+          window.location.href = "/";
         }, 1400);
       }
     }
